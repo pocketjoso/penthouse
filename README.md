@@ -1,9 +1,9 @@
 #penthousee
 ##Critical Path CSS Generator for PhantomJS
 
+[![NPM version](https://badge.fury.io/js/penthouse.svg)](http://badge.fury.io/js/penthouse)
+
 Online version on: http://jonassebastianohlsson.com/criticalpathcssgenerator/
-
-
 
 ### Usage
 
