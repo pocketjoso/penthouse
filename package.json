@@ -22,10 +22,10 @@
     }
   ],
   "dependencies": {
-    "phantomjs" : ""
+    "phantomjs" : "~1.9.7"
   },
   "devDependencies": {
-	"grunt": "~1.9.7"
+	"grunt": "~0.4.2"
   },
   "keywords": [
     "CSS Critical Path Generator","phantomjs","css","performance","build","tool"
