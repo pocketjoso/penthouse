@@ -10,7 +10,7 @@ Online version on: http://jonassebastianohlsson.com/criticalpathcssgenerator/
 #### Command line
 [PhantomJS](https://github.com/ariya/phantomjs/) has to be set up first.
 
-	phantomjs penthouse [URL to page] [CSS file] > [critical path CSS file]
+	phantomjs penthouse.js [URL to page] [CSS file] > [critical path CSS file]
 	
 	//for example
 	phantomjs penthouse http://mySite.com/home css/myFullSiteStyles.css > css/home-critical-path.css

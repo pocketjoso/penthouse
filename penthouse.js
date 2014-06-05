@@ -3,6 +3,12 @@
 // Author: Jonas Ohlsson
 // License: MIT
 
+//USAGE:
+//phantomjs penthouse.js [URL to page] [CSS file] > [critical path CSS file]
+//
+//dependencies
+// - "phantomjs" : "~1.9.7"
+
 'use strict';
 
 /*
