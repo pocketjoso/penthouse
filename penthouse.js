@@ -3,11 +3,11 @@
 // Author: Jonas Ohlsson
 // License: MIT
 
-//USAGE:
-//phantomjs penthouse.js [URL to page] [CSS file] > [critical path CSS file]
+// USAGE:
+// phantomjs penthouse.js [URL to page] [CSS file] > [critical path CSS file]
 //
-//dependencies
-// - "phantomjs" : "~1.9.7"
+// dependencies
+// + "phantomjs" : "~1.9.7"
 
 'use strict';
 
@@ -30,6 +30,23 @@ var page = require('webpage').create(),
 //shortcut for logging
 var log = function(msg) {window.console&&console.log&&console.log(msg)};
 
+
+/*=== preFormatCSS ===
+ * preformats the css to ensure we won't run into and problems in our parsing
+ * removes comments (actually would be anough to remove/replace {} chars.. TODO
+ * replaces } char inside content: "" properties.
+  ---------------------------------------------------------*/
+var preFormatCSS = function(css) {
+	//remove comments from css (including multi-line coments) before we start working with it,
+	//so we can rely on {} to be splitting rules.
+	css = css.replace(/\/\*[\s\S]*?\*\//g, ''); 
+	
+	//we also need to replace eventual close curly bracket characters inside content: "" property declarations, replace them with their ASCI code equivalent
+	//\7d = '\' + '}'.charCodeAt(0).toString(16);
+	css = css.replace(/(content(.|[\r\n])*['"].*)}((.|[\r\n])*;)/gm,"$1"+"\\7d"+"$3");
+	
+	return css;
+}
 
 /*=== main ===
  * tests each selector in css file at specified resolution,
@@ -216,8 +233,9 @@ var main = function(res){
 			
 			
 			
-			//final cleanup: remove all empty rules
-			css = css.replace(/^([^{}]*\{\s*\})/gm, '');
+			//final cleanup
+			//remove all empty rules, and remove leading/trailing whitespace
+			css = css.replace(/^([^{}]*\{\s*\})/gm, '').trim();
 			
 			//we're done, log the result as the output from phantomjs execution of this script!
 			log(css);
@@ -244,9 +262,7 @@ cssFilePath = system.args[2];
 try {
     var f = fs.open(cssFilePath, "r");
     css = f.read();
-	//remove comments from css (including multi-line coments) before we start working with it,
-	//so we can rely on {} to be splitting rules.
-	css = css.replace(/\/\*[\s\S]*?\*\//g, ''); 
+	css = preFormatCSS(css);
 } catch (e) {
     console.log(e);
 	phantom.exit();
