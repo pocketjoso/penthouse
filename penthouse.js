@@ -37,8 +37,7 @@ var log = function(msg) {window.console&&console.log&&console.log(msg)};
  * replaces } char inside content: "" properties.
   ---------------------------------------------------------*/
 var preFormatCSS = function(css) {
-	//remove comments from css (including multi-line coments) before we start working with it,
-	//so we can rely on {} to be splitting rules.
+	//remove comments from css (including multi-line coments)
 	css = css.replace(/\/\*[\s\S]*?\*\//g, ''); 
 	
 	//we also need to replace eventual close curly bracket characters inside content: "" property declarations, replace them with their ASCI code equivalent
@@ -235,7 +234,7 @@ var main = function(res){
 			
 			//final cleanup
 			//remove all empty rules, and remove leading/trailing whitespace
-			css = css.replace(/^([^{}]*\{\s*\})/gm, '').trim();
+			css = css.replace(/[^{}]*\{\s*\}/gm, '').trim();
 			
 			//we're done, log the result as the output from phantomjs execution of this script!
 			log(css);
