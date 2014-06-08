@@ -31,6 +31,11 @@ var page = require('webpage').create(),
 var log = function(msg) {window.console&&console.log&&console.log(msg)};
 
 
+/* prevent page JS errors from being output to final CSS */
+page.onError = function(msg, trace) {
+	//do nothing
+}
+
 /*=== preFormatCSS ===
  * preformats the css to ensure we won't run into and problems in our parsing
  * removes comments (actually would be anough to remove/replace {} chars.. TODO
@@ -53,7 +58,7 @@ var preFormatCSS = function(css) {
  * modifies CSS - removes selectors that don't appear, and empty rules
  * logs new CSS, then exits PhantomJS
  ---------------------------------------------------------*/
-var main = function(res){
+var main = function(url, res){
 	page.viewportSize = {
 	  width: res.w,
 	  height: res.h
@@ -270,4 +275,4 @@ try {
 
 //start the critical path CSS generation
 // - exists the program from within
-main(resolution);
+main(url, resolution);
