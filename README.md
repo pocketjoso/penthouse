@@ -1,5 +1,5 @@
-#penthousee
-##Critical Path CSS Generator for PhantomJS
+#penthouse
+##Critical Path CSS Generator
 
 [![NPM version](https://badge.fury.io/js/penthouse.svg)](http://badge.fury.io/js/penthouse)
 
@@ -10,14 +10,12 @@ Online version on: http://jonassebastianohlsson.com/criticalpathcssgenerator/
 #### Command line
 [PhantomJS](https://github.com/ariya/phantomjs/) has to be set up first.
 
-	phantomjs --config=config.json penthouse.js [URL to page] [CSS file] > [critical path CSS file]
+	penthouse [URL to page] [CSS file] > [critical path CSS file]
 	
 	//for example
-	phantomjs --config=config.json penthouse.js http://mySite.com/home css/myFullSiteStyles.css > css/home-critical-path.css
-	
-Config is required to handle SSL and https urls.
+	penthouse.js http://mySite.com/home css/myFullSiteStyles.css > css/home-critical-path.css
 
-#### Online use
+#### Online version
 If you don't want to install phantomJS and run via terminal, you can just use the online version instead - it uses the same code backend:
 http://jonassebastianohlsson.com/criticalpathcssgenerator/
 
