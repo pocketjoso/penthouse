@@ -1,4 +1,4 @@
-// Penthouse CSS Critical Path Generator v0.1.0
+// Penthouse CSS Critical Path Generator v0.1.1
 // https://github.com/pocketjoso/penthouse
 // Author: Jonas Ohlsson
 // License: MIT
@@ -48,6 +48,65 @@ var preFormatCSS = function(css) {
 	//we also need to replace eventual close curly bracket characters inside content: "" property declarations, replace them with their ASCI code equivalent
 	//\7d = '\' + '}'.charCodeAt(0).toString(16);
 	css = css.replace(/(content(.|[\r\n])*['"].*)}((.|[\r\n])*;)/gm,"$1"+"\\7d"+"$3");
+	
+	return css;
+}
+
+
+/*=== rmUnusedFontFace ===
+ * find @fontface declarations where font isn't used in
+ * above the fold css, and removes those.
+ ---------------------------------------------------------*/
+
+var rmUnusedFontFace = function(css) {
+	var toDeleteSections = [];
+
+	//extract full @font-face rules
+	var fontFaceRegex = /(@font-face[ \s\S]*?\{([\s\S]*?)\})/gm,	
+		ff;
+		
+	while ((ff = fontFaceRegex.exec(css)) !== null) {
+
+		//grab the font name declared in the @font-face rule
+		//(can still be in quotes, f.e. "Lato Web"
+		var t = /font-family[^:]*?:[ ]*([^;]*)/.exec(ff[1]);
+		if(typeof t[1] === "undefined")
+			continue; //no font-family in @fontface rule!
+			
+		//rm quotes
+		var fontName = t[1].replace(/['"]/gm,"");
+		
+		// does this fontname appear as a font-family or font (shorthand) value?
+		var fontNameRegex = new RegExp("([^{}]*?)\{[^}]*?font(-family)?[^:]*?:[^;]*"+fontName+"[^,;]*[,;]","gmi");
+
+		
+		var fontFound = false,
+			m;
+			
+		while ((m = fontNameRegex.exec(css)) !== null) {
+			if(m[1].indexOf("@font-face") === -1){
+				//log("FOUND, keep rule");
+				fontFound = true;
+				break;
+			}
+		}
+		if(!fontFound){
+			//"NOT FOUND, rm!
+			
+			//can't remove rule here as it will screw up ongoing while (exec ...) loop.
+			//instead: save indices and delete AFTER for loop
+			var closeRuleIndex = css.indexOf("}", ff.index);
+			//unshift - add to beginning of array - we need to remove rules in reverse order,
+			//otherwise indeces will become incorrect again.
+			toDeleteSections.unshift({start: ff.index, end: closeRuleIndex+1});
+		}
+	}
+	//now delete the @fontface rules we registed as having no matches in the css
+	for (var i=0; i < toDeleteSections.length; i++){
+		var start = toDeleteSections[i].start,
+			end = toDeleteSections[i].end;
+		css = css.substring(0, start) + css.substring(end, css.length);
+	}
 	
 	return css;
 }
@@ -240,6 +299,8 @@ var main = function(url, res){
 			//final cleanup
 			//remove all empty rules, and remove leading/trailing whitespace
 			css = css.replace(/[^{}]*\{\s*\}/gm, '').trim();
+			
+			css = rmUnusedFontFace(css);
 			
 			//we're done, log the result as the output from phantomjs execution of this script!
 			log(css);
