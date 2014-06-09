@@ -1,7 +1,7 @@
 {
   "name": "penthouse",
   "description": "PhantomJS script for creating critical path CSS for web pages",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "homepage": "https://github.com/pocketjoso/penthouse",
   "author": {
     "name": "Jonas Ohlsson",
