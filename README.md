@@ -71,7 +71,7 @@ http://jonassebastianohlsson.com/criticalpathcssgenerator/
 ## Problems with generated CSS
 
 ###Background images missing
-Change any relative paths (f.e. `background-image: url("../images/x.gif");)` to absolute `background-image: url("http://mysite.com/images/x.gif");`, and then try again.
+Change any relative paths (f.e. `background-image: url("../images/x.gif");`) to absolute `background-image: url("http://mysite.com/images/x.gif");`, and then try again.
 
 ###Unstyled content showing
 The most common problem is with clearing floats. Instead of clearing elements appearing after floated elements (f.e. using `clear:both;`), clear the floats themselves by using the [clear-fix pattern](http://css-tricks.com/snippets/css/clear-fix/). Float clearing will now work also in the generated critical css.
