@@ -1,7 +1,7 @@
 {
   "name": "penthouse",
   "description": "Generate critical path CSS for web pages",
-  "version": "0.2.0-alpha",
+  "version": "0.2.0",
   "homepage": "https://github.com/pocketjoso/penthouse",
   "author": {
     "name": "Jonas Ohlsson",
@@ -21,13 +21,32 @@
       "url": "github.com/pocketjoso/penthouse/blob/master/LICENSE"
     }
   ],
+  "main": "./lib/index.js",
+  "bin": {
+    "penthouse": "./bin/penthouse"
+  },
+  "scripts": {
+    "test": "node_modules/.bin/mocha test"
+  },
   "dependencies": {
-    "phantomjs" : "~1.9.7"
+    "phantomjs": "~1.9.7",
+    "nopt": "^3.0.0"
   },
   "devDependencies": {
-	"grunt": "~0.4.2"
+    "grunt": "~0.4.2",
+    "express": "^4.4.2",
+    "portfinder": "^0.2.1",
+    "morgan": "^1.1.1",
+    "mocha": "^1.20.1",
+    "css": "^1.6.0",
+    "chai": "^1.9.1"
   },
   "keywords": [
-    "CSS Critical Path Generator","phantomjs","css","performance","build","tool"
+    "CSS Critical Path Generator",
+    "phantomjs",
+    "css",
+    "performance",
+    "build",
+    "tool"
   ]
 }
