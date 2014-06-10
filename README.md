@@ -26,16 +26,17 @@ Install [PhantomJS](https://github.com/ariya/phantomjs) first, and make sure it 
 	phantomjs penthouse.js http://mySite.com/page1 allStyles.css > page1-critical-styles.css
 	phantomjs penthouse.js http://mySite.com/page2 allStyles.css > page2-critical-styles.css
 
-#####HTTPS	
+##### HTTPS	
 To run on HTTPS pages two extra flags must be passed in, directly after phantomjs in the call:
+
 	--ignore-ssl-errors=true --ssl-protocol=tlsv1
 	//as such:
 	phantomjs penthouse.js --ignore-ssl-errors=true --ssl-protocol=tlsv1 [URL to page] [CSS file] > [critical path CSS file]
 
-#####Optional parameters: 
-[WIDTH], [HEIGHT] - must follow [CSS file] param in this order. Defaults to 1300, 900.
+##### Optional parameters
+By default penthouse gives you the css needed to render a viewport of size `1300x900`. This css will cover all smaller viewport sizes, unless you're delivering a different DOM or doing something crazy. You can pass in your a different `viewport width` and `viewport height` if you want; these two params must follow the `[CSS file]` like this:
 
-	phantomjs penthouse.js [URL to page] [CSS file] [WIDTH] [HEIGHT] > [critical path CSS file]
+	phantomjs penthouse.js [URL to page] [CSS file] [Viewport WIDTH] [Viewport HEIGHT] > [critical path CSS file]
 
 
 ### As a Node module
@@ -77,7 +78,7 @@ The most common problem is with clearing floats. Instead of clearing elements ap
 If you for some reason have an element appearing early in the DOM, but that you apply styles to move outside of the above the fold content (using absolute position or transforms), consider whether it really should appear so early in the DOM.
 
 ###Special glyphs not showing/showing incorrectly
-Problems with special characters like `&#8594;` after converting? Make sure you use the correct hexadecimal format in your CSS. You can always get this format from your browser console, by entering `'&#8594;'.charCodeAt(0).toString(16)` (answer for this arrow glyph is `2192`). When using hexadecimal format in CSS it needs to be prepended with a backslash, like so: `\2192` (f.e. `content: '\2192';`)
+Problems with special characters like &#8594; after converting? Make sure you use the correct hexadecimal format in your CSS. You can always get this format from your browser console, by entering '&#8594;'`.charCodeAt(0).toString(16)` (answer for this arrow glyph is `2192`). When using hexadecimal format in CSS it needs to be prepended with a backslash, like so: `\2192` (f.e. `content: '\2192';`)
 
 ###Other problems
 Please report your issue (check that it's not already there first though!), and I will try to fix it as soon as possible.
