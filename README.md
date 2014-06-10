@@ -3,26 +3,40 @@
 
 [![NPM version](https://badge.fury.io/js/penthouse.svg)](http://badge.fury.io/js/penthouse)
 
+## About
+Penthouse is a tool generating critical path css for your web pages and web apps in order to speed up page rendering. Supply the tool with your site's full CSS, and the page you want to create the critical CSS for, and it will return all the CSS needed to render the above the fold content of the page. Read more about critical path css [here](http://www.phpied.com/css-and-the-critical-path/).
+
+The process is automatic and the generated css should be ready for production as is. If you run in to problems however, check out the Problems section further down on this page.
 
 ## Usage
 
-This module can be used standalone or be `require`d as a normal Node module.
+Penthouse can be used directly from the command line, as a Node module, or via the online version.
 
 ### As a standalone command line tool
 
 #### Installation
 
-    npm install -g penthouse
+Install [PhantomJS](https://github.com/ariya/phantomjs) first, and make sure it works for you. Then download the `penthouse.js` file.
 
 #### Usage
 
-	penthouse [--width <width>] [--height <height>] <URL to page> <CSS file>
-
-The width and height parameters are optional and have defaults of 1300 and 900 respectively.
+	phantomjs penthouse.js [URL to page] [CSS file] > [critical path CSS file]
 	
-Example
+	//for example
+	phantomjs penthouse.js http://mySite.com/page1 allStyles.css > page1-critical-styles.css
+	phantomjs penthouse.js http://mySite.com/page2 allStyles.css > page2-critical-styles.css
 
-	penthouse http://mySite.com/home css/myFullSiteStyles.css > css/home-critical-path.css
+#####HTTPS	
+To run on HTTPS pages two extra flags must be passed in, directly after phantomjs in the call:
+	--ignore-ssl-errors=true --ssl-protocol=tlsv1
+	//as such:
+	phantomjs penthouse.js --ignore-ssl-errors=true --ssl-protocol=tlsv1 [URL to page] [CSS file] > [critical path CSS file]
+
+#####Optional parameters: 
+[WIDTH], [HEIGHT] - must follow [CSS file] param in this order. Defaults to 1300, 900.
+
+	phantomjs penthouse.js [URL to page] [CSS file] [WIDTH] [HEIGHT] > [critical path CSS file]
+
 
 ### As a Node module
 
@@ -49,8 +63,24 @@ Require as normal and execute with a callback
     });
 
 ## Online version
-If you don't want to run via terminal, you can just use the online version instead - it uses the same code backend:
 http://jonassebastianohlsson.com/criticalpathcssgenerator/
+
+
+## Problems with generated CSS
+
+###Background images missing
+Change any relative paths (f.e. `background-image: url("../images/x.gif");)` to absolute `background-image: url("http://mysite.com/images/x.gif");`, and then try again.
+
+###Unstyled content showing
+The most common problem is with clearing floats. Instead of clearing elements appearing after floated elements (f.e. using `clear:both;`), clear the floats themselves by using the [clear-fix pattern](http://css-tricks.com/snippets/css/clear-fix/). Float clearing will now work also in the generated critical css.
+
+If you for some reason have an element appearing early in the DOM, but that you apply styles to move outside of the above the fold content (using absolute position or transforms), consider whether it really should appear so early in the DOM.
+
+###Special glyphs not showing/showing incorrectly
+Problems with special characters like `&#8594;` after converting? Make sure you use the correct hexadecimal format in your CSS. You can always get this format from your browser console, by entering `'&#8594;'.charCodeAt(0).toString(16)` (answer for this arrow glyph is `2192`). When using hexadecimal format in CSS it needs to be prepended with a backslash, like so: `\2192` (f.e. `content: '\2192';`)
+
+###Other problems
+Please report your issue (check that it's not already there first though!), and I will try to fix it as soon as possible.
 
 ### License
 MIT
