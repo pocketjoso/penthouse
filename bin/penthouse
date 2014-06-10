@@ -1,0 +1,57 @@
+#!/bin/env node
+
+/*
+ * Executable that will be available in the path by executing `npm install penthouse -g`.
+ * If installed as a dependency the binary will be placed in node_modules/.bin/penthouse
+ */
+
+var usage = 'Correct form: "penthouse [--width=WIDTH] [--height=HEIGHT] <url> <css_file>"',
+    args = process.argv.slice(2),
+    len = args.length,
+    compulsoryArgsLength = 2,
+    path = require('path'),
+    penthouse = require('../lib/index.js'),
+    nopt = require('nopt'),
+    knownOpts = {
+        'width': [Number],
+        'height': [Number]
+    },
+    shortHands = {},
+    options = {},
+    compulsoryArgs,
+    parsed,
+    remaining;
+
+
+function error(msg) {
+    console.error(msg);
+    console.error(usage);
+    process.exit(1);
+}
+
+if (len < compulsoryArgsLength) {
+    error('Not enough parameters passed in.');
+}
+
+compulsoryArgs = args.slice(len - compulsoryArgsLength);
+parsed = nopt(knownOpts, shortHands);
+
+remaining = parsed.argv.remain;
+if (remaining.length !== 2) {
+    error('Redundant parameters in argument string: ' + remaining);
+}
+
+options.width = parsed.width || 1300;
+options.height = parsed.height || 900;
+options.url = remaining[0];
+options.css = remaining[1];
+
+penthouse(options, function(err, result) {
+    if(err) {
+        console.error(err.msg);
+        process.exit(err.code);
+    }
+
+    console.log(result);
+});
+

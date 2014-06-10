@@ -1,0 +1,23 @@
+#box1 {
+    width : 800px;
+    height: 400px;
+    background : red;
+}
+#box2 {
+    width : 800px;
+    height: 400px;
+    background : blue;
+}
+
+#box21 {
+    width : 100%;
+    height: 100px;
+    background: yellow;
+}
+
+#box22 {
+    width : 100%;
+    height: 50px;
+    padding-top: 200px;
+    background: green;
+}
