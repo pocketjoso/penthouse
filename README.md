@@ -6,11 +6,11 @@
 ## About
 Penthouse is a tool generating critical path css for your web pages and web apps in order to speed up page rendering. Supply the tool with your site's full CSS, and the page you want to create the critical CSS for, and it will return all the CSS needed to render the above the fold content of the page. Read more about critical path css [here](http://www.phpied.com/css-and-the-critical-path/).
 
-The process is automatic and the generated css should be ready for production as is. If you run in to problems however, check out the Problems section further down on this page.
+The process is automatic and the generated css should be ready for production as is. If you run in to problems however, check out the [Problems section](https://github.com/pocketjoso/penthouse/#problems-with-generated-css) further down on this page.
 
 ## Usage
 
-Penthouse can be used directly from the command line, as a Node module, or via the online version.
+Penthouse can be used directly from the command line, [as a Node module](https://github.com/pocketjoso/penthouse/#as-a-node-module), or via [the online version](https://github.com/pocketjoso/penthouse#online-version).
 
 ### As a standalone command line tool
 
