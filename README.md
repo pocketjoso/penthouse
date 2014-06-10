@@ -27,6 +27,7 @@ Install [PhantomJS](https://github.com/ariya/phantomjs) first, and make sure it 
 	phantomjs penthouse.js http://mySite.com/page2 allStyles.css > page2-critical-styles.css
 
 ##### HTTPS	
+
 To run on HTTPS pages two extra flags must be passed in, directly after phantomjs in the call:
 
 	--ignore-ssl-errors=true --ssl-protocol=tlsv1
