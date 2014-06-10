@@ -25,6 +25,9 @@
   "bin": {
     "penthouse": "./bin/penthouse"
   },
+  "scripts": {
+    "test": "node_modules/.bin/mocha test"
+  },
   "dependencies": {
     "phantomjs": "~1.9.7",
     "nopt": "^3.0.0"
