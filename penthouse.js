@@ -2,8 +2,9 @@
 // https://github.com/pocketjoso/penthouse
 // Author: Jonas Ohlsson
 // License: MIT
+// Version 0.2.0
 
-// USAGE:
+// USAGE (when run standalone):
 // phantomjs penthouse.js [URL to page] [CSS file] > [critical path CSS file]
 
 // to run on HTTPS sites two flags must be passed in, directly after phantomjs in the call:
