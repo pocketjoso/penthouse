@@ -12,7 +12,7 @@ The process is automatic and the generated css should be ready for production as
 
 Penthouse can be used directly from the command line, [as a Node module](https://github.com/pocketjoso/penthouse/#as-a-node-module), or via [the online version](https://github.com/pocketjoso/penthouse#online-version).
 
-### Used together with PhantomJS
+### From command line
 
 #### Installation
 
@@ -85,6 +85,6 @@ Problems with special characters like &#8594; after converting? Make sure you us
 Please report your issue (check that it's not already there first though!), and I will try to fix it as soon as possible.
 
 ## Changelog
-2014-06-10    v0.2.0    Node module and standalone executable (@fatso83)
-2014-06-05    v0.1.0    Published on NPM (@pocketjoso)
+2014-06-10    v0.2.0    Node module and standalone executable (@fatso83)  
+2014-06-05    v0.1.0    Published on NPM (@pocketjoso)  
 2014-06-04    v0.0.0    PhantomJS script /core logic (@pocketjoso)
