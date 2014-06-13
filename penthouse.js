@@ -2,18 +2,80 @@
 // https://github.com/pocketjoso/penthouse
 // Author: Jonas Ohlsson
 // License: MIT
-// Version 0.2.0
+// Version 0.2.1
 
 // USAGE (when run standalone):
 // phantomjs penthouse.js [URL to page] [CSS file] > [critical path CSS file]
+// Options:
+// --width <width>      The viewport width in pixels. Defaults to 1300 
+// --height <height>    The viewport height in pixels. Defaults to 900 
 
 // to run on HTTPS sites two flags must be passed in, directly after phantomjs in the call:
 // --ignore-ssl-errors=true --ssl-protocol=tlsv1
 
-// optional parameters: [WIDTH], [HEIGHT] - must follow [CSS file] param in this order. Defaults to 1300, 900.
 
 // DEPENDENCIES
 // + "phantomjs" : "~1.9.7"
+
+/* 
+ parser for the script - can be used both for the standalone node binary and the phantomjs script
+ @author Carl-Erik Kopseng
+*/
+
+// we test for this value when concatenating this script for a standalone script
+var embeddedParser = true;
+
+var usageString = ' [--width <width>] [--height <height>] <url> <main.css>';
+
+function error(msg, token) {
+        var error = new Error( msg );
+        error.token = token;
+        throw error;
+}
+
+// Parses the arguments passed in
+// @returns { width, height, url, css }
+// throws an error on wrong options or parsing error
+function parseOptions(argsOriginal) {   
+    var args = argsOriginal.slice(0),
+        validOptions = ['--width', '--height'],
+        parsed = {},
+        len = args.length,
+        optIndex,
+        option;
+
+    if(len % 2 !== 0 || len < 2 || len > 6) error('Invalid number of arguments');
+
+    while(args.length > 2) {
+        optIndex = validOptions.indexOf(args[0]);
+        if(optIndex === -1) error('Parsing error', args[0]);
+
+        option = validOptions[optIndex].slice(2);
+        val = args[1];
+
+        parsed[option] = parseInt(val, 10);
+        if(isNaN(parsed[option])) error('Parsing error when parsing ' + val, val); 
+
+        // remove the two parsed arguments from the list
+        args = args.slice(2);
+    }
+
+    parsed.url = args[0];
+    parsed.css = args[1];
+
+    if( ! parsed.url.match(/https?:\/\//) ) error('Invalid url: ' + parsed.url);
+
+    return parsed;
+}
+
+if(typeof module !== 'undefined') {
+    module.exports = exports = {
+        parse : parseOptions,
+        usageString : usageString
+    };
+}
+// PhantomJS script for extracting critical path css
+// @author Jonas Ohlsson
 
 'use strict';
 
@@ -34,11 +96,8 @@ page.onError = function (msg, trace) {
     //do nothing
 };
 
-var main = function () {
+var main = function (optiosn) {
 
-    var options;
-
-    options = parseArguments();
     try {
         var f = fs.open(options.cssFilePath, "r");
         options.css = preFormatCSS(f.read());
@@ -54,97 +113,6 @@ var main = function () {
         log(css);
         phantom.exit();
     });
-};
-
-var parseArguments = function () {
-    var options = {};
-
-    //url needs to be passed in
-    if (system.args.length < 3) {
-        log('Usage: penthouse <some URL> <path to css file>');
-        phantom.exit(1);
-    }
-
-    options.url = system.args[1];
-    options.cssFilePath = system.args[2];
-    options.width = system.args[3] || 1300;
-    options.height = system.args[4] || 900;
-
-    return options;
-};
-
-/* === preFormatCSS ===
- * preformats the css to ensure we won't run into and problems in our parsing
- * removes comments (actually would be anough to remove/replace {} chars.. TODO
- * replaces } char inside content: "" properties.
- */
-var preFormatCSS = function (css) {
-    //remove comments from css (including multi-line coments)
-    css = css.replace(/\/\*[\s\S]*?\*\//g, '');
-
-    //we also need to replace eventual close curly bracket characters inside content: "" property declarations, replace them with their ASCI code equivalent
-    //\7d = '\' + '}'.charCodeAt(0).toString(16);
-    css = css.replace(/(content(.|[\r\n])*['"].*)}((.|[\r\n])*;)/gm, "$1" + "\\7d" + "$3");
-
-    return css;
-};
-
-
-/*=== rmUnusedFontFace ===
- * find @fontface declarations where font isn't used in
- * above the fold css, and removes those.
- ---------------------------------------------------------*/
-var rmUnusedFontFace = function (css) {
-    var toDeleteSections = [];
-
-    //extract full @font-face rules
-    var fontFaceRegex = /(@font-face[ \s\S]*?\{([\s\S]*?)\})/gm,
-        ff;
-
-    while ((ff = fontFaceRegex.exec(css)) !== null) {
-
-        //grab the font name declared in the @font-face rule
-        //(can still be in quotes, f.e. "Lato Web"
-        var t = /font-family[^:]*?:[ ]*([^;]*)/.exec(ff[1]);
-        if (typeof t[1] === "undefined")
-            continue; //no font-family in @fontface rule!
-
-        //rm quotes
-        var fontName = t[1].replace(/['"]/gm, "");
-
-        // does this fontname appear as a font-family or font (shorthand) value?
-        var fontNameRegex = new RegExp("([^{}]*?)\{[^}]*?font(-family)?[^:]*?:[^;]*" + fontName + "[^,;]*[,;]", "gmi");
-
-
-        var fontFound = false,
-            m;
-
-        while ((m = fontNameRegex.exec(css)) !== null) {
-            if (m[1].indexOf("@font-face") === -1) {
-                //log("FOUND, keep rule");
-                fontFound = true;
-                break;
-            }
-        }
-        if (!fontFound) {
-            //"NOT FOUND, rm!
-
-            //can't remove rule here as it will screw up ongoing while (exec ...) loop.
-            //instead: save indices and delete AFTER for loop
-            var closeRuleIndex = css.indexOf("}", ff.index);
-            //unshift - add to beginning of array - we need to remove rules in reverse order,
-            //otherwise indeces will become incorrect again.
-            toDeleteSections.unshift({start: ff.index, end: closeRuleIndex + 1});
-        }
-    }
-    //now delete the @fontface rules we registed as having no matches in the css
-    for (var i = 0; i < toDeleteSections.length; i++) {
-        var start = toDeleteSections[i].start,
-            end = toDeleteSections[i].end;
-        css = css.substring(0, start) + css.substring(end, css.length);
-    }
-
-    return css;
 };
 
 /*
@@ -348,4 +316,102 @@ var getCriticalPathCss = function (options, callback) {
     });
 };
 
-main();
+/* === preFormatCSS ===
+ * preformats the css to ensure we won't run into and problems in our parsing
+ * removes comments (actually would be anough to remove/replace {} chars.. TODO
+ * replaces } char inside content: "" properties.
+ */
+var preFormatCSS = function (css) {
+    //remove comments from css (including multi-line coments)
+    css = css.replace(/\/\*[\s\S]*?\*\//g, '');
+
+    //we also need to replace eventual close curly bracket characters inside content: "" property declarations, replace them with their ASCI code equivalent
+    //\7d = '\' + '}'.charCodeAt(0).toString(16);
+    css = css.replace(/(content(.|[\r\n])*['"].*)}((.|[\r\n])*;)/gm, "$1" + "\\7d" + "$3");
+
+    return css;
+};
+
+
+/*=== rmUnusedFontFace ===
+ * find @fontface declarations where font isn't used in
+ * above the fold css, and removes those.
+ ---------------------------------------------------------*/
+var rmUnusedFontFace = function (css) {
+    var toDeleteSections = [];
+
+    //extract full @font-face rules
+    var fontFaceRegex = /(@font-face[ \s\S]*?\{([\s\S]*?)\})/gm,
+        ff;
+
+    while ((ff = fontFaceRegex.exec(css)) !== null) {
+
+        //grab the font name declared in the @font-face rule
+        //(can still be in quotes, f.e. "Lato Web"
+        var t = /font-family[^:]*?:[ ]*([^;]*)/.exec(ff[1]);
+        if (typeof t[1] === "undefined")
+            continue; //no font-family in @fontface rule!
+
+        //rm quotes
+        var fontName = t[1].replace(/['"]/gm, "");
+
+        // does this fontname appear as a font-family or font (shorthand) value?
+        var fontNameRegex = new RegExp("([^{}]*?)\{[^}]*?font(-family)?[^:]*?:[^;]*" + fontName + "[^,;]*[,;]", "gmi");
+
+
+        var fontFound = false,
+            m;
+
+        while ((m = fontNameRegex.exec(css)) !== null) {
+            if (m[1].indexOf("@font-face") === -1) {
+                //log("FOUND, keep rule");
+                fontFound = true;
+                break;
+            }
+        }
+        if (!fontFound) {
+            //"NOT FOUND, rm!
+
+            //can't remove rule here as it will screw up ongoing while (exec ...) loop.
+            //instead: save indices and delete AFTER for loop
+            var closeRuleIndex = css.indexOf("}", ff.index);
+            //unshift - add to beginning of array - we need to remove rules in reverse order,
+            //otherwise indeces will become incorrect again.
+            toDeleteSections.unshift({start: ff.index, end: closeRuleIndex + 1});
+        }
+    }
+    //now delete the @fontface rules we registed as having no matches in the css
+    for (var i = 0; i < toDeleteSections.length; i++) {
+        var start = toDeleteSections[i].start,
+            end = toDeleteSections[i].end;
+        css = css.substring(0, start) + css.substring(end, css.length);
+    }
+
+    return css;
+};
+
+var parser, parse, usage, options, script;
+
+if( typeof embeddedParser !== 'undefined') { //standalone
+    parse = parseOptions;
+    usage = usageString;
+} else { 
+    parser = require('../options-parser');
+    parse = parser.parse;
+    usage = parser.usageString;
+}
+
+try { 
+    script = system.args[0];
+    options = parse(system.args.slice(1));
+} catch(ex) {
+    console.log('Caught error parsing arguments' + ex.message);
+    console.log('Usage: phantomjs ' + script + ' ' + usage);
+    phantom.exit(1);
+}
+
+console.log(JSON.stringify(options));
+//main(options);
+
+
+
