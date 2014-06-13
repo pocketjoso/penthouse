@@ -174,6 +174,7 @@ var getCriticalPathCss = function (options, callback) {
                 var h = window.innerHeight,
                     split = css.split(/[{}]/g),
                     keepHover = false,
+					renderWaitTime = 100, //ms
                     finished = false,
                     currIndex = 0,
                     forceRemoveNestedRule = false;
@@ -217,122 +218,129 @@ var getCriticalPathCss = function (options, callback) {
                     }
                     return i;
                 };
+				
+				//give some time (renderWaitTime) for sites like facebook that build their page dynamically,
+				//otherwise we can miss some selectors (and therefor rules)
+				//--tradeoff here: if site is too slow with dynamic content,
+				//	it doesn't deserve to be in critical path.
+				setTimeout(function(){
 
-                for (var i = 0; i < split.length; i = i + 2) {
-                    //step over non DOM CSS selectors (@font-face, @media..)
-                    i = getNewValidCssSelector(i);
-                    var fullSel = split[i];
+					for (var i = 0; i < split.length; i = i + 2) {
+						//step over non DOM CSS selectors (@font-face, @media..)
+						i = getNewValidCssSelector(i);
+						var fullSel = split[i];
 
-                    if (finished) {
-                        return css;
-                    }
+						if (finished) {
+							return css;
+						}
 
-                    //fullSel can contain combined selectors
-                    //,f.e.  body, html {}
-                    //split and check one such selector at the time.
-                    var selSplit = fullSel.split(',');
-                    //keep track - if we remove all selectors, we also want to remove the whole rule.
-                    var selectorsKept = 0;
+						//fullSel can contain combined selectors
+						//,f.e.  body, html {}
+						//split and check one such selector at the time.
+						var selSplit = fullSel.split(',');
+						//keep track - if we remove all selectors, we also want to remove the whole rule.
+						var selectorsKept = 0;
 
-                    for (var j = 0; j < selSplit.length; j++) {
-                        var sel = selSplit[j];
+						for (var j = 0; j < selSplit.length; j++) {
+							var sel = selSplit[j];
 
-                        //some selectors can't be matched on page.
-                        //In these cases we test a slightly modified selectors instead, temp.
-                        var temp = sel;
+							//some selectors can't be matched on page.
+							//In these cases we test a slightly modified selectors instead, temp.
+							var temp = sel;
 
-                        //if not to keep hover, let it go through here as is - won't match anything on page and therefor will be removed from CSS
-                        if (!keepHover && sel.indexOf(":hover") > -1) {
-                            // TODO: Remove?
-                            var NEVER_USED_REMOVE_ME = 3;
-                        } else if (sel.indexOf(":") > -1) {
-                            //handle special case selectors, the ones that contain a semi colon (:)
-                            //many of these selectors can't be matched to anything on page via JS,
-                            //but that still might affect the above the fold styling
+							//if not to keep hover, let it go through here as is - won't match anything on page and therefor will be removed from CSS
+							if (!keepHover && sel.indexOf(":hover") > -1) {
+								// TODO: Remove?
+								var NEVER_USED_REMOVE_ME = 3;
+							} else if (sel.indexOf(":") > -1) {
+								//handle special case selectors, the ones that contain a semi colon (:)
+								//many of these selectors can't be matched to anything on page via JS,
+								//but that still might affect the above the fold styling
 
-                            //these psuedo selectors depend on an element,
-                            //so test element instead (would do the same for f.e. :focus, :active IF we wanted to keep them for critical path css, but we don't)
-                            temp = temp.replace(/(:hover|:?:before|:?:after)*/g, '');
+								//these psuedo selectors depend on an element,
+								//so test element instead (would do the same for f.e. :focus, :active IF we wanted to keep them for critical path css, but we don't)
+								temp = temp.replace(/(:hover|:?:before|:?:after)*/g, '');
 
-                            //if selector is purely psuedo (f.e. ::-moz-placeholder), just keep as is.
-                            //we can't match it to anything on page, but it can impact above the fold styles
-                            if (temp.replace(/:[:]?([a-zA-Z0-9\-\_])*/g, '').trim().length === 0) {
-                                currIndex = css.indexOf(sel, currIndex) + sel.length;
-                                continue;
-                            }
+								//if selector is purely psuedo (f.e. ::-moz-placeholder), just keep as is.
+								//we can't match it to anything on page, but it can impact above the fold styles
+								if (temp.replace(/:[:]?([a-zA-Z0-9\-\_])*/g, '').trim().length === 0) {
+									currIndex = css.indexOf(sel, currIndex) + sel.length;
+									continue;
+								}
 
-                            //handle browser specific psuedo selectors bound to elements,
-                            //Example, button::-moz-focus-inner, input[type=number]::-webkit-inner-spin-button
-                            //remove browser specific pseudo and test for element
-                            temp = temp.replace(/:?:-[a-z-]*/g, '');
-                        }
+								//handle browser specific psuedo selectors bound to elements,
+								//Example, button::-moz-focus-inner, input[type=number]::-webkit-inner-spin-button
+								//remove browser specific pseudo and test for element
+								temp = temp.replace(/:?:-[a-z-]*/g, '');
+							}
 
-                        if (!forceRemoveNestedRule) {
-                            //now we have a selector to test, first grab any matching elements
-                            try {
-                                var el = document.querySelectorAll(temp);
-                            } catch (e) {
-                                continue;
-                            }
+							if (!forceRemoveNestedRule) {
+								//now we have a selector to test, first grab any matching elements
+								try {
+									var el = document.querySelectorAll(temp);
+								} catch (e) {
+									continue;
+								}
 
-                            //check if selector matched element(s) on page..
-                            var aboveFold = false;
-                            for (var k = 0; k < el.length; k++) {
-                                var testEl = el[k];
+								//check if selector matched element(s) on page..
+								var aboveFold = false;
+								for (var k = 0; k < el.length; k++) {
+									var testEl = el[k];
 
-                                //check to see if any matched element is above the fold on current page
-                                //(in current viewport size)
-                                if (testEl.getBoundingClientRect().top < h) {
-                                    //then we will save this selector
-                                    aboveFold = true;
-                                    selectorsKept++;
+									//check to see if any matched element is above the fold on current page
+									//(in current viewport size)
+									if (testEl.getBoundingClientRect().top < h) {
+										//then we will save this selector
+										aboveFold = true;
+										selectorsKept++;
 
-                                    //update currIndex so we only search from this point from here on.
-                                    currIndex = css.indexOf(sel, currIndex);
+										//update currIndex so we only search from this point from here on.
+										currIndex = css.indexOf(sel, currIndex);
 
-                                    //break, because matching 1 element is enough
-                                    break;
-                                }
-                            }
-                        } else
-                            aboveFold = false; //force removal of rule
+										//break, because matching 1 element is enough
+										break;
+									}
+								}
+							} else
+								aboveFold = false; //force removal of rule
 
-                        //if selector didn't match any elements above fold - delete selector from CSS
-                        if (aboveFold === false) {
-                            var selPos = css.indexOf(sel, currIndex);
-                            //update currIndex so we only search from this point from here on.
-                            currIndex = css.indexOf(sel, currIndex);
+							//if selector didn't match any elements above fold - delete selector from CSS
+							if (aboveFold === false) {
+								var selPos = css.indexOf(sel, currIndex);
+								//update currIndex so we only search from this point from here on.
+								currIndex = css.indexOf(sel, currIndex);
 
-                            //check what comes next: { or ,
-                            var nextComma = css.indexOf(',', selPos);
-                            var nextOpenBracket = css.indexOf('{', selPos);
+								//check what comes next: { or ,
+								var nextComma = css.indexOf(',', selPos);
+								var nextOpenBracket = css.indexOf('{', selPos);
 
-                            if (selectorsKept > 0 || (nextComma > 0 && nextComma < nextOpenBracket)) {
-                                //we already kept selectors from this rule, so rule will stay
+								if (selectorsKept > 0 || (nextComma > 0 && nextComma < nextOpenBracket)) {
+									//we already kept selectors from this rule, so rule will stay
 
-                                //more selectors in selectorList, cut until (and including) next comma
-                                if (nextComma > 0 && nextComma < nextOpenBracket) {
-                                    css = css.substring(0, selPos) + css.substring(nextComma + 1, css.length);
-                                }
-                                //final selector, cut until open bracket. Also remove previous comma, as the (new) last selector should not be followed by a comma.
-                                else {
-                                    var prevComma = css.lastIndexOf(",", selPos);
-                                    css = css.substring(0, prevComma) + css.substring(nextOpenBracket, css.length);
-                                }
-                            }
-                            else {
-                                //no part of selector matched elements above fold on page - remove whole rule CSS rule
-                                var endRuleBracket = css.indexOf('}', nextOpenBracket);
+									//more selectors in selectorList, cut until (and including) next comma
+									if (nextComma > 0 && nextComma < nextOpenBracket) {
+										css = css.substring(0, selPos) + css.substring(nextComma + 1, css.length);
+									}
+									//final selector, cut until open bracket. Also remove previous comma, as the (new) last selector should not be followed by a comma.
+									else {
+										var prevComma = css.lastIndexOf(",", selPos);
+										css = css.substring(0, prevComma) + css.substring(nextOpenBracket, css.length);
+									}
+								}
+								else {
+									//no part of selector matched elements above fold on page - remove whole rule CSS rule
+									var endRuleBracket = css.indexOf('}', nextOpenBracket);
 
-                                css = css.substring(0, selPos) + css.substring(endRuleBracket + 1, css.length);
-                            }
-                        }
-                    }
-                    //if rule stayed, move our cursor forward for matching new selectors
-                    if (selectorsKept > 0) {
-                        currIndex = css.indexOf("}", currIndex) + 1;
-                    }
-                }
+									css = css.substring(0, selPos) + css.substring(endRuleBracket + 1, css.length);
+								}
+							}
+						}
+						//if rule stayed, move our cursor forward for matching new selectors
+						if (selectorsKept > 0) {
+							currIndex = css.indexOf("}", currIndex) + 1;
+						}
+					}
+				},renderWaitTime);
                 return css;
 
             }, options.css);
