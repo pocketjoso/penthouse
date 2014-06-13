@@ -18,7 +18,7 @@
   "license": [
     {
       "type": "MIT",
-      "url": "github.com/pocketjoso/penthouse/blob/master/LICENSE"
+      "url": "github.com/pocketjoso/penthouse/blob/master/LICENSE-MIT"
     }
   ],
   "main": "./lib/index.js",
