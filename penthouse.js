@@ -203,7 +203,6 @@ var getCriticalPathCss = function (options) {
             page.evaluate(function (css) {
                 var h = window.innerHeight,
                     split = css.split(/[{}]/g),
-                    keepHover = false,
 					renderWaitTime = 100, //ms
                     finished = false,
                     currIndex = 0,
@@ -272,11 +271,7 @@ var getCriticalPathCss = function (options) {
 							//In these cases we test a slightly modified selectors instead, temp.
 							var temp = sel;
 
-							//if not to keep hover, let it go through here as is - won't match anything on page and therefor will be removed from CSS
-							if (!keepHover && sel.indexOf(":hover") > -1) {
-								// TODO: Remove?
-								var NEVER_USED_REMOVE_ME = 3;
-							} else if (sel.indexOf(":") > -1) {
+							if (sel.indexOf(":") > -1) {
 								//handle special case selectors, the ones that contain a semi colon (:)
 								//many of these selectors can't be matched to anything on page via JS,
 								//but that still might affect the above the fold styling
@@ -308,8 +303,11 @@ var getCriticalPathCss = function (options) {
 
 								//check if selector matched element(s) on page..
 								var aboveFold = false;
+								
 								for (var k = 0; k < el.length; k++) {
 									var testEl = el[k];
+									//temporarily force clear none in order to catch elements that clear previous content themselves and who w/o their styles could show up unstyled in above the fold content (if they rely on f.e. "clear:both;" to clear some main content)
+									testEl.style.clear = "none";
 
 									//check to see if any matched element is above the fold on current page
 									//(in current viewport size)
@@ -321,12 +319,16 @@ var getCriticalPathCss = function (options) {
 										//update currIndex so we only search from this point from here on.
 										currIndex = css.indexOf(sel, currIndex);
 
+										//set clear style back to what it was
+										testEl.style.clear = "";
 										//break, because matching 1 element is enough
 										break;
 									}
+									//set clear style back to what it was
+									testEl.style.clear = "";
 								}
 							} else
-								aboveFold = false; //force removal of rule
+								aboveFold = false; //force removal of selector
 
 							//if selector didn't match any elements above fold - delete selector from CSS
 							if (aboveFold === false) {
@@ -352,7 +354,7 @@ var getCriticalPathCss = function (options) {
 									}
 								}
 								else {
-									//no part of selector matched elements above fold on page - remove whole rule CSS rule
+									//no part of selector (list) matched elements above fold on page - remove whole rule CSS rule
 									var endRuleBracket = css.indexOf('}', nextOpenBracket);
 
 									css = css.substring(0, selPos) + css.substring(endRuleBracket + 1);
