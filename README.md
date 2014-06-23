@@ -10,7 +10,12 @@ The process is automatic and the generated css should be ready for production as
 
 ## Usage
 
-Penthouse can be used directly from the command line, [as a Node module](https://github.com/pocketjoso/penthouse/#as-a-node-module), or via [the online version](https://github.com/pocketjoso/penthouse#online-version).
+Penthouse can be used:
+ * from the command line
+ * [as a Node module](https://github.com/pocketjoso/penthouse/#as-a-node-module)
+ * [as a Grunt task](https://github.com/fatso83/grunt-penthouse)
+ * as a Gulp task (just require Node module straight from just script)
+ * via [the online version](https://github.com/pocketjoso/penthouse#online-version)
 
 ### From command line
 
@@ -32,7 +37,7 @@ To run on HTTPS pages two extra flags must be passed in, directly after phantomj
 
 	--ignore-ssl-errors=true --ssl-protocol=tlsv1
 	//as such:
-	phantomjs penthouse.js --ignore-ssl-errors=true --ssl-protocol=tlsv1 [URL to page] [CSS file] > [critical path CSS file]
+	phantomjs --ignore-ssl-errors=true --ssl-protocol=tlsv1 penthouse.js [URL to page] [CSS file] > [critical path CSS file]
 
 ##### Optional parameters
 By default penthouse gives you the css needed to render a viewport of size `1300x900`. This css will cover all smaller viewport sizes, unless you're delivering a different DOM or doing something crazy. You can pass in your a different `viewport width` and `viewport height` if you want; these two params must follow the `[CSS file]` like this:
@@ -63,6 +68,8 @@ Require as normal and execute with a callback
     }, function(err, criticalCss) {
         console.log(criticalCss);
     });
+	
+The Penthouse Node module can also be used as in Gulp.
 
 ## Online version
 http://jonassebastianohlsson.com/criticalpathcssgenerator/
