@@ -14,7 +14,7 @@ Penthouse can be used:
  * from the command line
  * [as a Node module](https://github.com/pocketjoso/penthouse/#as-a-node-module)
  * [as a Grunt task](https://github.com/fatso83/grunt-penthouse)
- * as a Gulp task (just require Node module straight from just script)
+ * as a Gulp task (just require Node module straight from your script)
  * via [the online version](https://github.com/pocketjoso/penthouse#online-version)
 
 ### From command line
