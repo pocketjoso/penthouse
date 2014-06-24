@@ -5,6 +5,8 @@ var penthouse = require('../lib/'),
     read = require('fs').readFileSync,
     path = require('path');
 
+    //penthouse.debug = true;
+
 describe('basic tests of penthouse functionality', function () {
     var originalCssFilePath = path.join(__dirname, 'static-server', 'main.css'),
         originalCss = read(originalCssFilePath).toString(),
@@ -27,10 +29,13 @@ describe('basic tests of penthouse functionality', function () {
 
     it('should return a css file', function (done) {
         penthouse({
-            url: 'http://localhost:' + port,
+            urls: ['http://localhost:' + port],
             css: originalCssFilePath
         }, function (err, result) {
-            if(err) { done(err); }
+            if(err) { 
+                done(err); 
+                return;
+            }
             try {
                 css.parse(result);
                 done();
@@ -44,11 +49,15 @@ describe('basic tests of penthouse functionality', function () {
         var widthLargerThanTotalTestCSS = 1000,
             heightLargerThanTotalTestCSS = 1000;
         penthouse({
-            url: 'http://localhost:' + port,
+            urls: ['http://localhost:' + port],
             css: originalCssFilePath,
             width: widthLargerThanTotalTestCSS,
             height: heightLargerThanTotalTestCSS
         }, function (err, result) {
+            if(err) { 
+                done(err); 
+                return;
+            }
             try {
                 var resultAst = css.parse(result);
                 var orgAst = css.parse(originalCss);
@@ -65,7 +74,7 @@ describe('basic tests of penthouse functionality', function () {
         var widthLargerThanTotalTestCSS = 1000,
             heightSmallerThanTotalTestCSS = 100;
         penthouse({
-            url: 'http://localhost:' + port,
+            urls: ['http://localhost:' + port],
             css: originalCssFilePath,
             width: widthLargerThanTotalTestCSS,
             height: heightSmallerThanTotalTestCSS
