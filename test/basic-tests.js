@@ -13,7 +13,7 @@ describe('basic tests of penthouse functionality', function () {
         server, port;
 
     // phantomjs takes a while to start up
-    this.timeout(5000);
+    this.timeout(8000);
 
     before(function (done) {
         startServer(function (instance, serverPort) {

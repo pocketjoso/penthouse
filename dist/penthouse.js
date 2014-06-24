@@ -1,11 +1,13 @@
-// Penthouse CSS Critical Path Generator
-// https://github.com/pocketjoso/penthouse
-// Author: Jonas Ohlsson
-// License: MIT
-// Version 0.2.5
+/*
+    Penthouse CSS Critical Path Generator
+    https://github.com/pocketjoso/penthouse
+    Author: Jonas Ohlsson
+    License: MIT
+    Version 0.2.5
+*/
 
 // USAGE (when run standalone):
-// phantomjs penthouse.js [URL to page] [CSS file] > [critical path CSS file]
+// phantomjs penthouse.js [CSS file] [URL to page] > [critical path CSS file]
 // Options:
 // --width <width>      The viewport width in pixels. Defaults to 1300
 // --height <height>    The viewport height in pixels. Defaults to 900
@@ -13,58 +15,59 @@
 // to run on HTTPS sites two flags must be passed in, directly after phantomjs in the call:
 // --ignore-ssl-errors=true --ssl-protocol=tlsv1
 
-
 // DEPENDENCIES
 // + "phantomjs" : "~1.9.7"
 
 /*
- parser for the script - can be used both for the standalone node binary and the phantomjs script
- @author Carl-Erik Kopseng
+parser for the script - can be used both for the standalone node binary and the phantomjs script
 */
 
-// we test for this value when concatenating this script for a standalone script
-var embeddedParser = true;
+var usageString = ' [--width <width>] [--height <height>]  <main.css> <url> [<url> [...]]';
 
-var usageString = ' [--width <width>] [--height <height>] <url> <main.css>';
-
-function error(msg, token) {
-        var error = new Error( msg );
-        error.token = token;
-        throw error;
+function error(msg, problemToken, args) {
+    var error = new Error( msg  + problemToken);
+    error.token = problemToken;
+    error.args = args;
+    throw error;
 }
 
 // Parses the arguments passed in
-// @returns { width, height, url, css }
+// @returns { width, height, url, cssFile }
 // throws an error on wrong options or parsing error
 function parseOptions(argsOriginal) {
     var args = argsOriginal.slice(0),
-        validOptions = ['--width', '--height'],
-        parsed = {},
-        len = args.length,
-        optIndex,
-        option;
+    validOptions = ['--width', '--height'],
+    parsed = {},
+    len = args.length,
+    optIndex,
+    option;
 
-    if(len % 2 !== 0 || len < 2 || len > 6) error('Invalid number of arguments');
+    if(len < 2 ) error('Invalid number of arguments', args, args);
 
-    while(args.length > 2) {
+    while(args.length > 2 && args[0].match(/^(--width|--height)$/)) {
         optIndex = validOptions.indexOf(args[0]);
-        if(optIndex === -1) error('Parsing error', args[0]);
+        if(optIndex === -1) error('Logic/Parsing error ', args[0], args);
 
+        // lose the dashes
         option = validOptions[optIndex].slice(2);
         val = args[1];
 
         parsed[option] = parseInt(val, 10);
-        if(isNaN(parsed[option])) error('Parsing error when parsing ' + val, val);
+
+        if(isNaN(parsed[option])) error('Parsing error when parsing ', val, args);
 
         // remove the two parsed arguments from the list
         args = args.slice(2);
     }
 
-    parsed.url = args[0];
-    parsed.css = args[1];
+    parsed.cssFile = args[0];
+    parsed.urls = args.slice(1);
 
-    if( ! parsed.url.match(/https?:\/\//) ) error('Invalid url: ' + parsed.url);
-
+    parsed.urls.forEach(function(url) {
+        if( ! url.match(/https?:\/\//) ) {
+            error('Invalid url: ', parsed.url, args);
+        }
+    });
     return parsed;
 }
 
@@ -75,7 +78,6 @@ if(typeof module !== 'undefined') {
     };
 }
 // PhantomJS script for extracting critical path css
-// @author Jonas Ohlsson
 
 'use strict';
 
@@ -83,9 +85,15 @@ var page = require('webpage').create(),
     fs = require('fs'),
     system = require('system');
 
-//shortcut for logging
+// shortcut for logging
 var log = function (msg) {
     console.log(msg);
+};
+
+// monkey patch for directing errors to stderr
+// https://github.com/ariya/phantomjs/issues/10150#issuecomment-28707859
+var errorlog = function () {
+    system.stderr.write(Array.prototype.join.call(arguments, ' ') + '\n');
 };
 
 //don't confuse analytics more than necessary when visiting websites
@@ -96,18 +104,31 @@ page.onError = function (msg, trace) {
     //do nothing
 };
 
-var main = function (optiosn) {
+var main = function (options) {
 
     try {
-        var f = fs.open(options.cssFilePath, "r");
+        var f = fs.open(options.cssFile, "r");
         options.css = preFormatCSS(f.read());
     } catch (e) {
         console.error(e);
         phantom.exit(1);
     }
 
+    // since the various async operations might overlap it might make
+    // sense to not let them share the same object
+    function createOptionsObject(urlIndex) {
+        var clone = JSON.parse(JSON.stringify(options));
+        delete clone.urls;
+        clone.url = options.urls[urlIndex];
+        return clone;
+    }
+
     // start the critical path CSS generation
-    getCriticalPathCss(options);
+    getCriticalPathCss(createOptionsObject(0), function (css) {
+        //we're done, log the result as the output from phantomjs execution of this script
+        log(css);
+        phantom.exit();
+    });
 };
 
 /* Final function
@@ -130,6 +151,7 @@ page.onCallback = function(data) {
  * to see if any such elements appears above the fold on the page
  * modifies CSS - removes selectors that don't appear, and empty rules
  *
+ * @param options.url the url as a string
  * @param options.css the css as a string
  * @param options.width the width of viewport
  * @param options.height the height of viewport
@@ -446,10 +468,10 @@ try {
     script = system.args[0];
     options = parse(system.args.slice(1));
 } catch(ex) {
-    console.log('Caught error parsing arguments' + ex.message);
-    console.log('Usage: phantomjs ' + script + ' ' + usage);
+    errorlog('Caught error parsing arguments: ' + ex.message);
+    errorlog('Usage: phantomjs ' + script + ' ' + usage);
     phantom.exit(1);
 }
 
-console.log(JSON.stringify(options));
-//main(options);
+//errorlog("Options: ", JSON.stringify(options));
+main(options);

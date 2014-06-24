@@ -1,6 +1,8 @@
-// Penthouse CSS Critical Path Generator
-// https://github.com/pocketjoso/penthouse
-// Author: Jonas Ohlsson
-// License: MIT
-// Version 0.2.0
+/*
+    Penthouse CSS Critical Path Generator
+    https://github.com/pocketjoso/penthouse
+    Author: Jonas Ohlsson
+    License: MIT
+    Version 0.2.0
+*/
 
