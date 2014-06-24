@@ -1,32 +1,36 @@
 /*
-    Penthouse CSS Critical Path Generator
-    https://github.com/pocketjoso/penthouse
-    Author: Jonas Ohlsson
-    License: MIT
-    Version 0.2.5
+
+Penthouse CSS Critical Path Generator
+https://github.com/pocketjoso/penthouse
+Author: Jonas Ohlsson
+License: MIT
+Version: 0.2.5
+
+USAGE:
+    phantomjs penthouse.js [CSS file] [URL to page] > [critical path CSS file]
+    Options:
+    --width <width>      The viewport width in pixels. Defaults to 1300
+    --height <height>    The viewport height in pixels. Defaults to 900
+
+    to run on HTTPS sites two flags must be passed in, directly after phantomjs in the call:
+    --ignore-ssl-errors=true --ssl-protocol=tlsv1
+
+DEPENDENCIES
+    + "phantomjs" : "~1.9.7"
+
 */
 
-// USAGE (when run standalone):
-// phantomjs penthouse.js [CSS file] [URL to page] > [critical path CSS file]
-// Options:
-// --width <width>      The viewport width in pixels. Defaults to 1300
-// --height <height>    The viewport height in pixels. Defaults to 900
-
-// to run on HTTPS sites two flags must be passed in, directly after phantomjs in the call:
-// --ignore-ssl-errors=true --ssl-protocol=tlsv1
-
-// DEPENDENCIES
-// + "phantomjs" : "~1.9.7"
 
 /*
 parser for the script - can be used both for the standalone node binary and the phantomjs script
 */
+/*jshint unused:false*/ // we detect embeddedParser when concatenating the script
 
 var usageString = '[--width <width>] [--height <height>]  <main.css> <url> [<url> [...]]';
 
 var embeddedParser = true; // we test for this symbol in the concatenated script
 
-function error(msg, problemToken, args) {
+function buildError(msg, problemToken, args) {
     var error = new Error( msg  + problemToken);
     error.token = problemToken;
     error.args = args;
@@ -40,23 +44,23 @@ function parseOptions(argsOriginal) {
     var args = argsOriginal.slice(0),
     validOptions = ['--width', '--height'],
     parsed = {},
+    val,
     len = args.length,
     optIndex,
     option;
 
-    if(len < 2 ) error('Invalid number of arguments', args, args);
+    if(len < 2 ) buildError('Invalid number of arguments', args, args);
 
     while(args.length > 2 && args[0].match(/^(--width|--height)$/)) {
         optIndex = validOptions.indexOf(args[0]);
-        if(optIndex === -1) error('Logic/Parsing error ', args[0], args);
+        if(optIndex === -1) buildError('Logic/Parsing error ', args[0], args);
 
         // lose the dashes
         option = validOptions[optIndex].slice(2);
         val = args[1];
 
         parsed[option] = parseInt(val, 10);
-
-        if(isNaN(parsed[option])) error('Parsing error when parsing ', val, args);
+        if(isNaN(parsed[option])) buildError('Parsing error when parsing ', val, args);
 
         // remove the two parsed arguments from the list
         args = args.slice(2);
@@ -67,7 +71,7 @@ function parseOptions(argsOriginal) {
 
     parsed.urls.forEach(function(url) {
         if( ! url.match(/https?:\/\//) ) {
-            error('Invalid url: ', parsed.url, args);
+            buildError('Invalid url: ', parsed.url, args);
         }
     });
     return parsed;
@@ -85,7 +89,8 @@ if(typeof module !== 'undefined') {
 
 var page = require('webpage').create(),
     fs = require('fs'),
-    system = require('system');
+    system = require('system'),
+    stdout = system.stdout; // for using this as a file
 
 // shortcut for logging
 var log = function (msg) {
@@ -125,28 +130,28 @@ var main = function (options) {
         return clone;
     }
 
-    // start the critical path CSS generation
-    getCriticalPathCss(createOptionsObject(0), function (css) {
-        //we're done, log the result as the output from phantomjs execution of this script
-        log(css);
+    fp = stdout;
+    getCssAndWriteToFile(fp, createOptionsObject(0), function() {
         phantom.exit();
     });
 };
 
-/* Final function
- * Get's called from getCriticalPathCss when CSS extraction from page is done*/
-page.onCallback = function(data) {
-	//final cleanup
-	//remove all empty rules, and remove leading/trailing whitespace
-	var finalCss = data.replace(/[^{}]*\{\s*\}/gm, '').trim();
-	//remove unused @fontface rules
-	finalCss = rmUnusedFontFace(finalCss);
-	//we're done, log the result as the output from phantomjs execution of this script!
-	log(finalCss);
+getCssAndWriteToFile = function(fp, options, callback) {
+    // start the critical path CSS generation
+    getCriticalPathCss(options, function (css) {
+        try {
+            //we're done, log the result as the output from phantomjs execution of this script
+            fp.write(css);
 
-	phantom.exit();
-};
+            // cannot close stdout
+            if(outFile !== stdout) fp.close(css);
 
+            callback();
+        } catch(ex) {
+            callback(ex);
+        }
+    });
+}
 
 /*
  * Tests each selector in css file at specified resolution,

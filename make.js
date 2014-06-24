@@ -8,35 +8,39 @@
  */
 
 require('shelljs/make');
+
+var fullName = "Penthouse CSS Critical Path Generator"
+var read = require('fs').readFileSync;
+var info = JSON.parse(read('package.json'));
 var mochaCmd = 'node ./node_modules/mocha/bin/mocha'; 
 
 //die on errors
 config.fatal = true;
 
-// initialize repository
-function init() {
-  mkdir('-p', 'dist');
-}
-
 // Make a single file out of everything
 function concat() {
 
-  init();
+    var banner = '/*\n' + [
+        fullName, 
+        info.homepage, 
+        'Author: ' + info.author.name,
+        'License: ' + info.license.type,
+        'Version: ' + info.version
+    ].join('\n') 
+    + cat('lib/phantomjs/usage.txt') + '*/\n\n\n';
 
-  // riot.js
-  var banner = cat(['lib/phantomjs/info.txt', 'lib/phantomjs/usage.txt' ]);
-  var js = banner + cat('lib/options-parser.js');
+    var js = banner + cat('lib/options-parser.js');
 
-  js += cat('lib/phantomjs/core.js');
+    js += cat('lib/phantomjs/core.js');
 
-  // dist
-  js.to('dist/penthouse.js');
+    // dist
+    js.to('penthouse.js');
 
 }
 
 target.all = function() {
     target.test();
-    // too many errors to enable as default
+    // too many errors to enable as default, but useful still
     //target.lint();
     target.build();
 };
@@ -48,7 +52,7 @@ target.test = function() {
 
 // lint the source - requires jshint (npm install -g jshint)
 target.lint = function() {
-  exec('jshint lib');
+    exec('jshint lib');
 };
 
 // concat target
@@ -57,6 +61,6 @@ target.build = concat;
 // watch for changes: ./make.js watch
 target.watch = function() {
 
-  // test on any changes
-  exec(mochaCmd + ' -w test');
+    // test on any changes
+    exec(mochaCmd + ' -w test');
 };
