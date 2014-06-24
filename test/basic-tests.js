@@ -30,7 +30,7 @@ describe('basic tests of penthouse functionality', function () {
     it('should return a css file', function (done) {
         penthouse({
             urls: ['http://localhost:' + port],
-            css: originalCssFilePath
+            cssFile: originalCssFilePath
         }, function (err, result) {
             if(err) { 
                 done(err); 
@@ -50,7 +50,7 @@ describe('basic tests of penthouse functionality', function () {
             heightLargerThanTotalTestCSS = 1000;
         penthouse({
             urls: ['http://localhost:' + port],
-            css: originalCssFilePath,
+            cssFile: originalCssFilePath,
             width: widthLargerThanTotalTestCSS,
             height: heightLargerThanTotalTestCSS
         }, function (err, result) {
@@ -75,7 +75,7 @@ describe('basic tests of penthouse functionality', function () {
             heightSmallerThanTotalTestCSS = 100;
         penthouse({
             urls: ['http://localhost:' + port],
-            css: originalCssFilePath,
+            cssFile: originalCssFilePath,
             width: widthLargerThanTotalTestCSS,
             height: heightSmallerThanTotalTestCSS
         }, function (err, result) {
