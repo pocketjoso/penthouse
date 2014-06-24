@@ -23,7 +23,9 @@
 parser for the script - can be used both for the standalone node binary and the phantomjs script
 */
 
-var usageString = ' [--width <width>] [--height <height>]  <main.css> <url> [<url> [...]]';
+var usageString = '[--width <width>] [--height <height>]  <main.css> <url> [<url> [...]]';
+
+var embeddedParser = true; // we test for this symbol in the concatenated script
 
 function error(msg, problemToken, args) {
     var error = new Error( msg  + problemToken);
@@ -74,9 +76,9 @@ function parseOptions(argsOriginal) {
 if(typeof module !== 'undefined') {
     module.exports = exports = {
         parse : parseOptions,
-        usageString : usageString
+        usage : usageString
     };
-}
+} 
 // PhantomJS script for extracting critical path css
 
 'use strict';
@@ -110,7 +112,7 @@ var main = function (options) {
         var f = fs.open(options.cssFile, "r");
         options.css = preFormatCSS(f.read());
     } catch (e) {
-        console.error(e);
+        errorlog(e);
         phantom.exit(1);
     }
 
@@ -407,25 +409,29 @@ var rmUnusedFontFace = function (css) {
     return css;
 };
 
-var parser, parse, usage, options, script;
+var parser, parse, usage, options;
 
+// test to see if we are running as a standalone script
+// or as part of the node module
 if( typeof embeddedParser !== 'undefined') { //standalone
     parse = parseOptions;
     usage = usageString;
-} else { 
+} else {  // we are running in node
     parser = require('../options-parser');
     parse = parser.parse;
     usage = parser.usageString;
 }
 
 try { 
-    script = system.args[0];
     options = parse(system.args.slice(1));
 } catch(ex) {
     errorlog('Caught error parsing arguments: ' + ex.message);
-    errorlog('Usage: phantomjs ' + script + ' ' + usage);
+    errorlog('Usage: phantomjs penthouse.js ' + usage);
     phantom.exit(1);
 }
 
-//errorlog("Options: ", JSON.stringify(options));
+// set defaults
+if(!options.width) options.width = 1300;
+if(!options.height) options.height = 900;
+
 main(options);
