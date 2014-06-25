@@ -14,7 +14,7 @@ var read = require('fs').readFileSync;
 var info = JSON.parse(read('package.json'));
 var mochaCmd = 'node ./node_modules/mocha/bin/mocha'; 
 var header = '(function() { "use strict"; ';
-var footer = '})()';
+var footer = '})();';
 
 //die on errors
 config.fatal = true;

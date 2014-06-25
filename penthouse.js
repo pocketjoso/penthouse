@@ -1,29 +1,103 @@
-// Penthouse CSS Critical Path Generator
-// https://github.com/pocketjoso/penthouse
-// Author: Jonas Ohlsson
-// License: MIT
-// Version 0.2.0
+/*
+Penthouse CSS Critical Path Generator
+https://github.com/pocketjoso/penthouse
+Author: Jonas Ohlsson
+License: undefined
+Version: 0.2.1
 
-// USAGE (when run standalone):
-// phantomjs penthouse.js [URL to page] [CSS file] > [critical path CSS file]
+USAGE:
+    phantomjs penthouse.js [CSS file] [URL to page] > [critical path CSS file]
+    Options:
+    --width <width>      The viewport width in pixels. Defaults to 1300 
+    --height <height>    The viewport height in pixels. Defaults to 900 
 
-// to run on HTTPS sites two flags must be passed in, directly after phantomjs in the call:
-// --ignore-ssl-errors=true --ssl-protocol=tlsv1
+    to run on HTTPS sites two flags must be passed in, directly after phantomjs in the call:
+    --ignore-ssl-errors=true --ssl-protocol=tlsv1
 
-// optional parameters: [WIDTH], [HEIGHT] - must follow [CSS file] param in this order. Defaults to 1300, 900.
+DEPENDENCIES
+    + "phantomjs" : "~1.9.7"
 
-// DEPENDENCIES
-// + "phantomjs" : "~1.9.7"
+*/
 
+
+(function() { "use strict"; /* 
+parser for the script - can be used both for the standalone node binary and the phantomjs script
+*/
+/*jshint unused:false*/ // we detect embeddedParser when concatenating the script
+
+var usageString = '[--width <width>] [--height <height>]  <main.css> <url> [<url> [...]]';
+
+var embeddedParser = true; // we test for this symbol in the concatenated script
+
+function buildError(msg, problemToken, args) {
+    var error = new Error( msg  + problemToken);
+    error.token = problemToken;
+    error.args = args;
+    throw error;
+}
+
+// Parses the arguments passed in
+// @returns { width, height, url, cssFile }
+// throws an error on wrong options or parsing error
+function parseOptions(argsOriginal) {   
+    var args = argsOriginal.slice(0),
+    validOptions = ['--width', '--height'],
+    parsed = {},
+    val,
+    len = args.length,
+    optIndex,
+    option;
+
+    if(len < 2 ) buildError('Invalid number of arguments', args, args);
+
+    while(args.length > 2 && args[0].match(/^(--width|--height)$/)) {
+        optIndex = validOptions.indexOf(args[0]);
+        if(optIndex === -1) buildError('Logic/Parsing error ', args[0], args);
+
+        // lose the dashes
+        option = validOptions[optIndex].slice(2);
+        val = args[1];
+
+        parsed[option] = parseInt(val, 10);
+        if(isNaN(parsed[option])) buildError('Parsing error when parsing ', val, args); 
+
+        // remove the two parsed arguments from the list
+        args = args.slice(2);
+    }
+
+    parsed.cssFile = args[0];
+    parsed.urls = args.slice(1);
+
+    parsed.urls.forEach(function(url) {
+        if( ! url.match(/https?:\/\//) ) { 
+            buildError('Invalid url: ', parsed.url, args); 
+        }
+    });
+    return parsed;
+}
+
+if(typeof module !== 'undefined') {
+    module.exports = exports = {
+        parse : parseOptions,
+        usage : usageString
+    };
+} 
 'use strict';
 
 var page = require('webpage').create(),
     fs = require('fs'),
-    system = require('system');
+    system = require('system'),
+    stdout = system.stdout; // for using this as a file
 
-//shortcut for logging
+// shortcut for logging
 var log = function (msg) {
     console.log(msg);
+};
+
+// monkey patch for directing errors to stderr
+// https://github.com/ariya/phantomjs/issues/10150#issuecomment-28707859
+var errorlog = function () {
+    system.stderr.write(Array.prototype.join.call(arguments, ' ') + '\n');
 };
 
 //don't confuse analytics more than necessary when visiting websites
@@ -34,23 +108,54 @@ page.onError = function (msg, trace) {
     //do nothing
 };
 
+var main = function (options) {
 
-var main = function () {
+    var jobs = [];
 
-    var options;
-
-    options = parseArguments();
     try {
-        var f = fs.open(options.cssFilePath, "r");
+        var f = fs.open(options.cssFile, "r");
         options.css = preFormatCSS(f.read());
     } catch (e) {
-        console.error(e);
+        errorlog(e);
         phantom.exit(1);
     }
 
+    // since the various async operations might overlap it might make 
+    // sense to not let them share the same object
+    function createOptionsObject(urlIndex) {
+        var clone = JSON.parse(JSON.stringify(options));
+        delete clone.urls;
+        clone.url = options.urls[urlIndex];
+        return clone;
+    }
 
-    // start the critical path CSS generation
-    getCriticalPathCss(options);
+    // support the standard old operation of logging to the console 
+    if (options.urls.length === 1) {
+        jobs.push(function(done) { getCssAndWriteToFile(stdout, createOptionsObject(0), done); });
+    } else {
+        options.urls.forEach(function(url, index) {
+            jobs.push(function(done) {
+                var fp = fs.open('critical-' + (index+1) + '.css', 'w');
+                getCssAndWriteToFile(fp, createOptionsObject(0), function(err) {
+                    fp.close();
+                    if(err) { 
+                        done(err);
+                        return;
+                    }
+                    done();
+                });
+            });
+        });
+    }
+
+    queueAsync(jobs, function(err) { 
+        if(err) {
+            errorlog(err);
+            phantom.exit(1); 
+        } else {
+            phantom.exit(0);
+        }
+    })
 };
 
 /* Final function
@@ -61,26 +166,55 @@ page.onCallback = function(data) {
 	var finalCss = data.replace(/[^{}]*\{\s*\}/gm, '').trim();
 	//we're done, log the result as the output from phantomjs execution of this script!
 	log(finalCss);
-	
+
 	phantom.exit();
 };
 
-var parseArguments = function () {
-    var options = {};
+// Queue async operations 
+// @author fatso83@github
+// Expect callbacks on the form  ( callback : (err?) => void )
+function queueAsync(functions, callback) {
+	var fns = functions.slice(0);
+	var fn, iter;
 
-    //url needs to be passed in
-    if (system.args.length < 3) {
-        log('Usage: penthouse <some URL> <path to css file>');
-        phantom.exit(1);
-    }
+	// functional looping, aka SICP 101 :)
+	iter = function() {
+		if(!fns.length) {
+			// tell the mothership we want to go home
+			callback();
+			return;
+		}
 
-    options.url = system.args[1];
-    options.cssFilePath = system.args[2];
-    options.width = system.args[3] || 1300;
-    options.height = system.args[4] || 900;
+		// get first from queue
+		fn = fns.splice(0,1)[0];
+		fn(function(err) {
+			if(err) callback(err);
+			else iter();
+		});
+	};
+	iter();
+}
 
-    return options;
+/**
+ * Get the CSS and write to file
+ * fp - a stream to write to
+ * options - an options object with width, height, url and css
+ * callback - a function that is called on finish, optionally with an error
+ */
+var getCssAndWriteToFile = function(fp, options, callback) {
+	// start the critical path CSS generation
+	getCriticalPathCss(options, function (css) {
+		try {
+			//we're done, log the result as the output from phantomjs execution of this script
+			fp.write(css);
+
+			callback();
+		} catch(ex) {
+			callback(ex);
+		}
+	});
 };
+
 
 /* === preFormatCSS ===
  * preformats the css to ensure we won't run into and problems in our parsing
@@ -120,74 +254,18 @@ var preFormatCSS = function (css) {
     return css;
 };
 
-
-/*=== rmUnusedFontFace ===
- * find @fontface declarations where font isn't used in
- * above the fold css, and removes those.
- ---------------------------------------------------------*/
-var rmUnusedFontFace = function (css) {
-    var toDeleteSections = [];
-
-    //extract full @font-face rules
-    var fontFaceRegex = /(@font-face[ \s\S]*?\{([\s\S]*?)\})/gm,
-        ff;
-
-    while ((ff = fontFaceRegex.exec(css)) !== null) {
-
-        //grab the font name declared in the @font-face rule
-        //(can still be in quotes, f.e. "Lato Web"
-        var t = /font-family[^:]*?:[ ]*([^;]*)/.exec(ff[1]);
-        if (typeof t[1] === "undefined")
-            continue; //no font-family in @fontface rule!
-
-        //rm quotes
-        var fontName = t[1].replace(/['"]/gm, "");
-
-        // does this fontname appear as a font-family or font (shorthand) value?
-        var fontNameRegex = new RegExp("([^{}]*?)\{[^}]*?font(-family)?[^:]*?:[^;]*" + fontName + "[^,;]*[,;]", "gmi");
-
-
-        var fontFound = false,
-            m;
-
-        while ((m = fontNameRegex.exec(css)) !== null) {
-            if (m[1].indexOf("@font-face") === -1) {
-                //log("FOUND, keep rule");
-                fontFound = true;
-                break;
-            }
-        }
-        if (!fontFound) {
-            //"NOT FOUND, rm!
-
-            //can't remove rule here as it will screw up ongoing while (exec ...) loop.
-            //instead: save indices and delete AFTER for loop
-            var closeRuleIndex = css.indexOf("}", ff.index);
-            //unshift - add to beginning of array - we need to remove rules in reverse order,
-            //otherwise indeces will become incorrect again.
-            toDeleteSections.unshift({start: ff.index, end: closeRuleIndex + 1});
-        }
-    }
-    //now delete the @fontface rules we registed as having no matches in the css
-    for (var i = 0; i < toDeleteSections.length; i++) {
-        var start = toDeleteSections[i].start,
-            end = toDeleteSections[i].end;
-        css = css.substring(0, start) + css.substring(end);
-    }
-
-    return css;
-};
-
 /*
  * Tests each selector in css file at specified resolution,
  * to see if any such elements appears above the fold on the page
  * modifies CSS - removes selectors that don't appear, and empty rules
  *
+ * @param options.url the url as a string
  * @param options.css the css as a string
  * @param options.width the width of viewport
  * @param options.height the height of viewport
+ * @param callback will be called with the result
  ---------------------------------------------------------*/
-var getCriticalPathCss = function (options) {
+var getCriticalPathCss = function (options, callback) {
 
     page.viewportSize = {
         width: options.width,
@@ -195,7 +273,6 @@ var getCriticalPathCss = function (options) {
     };
 
     page.open(options.url, function (status) {
-        var css;
         if (status !== 'success') {
             log('Unable to access network');
             phantom.exit();
@@ -240,142 +317,171 @@ var getCriticalPathCss = function (options) {
                     }
                     return i;
                 };
-				
-				//give some time (renderWaitTime) for sites like facebook that build their page dynamically,
-				//otherwise we can miss some selectors (and therefor rules)
-				//--tradeoff here: if site is too slow with dynamic content,
-				//	it doesn't deserve to be in critical path.
-				setTimeout(function(){
-					for (var i = 0; i < split.length; i = i + 2) {
-						//step over non DOM CSS selectors (@font-face, @media..)
-						i = getNewValidCssSelector(i);
-						
-						//reach end of CSS
-						if (finished) {
-							//call final function to exit outside of phantom evaluate scope
-							window.callPhantom(css);
-						}
-						
-						var fullSel = split[i];
-						//fullSel can contain combined selectors
-						//,f.e.  body, html {}
-						//split and check one such selector at the time.
-						var selSplit = fullSel.split(',');
-						//keep track - if we remove all selectors, we also want to remove the whole rule.
-						var selectorsKept = 0;
 
-						for (var j = 0; j < selSplit.length; j++) {
-							var sel = selSplit[j];
 
-							//some selectors can't be matched on page.
-							//In these cases we test a slightly modified selectors instead, temp.
-							var temp = sel;
+	            var processCssRules = function(){
+		            for (var i = 0; i < split.length; i = i + 2) {
+			            //step over non DOM CSS selectors (@font-face, @media..)
+			            i = getNewValidCssSelector(i);
 
-							if (sel.indexOf(":") > -1) {
-								//handle special case selectors, the ones that contain a semi colon (:)
-								//many of these selectors can't be matched to anything on page via JS,
-								//but that still might affect the above the fold styling
+			            //reach end of CSS
+			            if (finished) {
+				            //call final function to exit outside of phantom evaluate scope
+				            window.callPhantom(css);
+			            }
 
-								//these psuedo selectors depend on an element,
-								//so test element instead (would do the same for f.e. :focus, :active IF we wanted to keep them for critical path css, but we don't)
-								temp = temp.replace(/(:hover|:?:before|:?:after)*/g, '');
+			            var fullSel = split[i];
+			            //fullSel can contain combined selectors
+			            //,f.e.  body, html {}
+			            //split and check one such selector at the time.
+			            var selSplit = fullSel.split(',');
+			            //keep track - if we remove all selectors, we also want to remove the whole rule.
+			            var selectorsKept = 0;
 
-								//if selector is purely psuedo (f.e. ::-moz-placeholder), just keep as is.
-								//we can't match it to anything on page, but it can impact above the fold styles
-								if (temp.replace(/:[:]?([a-zA-Z0-9\-\_])*/g, '').trim().length === 0) {
-									currIndex = css.indexOf(sel, currIndex) + sel.length;
-									continue;
-								}
+			            for (var j = 0; j < selSplit.length; j++) {
+				            var sel = selSplit[j];
 
-								//handle browser specific psuedo selectors bound to elements,
-								//Example, button::-moz-focus-inner, input[type=number]::-webkit-inner-spin-button
-								//remove browser specific pseudo and test for element
-								temp = temp.replace(/:?:-[a-z-]*/g, '');
-							}
+				            //some selectors can't be matched on page.
+				            //In these cases we test a slightly modified selectors instead, temp.
+				            var temp = sel;
 
-							if (!forceRemoveNestedRule) {
-								//now we have a selector to test, first grab any matching elements
-								try {
-									var el = document.querySelectorAll(temp);
-								} catch (e) {
-									continue;
-								}
+				            if (sel.indexOf(":") > -1) {
+					            //handle special case selectors, the ones that contain a semi colon (:)
+					            //many of these selectors can't be matched to anything on page via JS,
+					            //but that still might affect the above the fold styling
 
-								//check if selector matched element(s) on page..
-								var aboveFold = false;
-								
-								for (var k = 0; k < el.length; k++) {
-									var testEl = el[k];
-									//temporarily force clear none in order to catch elements that clear previous content themselves and who w/o their styles could show up unstyled in above the fold content (if they rely on f.e. "clear:both;" to clear some main content)
-									testEl.style.clear = "none";
+					            //these psuedo selectors depend on an element,
+					            //so test element instead (would do the same for f.e. :focus, :active IF we wanted to keep them for critical path css, but we don't)
+					            temp = temp.replace(/(:hover|:?:before|:?:after)*/g, '');
 
-									//check to see if any matched element is above the fold on current page
-									//(in current viewport size)
-									if (testEl.getBoundingClientRect().top < h) {
-										//then we will save this selector
-										aboveFold = true;
-										selectorsKept++;
+					            //if selector is purely psuedo (f.e. ::-moz-placeholder), just keep as is.
+					            //we can't match it to anything on page, but it can impact above the fold styles
+					            if (temp.replace(/:[:]?([a-zA-Z0-9\-\_])*/g, '').trim().length === 0) {
+						            currIndex = css.indexOf(sel, currIndex) + sel.length;
+						            continue;
+					            }
 
-										//update currIndex so we only search from this point from here on.
-										currIndex = css.indexOf(sel, currIndex);
+					            //handle browser specific psuedo selectors bound to elements,
+					            //Example, button::-moz-focus-inner, input[type=number]::-webkit-inner-spin-button
+					            //remove browser specific pseudo and test for element
+					            temp = temp.replace(/:?:-[a-z-]*/g, '');
+				            }
 
-										//set clear style back to what it was
-										testEl.style.clear = "";
-										//break, because matching 1 element is enough
-										break;
-									}
-									//set clear style back to what it was
-									testEl.style.clear = "";
-								}
-							} else
-								aboveFold = false; //force removal of selector
+				            if (!forceRemoveNestedRule) {
+					            //now we have a selector to test, first grab any matching elements
+					            try {
+						            var el = document.querySelectorAll(temp);
+					            } catch (e) {
+						            continue;
+					            }
 
-							//if selector didn't match any elements above fold - delete selector from CSS
-							if (aboveFold === false) {
-								var selPos = css.indexOf(sel, currIndex);
-								//update currIndex so we only search from this point from here on.
-								currIndex = css.indexOf(sel, currIndex);
+					            //check if selector matched element(s) on page..
+					            var aboveFold = false;
 
-								//check what comes next: { or ,
-								var nextComma = css.indexOf(',', selPos);
-								var nextOpenBracket = css.indexOf('{', selPos);
+					            for (var k = 0; k < el.length; k++) {
+						            var testEl = el[k];
+						            //temporarily force clear none in order to catch elements that clear previous content themselves and who w/o their styles could show up unstyled in above the fold content (if they rely on f.e. "clear:both;" to clear some main content)
+						            testEl.style.clear = "none";
 
-								if (selectorsKept > 0 || (nextComma > 0 && nextComma < nextOpenBracket)) {
-									//we already kept selectors from this rule, so rule will stay
+						            //check to see if any matched element is above the fold on current page
+						            //(in current viewport size)
+						            if (testEl.getBoundingClientRect().top < h) {
+							            //then we will save this selector
+							            aboveFold = true;
+							            selectorsKept++;
 
-									//more selectors in selectorList, cut until (and including) next comma
-									if (nextComma > 0 && nextComma < nextOpenBracket) {
-										css = css.substring(0, selPos) + css.substring(nextComma + 1);
-									}
-									//final selector, cut until open bracket. Also remove previous comma, as the (new) last selector should not be followed by a comma.
-									else {
-										var prevComma = css.lastIndexOf(",", selPos);
-										css = css.substring(0, prevComma) + css.substring(nextOpenBracket);
-									}
-								}
-								else {
-									//no part of selector (list) matched elements above fold on page - remove whole rule CSS rule
-									var endRuleBracket = css.indexOf('}', nextOpenBracket);
+							            //update currIndex so we only search from this point from here on.
+							            currIndex = css.indexOf(sel, currIndex);
 
-									css = css.substring(0, selPos) + css.substring(endRuleBracket + 1);
-								}
-							}
-						}
-						//if rule stayed, move our cursor forward for matching new selectors
-						if (selectorsKept > 0) {
-							currIndex = css.indexOf("}", currIndex) + 1;
-						}
-					}
-										
-					//we're done - call final function to exit outside of phantom evaluate scope
-					window.callPhantom(css);
-					
+							            //set clear style back to what it was
+							            testEl.style.clear = "";
+							            //break, because matching 1 element is enough
+							            break;
+						            }
+						            //set clear style back to what it was
+						            testEl.style.clear = "";
+					            }
+				            } else
+					            aboveFold = false; //force removal of selector
 
-				},renderWaitTime);
+				            //if selector didn't match any elements above fold - delete selector from CSS
+				            if (aboveFold === false) {
+					            var selPos = css.indexOf(sel, currIndex);
+					            //update currIndex so we only search from this point from here on.
+					            currIndex = css.indexOf(sel, currIndex);
+
+					            //check what comes next: { or ,
+					            var nextComma = css.indexOf(',', selPos);
+					            var nextOpenBracket = css.indexOf('{', selPos);
+
+					            if (selectorsKept > 0 || (nextComma > 0 && nextComma < nextOpenBracket)) {
+						            //we already kept selectors from this rule, so rule will stay
+
+						            //more selectors in selectorList, cut until (and including) next comma
+						            if (nextComma > 0 && nextComma < nextOpenBracket) {
+							            css = css.substring(0, selPos) + css.substring(nextComma + 1);
+						            }
+						            //final selector, cut until open bracket. Also remove previous comma, as the (new) last selector should not be followed by a comma.
+						            else {
+							            var prevComma = css.lastIndexOf(",", selPos);
+							            css = css.substring(0, prevComma) + css.substring(nextOpenBracket);
+						            }
+					            }
+					            else {
+						            //no part of selector (list) matched elements above fold on page - remove whole rule CSS rule
+						            var endRuleBracket = css.indexOf('}', nextOpenBracket);
+
+						            css = css.substring(0, selPos) + css.substring(endRuleBracket + 1);
+					            }
+				            }
+			            }
+			            //if rule stayed, move our cursor forward for matching new selectors
+			            if (selectorsKept > 0) {
+				            currIndex = css.indexOf("}", currIndex) + 1;
+			            }
+		            }
+
+		            //we're done - call final function to exit outside of phantom evaluate scope
+		            window.callPhantom(css);
+
+
+	            };
+
+	            //give some time (renderWaitTime) for sites like facebook that build their page dynamically,
+	            //otherwise we can miss some selectors (and therefor rules)
+	            //--tradeoff here: if site is too slow with dynamic content,
+	            //	it doesn't deserve to be in critical path.
+	            setTimeout(processCssRules ,renderWaitTime);
                
             }, options.css);
         }
     });
 };
 
-main();
+
+var parser, parse, usage, options;
+
+// test to see if we are running as a standalone script
+// or as part of the node module
+if( typeof embeddedParser !== 'undefined') { //standalone
+	parse = parseOptions;
+	usage = usageString;
+} else {  // we are running in node
+	parser = require('../options-parser');
+	parse = parser.parse;
+	usage = parser.usageString;
+}
+
+try {
+	options = parse(system.args.slice(1));
+} catch(ex) {
+	errorlog('Caught error parsing arguments: ' + ex.message);
+	errorlog('Usage: phantomjs penthouse.js ' + usage);
+	phantom.exit(1);
+}
+
+// set defaults
+if(!options.width) options.width = 1300;
+if(!options.height) options.height = 900;
+
+main(options);})();
