@@ -8,7 +8,7 @@ var penthouse = require('../lib/'),
 	async = require('async'),
 	glob = require('glob');
 
-//penthouse.debug = true;
+//penthouse.DEBUG = true;
 
 describe('basic tests of penthouse functionality', function () {
 	var page1cssPath = path.join(__dirname, 'static-server', 'page1.css'),
@@ -17,7 +17,7 @@ describe('basic tests of penthouse functionality', function () {
 		page1, server, port;
 
 	// phantomjs takes a while to start up
-	this.timeout(8000);
+	this.timeout(5000);
 
 	before(function (done) {
 		startServer(function (instance, serverPort) {
@@ -41,7 +41,7 @@ describe('basic tests of penthouse functionality', function () {
 		});
 	});
 
-	it('should return a css file', function (done) {
+	it('should return the contents of a css file', function (done) {
 		penthouse({
 			urls    : [ page1],
 			cssFile : page1cssPath
