@@ -20,7 +20,8 @@ DEPENDENCIES
 */
 
 
-(function() { "use strict"; /*
+(function() { "use strict";
+/*
 parser for the script - can be used both for the standalone node binary and the phantomjs script
 */
 /*jshint unused:false*/ // we detect embeddedParser when concatenating the script
@@ -231,8 +232,14 @@ var getCssAndWriteToFile = function (fp, options, callback) {
 		debug('phantom.onCallback');
 
 		try {
-			//we're done, log the result as the output from phantomjs execution of this script!
+
+			if(css) {
+			// we are done - write the resulting css to the file stream
 			fp.write(cleanup(css));
+			} else {
+				// No css. This is not an error on our part
+				errorlog("No CSS. This means passed in CSS matched nothing on the URL: " + options.url);
+			}
 
 			callback();
 		} catch (ex) {
