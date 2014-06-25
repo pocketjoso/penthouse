@@ -40,7 +40,9 @@
     "mocha": "^1.20.1",
     "morgan": "^1.1.1",
     "portfinder": "^0.2.1",
-    "shelljs": "^0.3.0"
+    "shelljs": "^0.3.0",
+    "glob": "^4.0.2",
+    "async": "^0.9.0"
   },
   "keywords": [
     "CSS Critical Path Generator",
