@@ -2,7 +2,8 @@ var penthouse = require('../lib/'),
     chai = require('chai'),
     should = chai.should(),
     css = require('css'),
-    read = require('fs').readFileSync,
+    fs = require('fs'),
+    read = fs.readFileSync,
     path = require('path');
 
     //penthouse.debug = true;
@@ -42,6 +43,22 @@ describe('basic tests of penthouse functionality', function () {
             } catch (ex) {
                 done(ex);
             }
+        });
+    });
+
+    it('should create multiple output files for multiple urls', function (done) {
+        penthouse({
+            urls: ['http://localhost:' + port, 'http://localhost:' + port, 'http://localhost:' + port],
+            cssFile: originalCssFilePath
+        }, function (err, result) {
+            if(err) { 
+                done(err); 
+                return;
+            }
+            fs.existsSync('critical-1.css').should.be.true;
+            fs.existsSync('critical-2.css').should.be.true;
+            fs.existsSync('critical-3.css').should.be.true;
+            done();
         });
     });
 
