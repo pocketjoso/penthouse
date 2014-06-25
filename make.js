@@ -13,7 +13,7 @@ var fullName = "Penthouse CSS Critical Path Generator"
 var read = require('fs').readFileSync;
 var info = JSON.parse(read('package.json'));
 var mochaCmd = 'node ./node_modules/mocha/bin/mocha'; 
-var header = '(function() { "use strict"; ';
+var header = '(function() { "use strict"; \n';
 var footer = '})();';
 
 //die on errors
