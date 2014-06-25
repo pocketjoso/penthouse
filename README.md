@@ -10,9 +10,14 @@ The process is automatic and the generated css should be ready for production as
 
 ## Usage
 
-Penthouse can be used directly from the command line, [as a Node module](https://github.com/pocketjoso/penthouse/#as-a-node-module), or via [the online version](https://github.com/pocketjoso/penthouse#online-version).
+Penthouse can be used:
+ * from the command line
+ * [as a Node module](https://github.com/pocketjoso/penthouse/#as-a-node-module)
+ * [as a Grunt task](https://github.com/fatso83/grunt-penthouse)
+ * as a Gulp task (just require Node module straight from your script)
+ * via [the online version](https://github.com/pocketjoso/penthouse#online-version)
 
-### As a standalone command line tool
+### From command line
 
 #### Installation
 
@@ -32,7 +37,7 @@ To run on HTTPS pages two extra flags must be passed in, directly after phantomj
 
 	--ignore-ssl-errors=true --ssl-protocol=tlsv1
 	//as such:
-	phantomjs penthouse.js --ignore-ssl-errors=true --ssl-protocol=tlsv1 [URL to page] [CSS file] > [critical path CSS file]
+	phantomjs --ignore-ssl-errors=true --ssl-protocol=tlsv1 penthouse.js [URL to page] [CSS file] > [critical path CSS file]
 
 ##### Optional parameters
 By default penthouse gives you the css needed to render a viewport of size `1300x900`. This css will cover all smaller viewport sizes, unless you're delivering a different DOM or doing something crazy. You can pass in your a different `viewport width` and `viewport height` if you want; these two params must follow the `[CSS file]` like this:
@@ -63,6 +68,8 @@ Require as normal and execute with a callback
     }, function(err, criticalCss) {
         console.log(criticalCss);
     });
+	
+The Penthouse Node module can also be used as in Gulp.
 
 ## Online version
 http://jonassebastianohlsson.com/criticalpathcssgenerator/
@@ -84,5 +91,8 @@ Problems with special characters like &#8594; after converting? Make sure you us
 ###Other problems
 Please report your issue (check that it's not already there first though!), and I will try to fix it as soon as possible.
 
-### License
-MIT
+## Changelog
+2014-06-20    v0.2.1    Handle previous content clearing styles (@pocketjoso)  
+2014-06-10    v0.2.0    Node module and standalone executable (@fatso83)  
+2014-06-05    v0.1.0    Published on NPM (@pocketjoso)  
+2014-06-04    v0.0.0    PhantomJS script /core logic (@pocketjoso)
