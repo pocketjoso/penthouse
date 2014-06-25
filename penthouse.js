@@ -111,6 +111,8 @@ page.onError = function (msg, trace) {
 
 var main = function (options) {
 
+    var jobs = [];
+
     try {
         var f = fs.open(options.cssFile, "r");
         options.css = preFormatCSS(f.read());
@@ -128,21 +130,73 @@ var main = function (options) {
         return clone;
     }
 
-    var fp = stdout;
-    getCssAndWriteToFile(fp, createOptionsObject(0), function() {
-        phantom.exit();
-    });
+    // support the standard old operation of logging to the console 
+    if (options.urls.length === 1) {
+        jobs.push(function(done) { getCssAndWriteToFile(stdout, createOptionsObject(0), done); });
+    } else {
+        options.urls.forEach(function(url, index) {
+            jobs.push(function(done) {
+                var fp = fs.open('critical-' + index + '.css', 'w');
+                getCssAndWriteToFile(fp, createOptionsObject(0), function(err) {
+                    fp.close();
+                    if(err) { 
+                        done(err);
+                        return;
+                    }
+                    done();
+                });
+            });
+        });
+    }
+
+    queueAsync(jobs, function(err) { 
+        if(err) {
+            errorlog(err);
+            phantom.exit(1); 
+        } else {
+            phantom.exit(0);
+        }
+    })
 };
 
+// Queue async operations 
+// @author fatso83@github
+// Expect callbacks on the form  ( callback : (err?) => void )
+function queueAsync(functions, callback) {
+    var success = false;
+    var fns = functions.slice(0);
+    var fn, iter;
+
+    // functional looping, aka SICP 101 :)
+    iter = function() {
+        if(!fns.length) {
+            // tell the mothership we want to go home
+            callback(); 
+            return;
+        }
+
+        // get first from queue
+        fn = fns.splice(0,1)[0];
+        fn(function(err) {
+            if(err) callback(err);
+            else iter();
+        });
+    }
+    iter();
+}
+
+/**
+ * Get the CSS and write to file
+ * fp - a stream to write to
+ * options - an options object with width, height, url and css
+ * callback - a function that is called on finish, optionally with an error
+ */
 var getCssAndWriteToFile = function(fp, options, callback) {
     // start the critical path CSS generation
     getCriticalPathCss(options, function (css) {
         try {
             //we're done, log the result as the output from phantomjs execution of this script
             fp.write(css);
-
-            // cannot close stdout
-            if(outFile !== stdout) fp.close(css);
 
             callback();
         } catch(ex) {
