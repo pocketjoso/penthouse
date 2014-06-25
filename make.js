@@ -13,6 +13,8 @@ var fullName = "Penthouse CSS Critical Path Generator"
 var read = require('fs').readFileSync;
 var info = JSON.parse(read('package.json'));
 var mochaCmd = 'node ./node_modules/mocha/bin/mocha'; 
+var header = '(function() { "use strict"; ';
+var footer = '})()';
 
 //die on errors
 config.fatal = true;
@@ -29,9 +31,10 @@ function concat() {
     ].join('\n') 
     + cat('lib/phantomjs/usage.txt') + '*/\n\n\n';
 
-    var js = banner + cat('lib/options-parser.js');
+    var js = banner + header + cat('lib/options-parser.js');
 
     js += cat('lib/phantomjs/core.js');
+    js += footer;
 
     // dist
     js.to('penthouse.js');

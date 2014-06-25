@@ -21,7 +21,7 @@ DEPENDENCIES
 */
 
 
-/*
+(function() { "use strict"; /*
 parser for the script - can be used both for the standalone node binary and the phantomjs script
 */
 /*jshint unused:false*/ // we detect embeddedParser when concatenating the script
@@ -83,8 +83,6 @@ if(typeof module !== 'undefined') {
         usage : usageString
     };
 }
-// PhantomJS script for extracting critical path css
-
 'use strict';
 
 var page = require('webpage').create(),
@@ -130,13 +128,13 @@ var main = function (options) {
         return clone;
     }
 
-    fp = stdout;
+    var fp = stdout;
     getCssAndWriteToFile(fp, createOptionsObject(0), function() {
         phantom.exit();
     });
 };
 
-getCssAndWriteToFile = function(fp, options, callback) {
+var getCssAndWriteToFile = function(fp, options, callback) {
     // start the critical path CSS generation
     getCriticalPathCss(options, function (css) {
         try {
@@ -486,3 +484,4 @@ if(!options.width) options.width = 1300;
 if(!options.height) options.height = 900;
 
 main(options);
+})()
