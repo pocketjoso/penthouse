@@ -59,6 +59,7 @@ page.onCallback = function(data) {
 	//final cleanup
 	//remove all empty rules, and remove leading/trailing whitespace
 	var finalCss = data.replace(/[^{}]*\{\s*\}/gm, '').trim();
+	finalCss = rmUnusedFontFace(finalCss);
 	//we're done, log the result as the output from phantomjs execution of this script!
 	log(finalCss);
 	
