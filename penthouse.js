@@ -2,7 +2,7 @@
 // https://github.com/pocketjoso/penthouse
 // Author: Jonas Ohlsson
 // License: MIT
-// Version 0.2.1
+// Version 0.2.2
 
 // USAGE (when run standalone):
 // phantomjs penthouse.js [URL to page] [CSS file] > [critical path CSS file]
@@ -93,7 +93,7 @@ var preFormatCSS = function (css) {
     css = css.replace(/\/\*[\s\S]*?\*\//g, '');
 
     //we also need to replace eventual close curly bracket characters inside content: "" property declarations, replace them with their ASCI code equivalent
-    //\7d = '\' + '}'.charCodeAt(0).toString(16);
+    //\7d (same as:   '\' + '}'.charCodeAt(0).toString(16)  );
     
 	var m,
 		regexP = /(content\s*:\s*['"][^'"]*)}([^'"]*['"])/gm,
@@ -242,6 +242,34 @@ var getCriticalPathCss = function (options) {
                     return i;
                 };
 				
+				var removeSelector = function(sel, selectorsKept){
+					var selPos = css.indexOf(sel, currIndex);
+
+					//check what comes next: { or ,
+					var nextComma = css.indexOf(',', selPos);
+					var nextOpenBracket = css.indexOf('{', selPos);
+
+					if (selectorsKept > 0 || (nextComma > 0 && nextComma < nextOpenBracket)) {
+						//we already kept selectors from this rule, so rule will stay
+
+						//more selectors in selectorList, cut until (and including) next comma
+						if (nextComma > 0 && nextComma < nextOpenBracket) {
+							css = css.substring(0, selPos) + css.substring(nextComma + 1);
+						}
+						//final selector, cut until open bracket. Also remove previous comma, as the (new) last selector should not be followed by a comma.
+						else {
+							var prevComma = css.lastIndexOf(",", selPos);
+							css = css.substring(0, prevComma) + css.substring(nextOpenBracket);
+						}
+					}
+					else {
+						//no part of selector (list) matched elements above fold on page - remove whole rule CSS rule
+						var endRuleBracket = css.indexOf('}', nextOpenBracket);
+
+						css = css.substring(0, selPos) + css.substring(endRuleBracket + 1);
+					}
+				}
+				
 				//give some time (renderWaitTime) for sites like facebook that build their page dynamically,
 				//otherwise we can miss some selectors (and therefor rules)
 				//--tradeoff here: if site is too slow with dynamic content,
@@ -278,8 +306,8 @@ var getCriticalPathCss = function (options) {
 								//but that still might affect the above the fold styling
 
 								//these psuedo selectors depend on an element,
-								//so test element instead (would do the same for f.e. :focus, :active IF we wanted to keep them for critical path css, but we don't)
-								temp = temp.replace(/(:hover|:?:before|:?:after)*/g, '');
+								//so test element instead (would do the same for f.e. :hover, :focus, :active IF we wanted to keep them for critical path css, but we don't)
+								temp = temp.replace(/(:?:before|:?:after)*/g, '');
 
 								//if selector is purely psuedo (f.e. ::-moz-placeholder), just keep as is.
 								//we can't match it to anything on page, but it can impact above the fold styles
@@ -299,6 +327,8 @@ var getCriticalPathCss = function (options) {
 								try {
 									var el = document.querySelectorAll(temp);
 								} catch (e) {
+									//not a valid selector, remove it.
+									removeSelector(sel, 0);
 									continue;
 								}
 
@@ -333,33 +363,10 @@ var getCriticalPathCss = function (options) {
 
 							//if selector didn't match any elements above fold - delete selector from CSS
 							if (aboveFold === false) {
-								var selPos = css.indexOf(sel, currIndex);
 								//update currIndex so we only search from this point from here on.
 								currIndex = css.indexOf(sel, currIndex);
-
-								//check what comes next: { or ,
-								var nextComma = css.indexOf(',', selPos);
-								var nextOpenBracket = css.indexOf('{', selPos);
-
-								if (selectorsKept > 0 || (nextComma > 0 && nextComma < nextOpenBracket)) {
-									//we already kept selectors from this rule, so rule will stay
-
-									//more selectors in selectorList, cut until (and including) next comma
-									if (nextComma > 0 && nextComma < nextOpenBracket) {
-										css = css.substring(0, selPos) + css.substring(nextComma + 1);
-									}
-									//final selector, cut until open bracket. Also remove previous comma, as the (new) last selector should not be followed by a comma.
-									else {
-										var prevComma = css.lastIndexOf(",", selPos);
-										css = css.substring(0, prevComma) + css.substring(nextOpenBracket);
-									}
-								}
-								else {
-									//no part of selector (list) matched elements above fold on page - remove whole rule CSS rule
-									var endRuleBracket = css.indexOf('}', nextOpenBracket);
-
-									css = css.substring(0, selPos) + css.substring(endRuleBracket + 1);
-								}
+								//remove seletor (also removes rule, if nnothing left)
+								removeSelector(sel, selectorsKept);
 							}
 						}
 						//if rule stayed, move our cursor forward for matching new selectors
