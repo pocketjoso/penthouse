@@ -1,0 +1,9 @@
+@font-face {
+    font-family: 'Lato web';
+    font-style: normal;
+    font-weight: 400;
+    src: url('fonts/Lato-Regular.eot');
+}
+html {
+	font-family: Arial;
+}
