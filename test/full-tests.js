@@ -84,7 +84,7 @@ describe('penthouse functionality tests', function () {
     });
 	
 	
-	it('@fontface rule should remain, because it is used', function (done) {
+	it('should keep @fontface rule, because it is used', function (done) {
         var fontFaceRemainCssFilePath = path.join(__dirname, 'static-server', 'fontface--remain.css'),
 			fontFaceRemainCss = read(fontFaceRemainCssFilePath).toString();
 		
@@ -104,7 +104,7 @@ describe('penthouse functionality tests', function () {
         });
     });
 	
-	it('@fontface rule should be removed, because it is not used', function (done) {
+	it('should remove @fontface rule, because it is not used', function (done) {
         var fontFaceRemoveCssFilePath = path.join(__dirname, 'static-server', 'fontface--remove.css'),
 			fontFaceRemoveCss = read(fontFaceRemoveCssFilePath).toString();
 		
@@ -124,7 +124,7 @@ describe('penthouse functionality tests', function () {
         });
     });
 	
-	it(':before, :after rules should remain (because el above fold)', function (done) {
+	it('should keep :before, :after rules (because el above fold)', function (done) {
         var pusedoRemainCssFilePath = path.join(__dirname, 'static-server', 'psuedo--remain.css'),
 			pusedoRemainCss = read(pusedoRemainCssFilePath).toString();
 		
@@ -144,7 +144,7 @@ describe('penthouse functionality tests', function () {
         });
     });
 	
-	it(':hover, :active, etc rules should always be removed', function (done) {
+	it('should remove :hover, :active, etc rules - always', function (done) {
         var pusedoRemoveCssFilePath = path.join(__dirname, 'static-server', 'psuedo--remove.css');
 		
         penthouse({
