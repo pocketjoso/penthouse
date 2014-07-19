@@ -2,7 +2,7 @@
 // https://github.com/pocketjoso/penthouse
 // Author: Jonas Ohlsson
 // License: MIT
-// Version 0.2.2
+// Version 0.2.3
 
 // USAGE (when run standalone):
 // phantomjs penthouse.js [URL to page] [CSS file] > [critical path CSS file]
@@ -202,81 +202,104 @@ var getCriticalPathCss = function (options) {
             phantom.exit();
         } else {
             page.evaluate(function (css) {
-                var h = window.innerHeight,
-                    split = css.split(/[{}]/g),
-					renderWaitTime = 100, //ms
-                    finished = false,
-                    currIndex = 0,
+    				//==variables==
+    				var h = window.innerHeight,
+    			      renderWaitTime = 100, //ms
+                finished = false,
+                currIndex = 0,
+                forceRemoveNestedRule = false;
+
+            //split CSS so we can value the (selector) rules separately.
+            //first, handle special case @import (keep in css, but don't include in split, as has different syntax)
+            var splitCSS = css.replace(/@import[^;]*;/g,"");
+            split = splitCSS.split(/[{}]/g);
+
+				    //==methods==
+            var getNewValidCssSelector = function (i) {
+                var newSel = split[i];
+      					/* HANDLE @-rules */
+
+      					/*Case 1: @-rule with CSS properties inside [TO KEEP]
+      						(@font-face rules get checked at end to see whether they are used or not (too early here)
+      						(@page - don't have a proper check in place currently to handle css selector part - just keep in order not to break)
+      					*/
+                if (/@(font-face|page)/gi.test(newSel)) {
+						      //skip over this rule
+                  currIndex = css.indexOf("}", currIndex) + 1;
+                  return getNewValidCssSelector(i + 2);
+                }
+      					/*Case 2: @-rule with CSS properties inside [TO REMOVE]
+      						currently none..
+      					*/
+
+      					/*Case 3: @-rule with full CSS (rules) inside [TO KEEP]
+      						- just skip this particular line (i.e. keep), and continue checking the CSS inside as normal
+      					*/
+					      else if (/@(media|document|supports)/gi.test(newSel)) {
+                    return getNewValidCssSelector(i + 1);
+                }
+      					/*Case 4: @-rule with full CSS (rules) inside [TO REMOVE]
+      						- delete this rule and all its contents - doesn't belong in critical path CSS
+      					*/
+                else if (/@([a-z\-])*keyframe/gi.test(newSel)) {
+                    //force delete on child css rules
+                    forceRemoveNestedRule = true;
+                    return getNewValidCssSelector(i + 1);
+                }
+      					/*
+      						Resume normal execution after end of @-media rule with inside CSS rules (Case 3)
+      						Also identify abrupt file end.
+      					*/
+                else if (newSel.trim().length === 0) {
+		                //abrupt file end
+                    if (i + 1 >= split.length) {
+                        //end of file
+                        finished = true;
+                        return false;
+                    }
+                    //end of @-rule (Case 3)
                     forceRemoveNestedRule = false;
+                    return getNewValidCssSelector(i + 1);
+                }
+              return i;
+            };
 
-                var getNewValidCssSelector = function (i) {
-                    var newSel = split[i];
+    				var removeSelector = function(sel, selectorsKept){
+    					var selPos = css.indexOf(sel, currIndex),
+    						//check what comes next: { or ,
+    						nextComma = css.indexOf(',', selPos),
+    						nextOpenBracket = css.indexOf('{', selPos);
 
-                    if (newSel.indexOf("@font-face") > -1) {
-                        //just leave @font-face rules in. TODO: rm unused @fontface rules.
-                        currIndex = css.indexOf("}", currIndex) + 1;
-                        return getNewValidCssSelector(i + 2);
-                    }
-                    else if (newSel.indexOf("@media") > -1) { //media queries..
-                        //skip the media query line, which is not a css selector
-                        return getNewValidCssSelector(i + 1);
-                    }
-                    else if (/@([a-z\-])*keyframe/g.test(newSel)) {
-                        //remove @keyframe rules completely - don't belong in critical path css
-                        //do it via forcing delete on child css rules (inside f.e. @keyframe declaration)
-                        forceRemoveNestedRule = true;
-                        return getNewValidCssSelector(i + 1);
-                    }
-                    else if (newSel.trim().length === 0) {
-                        //end of nested rule (f.e. @media, @keyframe), or file..;
+    					if (selectorsKept > 0 || (nextComma > 0 && nextComma < nextOpenBracket)) {
+    						//we already kept selectors from this rule, so rule will stay
 
-                        if (i + 1 >= split.length) {
-                            //end of file
-                            finished = true;
-                            return false;
-                        }
-                        //end of nested selector, f.e. end of media query
-                        forceRemoveNestedRule = false;
-                        return getNewValidCssSelector(i + 1);
-                    }
-                    return i;
-                };
+    						//more selectors in selectorList, cut until (and including) next comma
+    						if (nextComma > 0 && nextComma < nextOpenBracket) {
+    							css = css.substring(0, selPos) + css.substring(nextComma + 1);
+    						}
+    						//final selector, cut until open bracket. Also remove previous comma, as the (new) last selector should not be followed by a comma.
+    						else {
+    							var prevComma = css.lastIndexOf(",", selPos);
+    							css = css.substring(0, prevComma) + css.substring(nextOpenBracket);
+    						}
+    					}
+    					else {
+    						//no part of selector (list) matched elements above fold on page - remove whole rule CSS rule
+    						var endRuleBracket = css.indexOf('}', nextOpenBracket);
 
-				var removeSelector = function(sel, selectorsKept){
-					var selPos = css.indexOf(sel, currIndex);
+    						css = css.substring(0, selPos) + css.substring(endRuleBracket + 1);
+    					}
+    				}
 
-					//check what comes next: { or ,
-					var nextComma = css.indexOf(',', selPos);
-					var nextOpenBracket = css.indexOf('{', selPos);
 
-					if (selectorsKept > 0 || (nextComma > 0 && nextComma < nextOpenBracket)) {
-						//we already kept selectors from this rule, so rule will stay
-
-						//more selectors in selectorList, cut until (and including) next comma
-						if (nextComma > 0 && nextComma < nextOpenBracket) {
-							css = css.substring(0, selPos) + css.substring(nextComma + 1);
-						}
-						//final selector, cut until open bracket. Also remove previous comma, as the (new) last selector should not be followed by a comma.
-						else {
-							var prevComma = css.lastIndexOf(",", selPos);
-							css = css.substring(0, prevComma) + css.substring(nextOpenBracket);
-						}
-					}
-					else {
-						//no part of selector (list) matched elements above fold on page - remove whole rule CSS rule
-						var endRuleBracket = css.indexOf('}', nextOpenBracket);
-
-						css = css.substring(0, selPos) + css.substring(endRuleBracket + 1);
-					}
-				}
-
+				//==MAIN function==
 				//give some time (renderWaitTime) for sites like facebook that build their page dynamically,
 				//otherwise we can miss some selectors (and therefor rules)
 				//--tradeoff here: if site is too slow with dynamic content,
 				//	it doesn't deserve to be in critical path.
 				setTimeout(function(){
 					for (var i = 0; i < split.length; i = i + 2) {
-						//step over non DOM CSS selectors (@font-face, @media..)
+						//step over non DOM CSS selectors (@-rules)
 						i = getNewValidCssSelector(i);
 
 						//reach end of CSS
