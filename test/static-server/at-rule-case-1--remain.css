@@ -7,3 +7,6 @@
 html {
 	font-family: "Lato web";
 }
+@page :first {
+	font-size: 120%;
+}
