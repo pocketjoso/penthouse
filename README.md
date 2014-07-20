@@ -92,6 +92,7 @@ Problems with special characters like &#8594; after converting? Make sure you us
 Please report your issue (check that it's not already there first though!), and I will try to fix it as soon as possible.
 
 ## Changelog
+2014-07-20    v0.2.4    Fix extra line break bug on Windows (@pocketjoso)  
 2014-07-19    v0.2.3    Improved @-rule handling (@pocketjoso)  
 2014-07-12    v0.2.2    Remove :hover, and invalid, selectors (@pocketjoso)  
 2014-06-20    v0.2.1    Handle previous content clearing styles (@pocketjoso)  
