@@ -78,7 +78,7 @@ http://jonassebastianohlsson.com/criticalpathcssgenerator/
 ## Problems with generated CSS
 
 ###Background images or Fonts missing
-Change any relative paths (f.e. `background-image: url("../images/x.gif");`) to absolute `background-image: url("http://mysite.com/images/x.gif");`, and then try again.
+Change any relative paths (f.e. `background-image: url("../images/x.gif");`) to absolute (starting with a `/`): `background-image: url("/images/x.gif");`, and then try again.
 
 ###Unstyled content showing
 The most common problem is with clearing floats. Instead of clearing elements appearing after floated elements (f.e. using `clear:both;`), clear the floats themselves by using the [clear-fix pattern](http://css-tricks.com/snippets/css/clear-fix/). Float clearing will now work also in the generated critical css.
@@ -92,7 +92,7 @@ Problems with special characters like &#8594; after converting? Make sure you us
 Please report your issue (check that it's not already there first though!), and I will try to fix it as soon as possible.
 
 ## Changelog
-2014-07-27    v0.2.5    Handle non nested @-rules (@pocketjoso)  
+2014-07-27    v0.2.5    Handle all non nested @-rules (@pocketjoso)  
 2014-07-20    v0.2.4    Fix extra line break bug on Windows (@pocketjoso)  
 2014-07-19    v0.2.3    Improved @-rule handling (@pocketjoso)  
 2014-07-12    v0.2.2    Remove :hover, and invalid, selectors (@pocketjoso)  
