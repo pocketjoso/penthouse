@@ -25,43 +25,7 @@ describe('penthouse functionality tests', function () {
         server.close();
     });
 	
-    it('should return a css file', function (done) {
-        penthouse({
-            url: 'http://localhost:' + port,
-            css: originalCssFilePath
-        }, function (err, result) {
-            if(err) { done(err); }
-            try {
-                css.parse(result);
-                done();
-            } catch (ex) {
-                done(ex);
-            }
-        });
-    });
-
-    it('should return a css file whose parsed AST is equal to the the original\'s AST when the viewport is large', function (done) {
-        var widthLargerThanTotalTestCSS = 1000,
-            heightLargerThanTotalTestCSS = 1000;
-        penthouse({
-            url: 'http://localhost:' + port,
-            css: originalCssFilePath,
-            width: widthLargerThanTotalTestCSS,
-            height: heightLargerThanTotalTestCSS
-        }, function (err, result) {
-            try {
-                var resultAst = css.parse(result);
-                var orgAst = css.parse(originalCss);
-                resultAst.should.eql(orgAst);
-                done();
-            } catch (ex) {
-                done(ex);
-            }
-
-        });
-    });
-
-    it('should return a subset of the original AST rules when the viewport is small', function (done) {
+	it('should return a subset of the original AST rules when the viewport is small', function (done) {
         var widthLargerThanTotalTestCSS = 1000,
             heightSmallerThanTotalTestCSS = 100;
         penthouse({
@@ -82,7 +46,6 @@ describe('penthouse functionality tests', function () {
 
         });
     });
-	
 	
 	it('should keep :before, :after rules (because el above fold)', function (done) {
         var pusedoRemainCssFilePath = path.join(__dirname, 'static-server', 'psuedo--remain.css'),
@@ -122,16 +85,23 @@ describe('penthouse functionality tests', function () {
         });
     });
 	
-	it('should remove empty rules', function (done) {
-        var emptyRemoveCssFilePath = path.join(__dirname, 'static-server', 'empty-rules--remove.css');
+	/*==@-rule handling==*/
+	
+	/* - Case 0 : Non nested @-rule [REMAIN]
+		(@charset, @import, @namespace)
+	*/
+	it('should keep complete case 0 @-rules (@import, @charset, @namespace)', function (done) {
+        var atRuleCase0RemainCssFilePath = path.join(__dirname, 'static-server', 'at-rule-case-0--remain.css'),
+			atRuleCase0RemainCss = read(atRuleCase0RemainCssFilePath).toString();
 		
         penthouse({
             url: 'http://localhost:' + port,
-            css: emptyRemoveCssFilePath
+            css: atRuleCase0RemainCssFilePath
         }, function (err, result) {
             try {
-				result = result.trim();
-				result.should.equal('');
+                var resultAst = css.parse(result);
+                var orgAst = css.parse(atRuleCase0RemainCss);
+				resultAst.should.eql(orgAst);
                 done();
             } catch (ex) {
                 done(ex);
@@ -139,8 +109,6 @@ describe('penthouse functionality tests', function () {
 
         });
     });
-	
-	/*==@-rule handling==*/
 	
 	/*	- Case 1: @-rule with CSS properties inside [REMAIN]
 		(NOTE: @font-face is removed later in code, unless it is used.
@@ -214,8 +182,45 @@ describe('penthouse functionality tests', function () {
         });
     });
 	
+	it('should keep self clearing rules when needed to stay outside the fold', function (done) {
+        var clearSelfRemainCssFilePath = path.join(__dirname, 'static-server', 'clearSelf--remain.css'),
+			clearSelfRemainCss = read(clearSelfRemainCssFilePath).toString();
+		
+        penthouse({
+            url: 'http://localhost:' + port + '/clearSelf.html',
+            css: clearSelfRemainCssFilePath
+        }, function (err, result) {
+            try {
+                var resultAst = css.parse(result);
+                var orgAst = css.parse(clearSelfRemainCss);
+				resultAst.should.eql(orgAst);
+                done();
+            } catch (ex) {
+                done(ex);
+            }
+
+        });
+    });
 	
-	/* non core (non breaking) functionality tests*/
+	/* non core (non breaking) functionality tests */
+	it('should remove empty rules', function (done) {
+        var emptyRemoveCssFilePath = path.join(__dirname, 'static-server', 'empty-rules--remove.css');
+		
+        penthouse({
+            url: 'http://localhost:' + port,
+            css: emptyRemoveCssFilePath
+        }, function (err, result) {
+            try {
+				result = result.trim();
+				result.should.equal('');
+                done();
+            } catch (ex) {
+                done(ex);
+            }
+
+        });
+    });
+	
 	it('should remove @fontface rule, because it is not used', function (done) {
         var fontFaceRemoveCssFilePath = path.join(__dirname, 'static-server', 'fontface--remove.css'),
 			fontFaceRemoveCss = read(fontFaceRemoveCssFilePath).toString();
@@ -236,26 +241,6 @@ describe('penthouse functionality tests', function () {
         });
     });
 	
-	
-	it('should keep self clearing rules when needed to stay outside the fold', function (done) {
-        var clearSelfRemainCssFilePath = path.join(__dirname, 'static-server', 'clearSelf--remain.css'),
-			clearSelfRemainCss = read(clearSelfRemainCssFilePath).toString();
-		
-        penthouse({
-            url: 'http://localhost:' + port + '/clearSelf.html',
-            css: clearSelfRemainCssFilePath
-        }, function (err, result) {
-            try {
-                var resultAst = css.parse(result);
-                var orgAst = css.parse(clearSelfRemainCss);
-				resultAst.should.eql(orgAst);
-                done();
-            } catch (ex) {
-                done(ex);
-            }
-
-        });
-    });
 });
 
 function startServer(done) {
