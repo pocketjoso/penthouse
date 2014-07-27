@@ -2,7 +2,7 @@
 // https://github.com/pocketjoso/penthouse
 // Author: Jonas Ohlsson
 // License: MIT
-// Version 0.2.4
+// Version 0.2.5
 
 // USAGE (when run standalone):
 // phantomjs penthouse.js [URL to page] [CSS file] > [critical path CSS file]
@@ -214,14 +214,16 @@ var getCriticalPathCss = function (options) {
                 forceRemoveNestedRule = false;
 
             //split CSS so we can value the (selector) rules separately.
-            //first, handle special case @import (keep in css, but don't include in split, as has different syntax)
-            var splitCSS = css.replace(/@import[^;]*;/g,"");
-            split = splitCSS.split(/[{}]/g);
+            //but first, handle stylesheet initial non nested @-rules.
+            //they don't come with any associated rules, and should all be kept,
+            //so just keep them in critical css, but don't include them in split
+            var splitCSS = css.replace(/@(import|charset|namespace)[^;]*;/g,"");
+            var split = splitCSS.split(/[{}]/g);
 
 				    //==methods==
             var getNewValidCssSelector = function (i) {
                 var newSel = split[i];
-      					/* HANDLE @-rules */
+      					/* HANDLE Nested @-rules */
 
       					/*Case 1: @-rule with CSS properties inside [REMAIN]
       						(@font-face rules get checked at end to see whether they are used or not (too early here)
