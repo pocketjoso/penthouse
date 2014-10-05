@@ -2,7 +2,7 @@
 // https://github.com/pocketjoso/penthouse
 // Author: Jonas Ohlsson
 // License: MIT
-// Version 0.2.0
+// Version 0.2.5
 
 // USAGE (when run standalone):
 // phantomjs penthouse.js [URL to page] [CSS file] > [critical path CSS file]
@@ -61,7 +61,7 @@ page.onCallback = function(data) {
 	var finalCss = data.replace(/[^{}]*\{\s*\}/gm, '').trim();
 	//we're done, log the result as the output from phantomjs execution of this script!
 	log(finalCss);
-	
+
 	phantom.exit();
 };
 
@@ -93,16 +93,16 @@ var preFormatCSS = function (css) {
 
     //we also need to replace eventual close curly bracket characters inside content: "" property declarations, replace them with their ASCI code equivalent
     //\7d = '\' + '}'.charCodeAt(0).toString(16);
-    
+
 	var m,
 		regexP = /(content\s*:\s*['"][^'"]*)}([^'"]*['"])/gm,
 		matchedData = [];
-	
+
 	//for each content: "" rule that contains at least one end bracket ('}')
 	while ((m = regexP.exec(css)) !== null) {
 		//we need to replace ALL end brackets in the rule
 		//we can't do it in here, because it will mess up ongoing exec, store data and do after
-		
+
 		//unshift - add to beginning of array - we need to remove rules in reverse order,
         //otherwise indeces will become incorrect.
 		matchedData.unshift({
@@ -111,12 +111,12 @@ var preFormatCSS = function (css) {
 			,replaceStr: m[0].replace(/\}/gm,"\\7d")
 		});
 	}
-	
+
 	for(var i=0; i<matchedData.length;i++){
 		var item = matchedData[0];
 		css = css.substring(0, item.start) + item.replaceStr + css.substring(item.end);
 	}
-	
+
     return css;
 };
 
@@ -178,6 +178,7 @@ var rmUnusedFontFace = function (css) {
     return css;
 };
 
+
 /*
  * Tests each selector in css file at specified resolution,
  * to see if any such elements appears above the fold on the page
@@ -210,7 +211,7 @@ var getCriticalPathCss = function (options) {
 
                 var getNewValidCssSelector = function (i) {
                     var newSel = split[i];
-					
+
                     if (newSel.indexOf("@font-face") > -1) {
                         //just leave @font-face rules in. TODO: rm unused @fontface rules.
                         currIndex = css.indexOf("}", currIndex) + 1;
@@ -240,7 +241,7 @@ var getCriticalPathCss = function (options) {
                     }
                     return i;
                 };
-				
+
 				//give some time (renderWaitTime) for sites like facebook that build their page dynamically,
 				//otherwise we can miss some selectors (and therefor rules)
 				//--tradeoff here: if site is too slow with dynamic content,
@@ -249,13 +250,13 @@ var getCriticalPathCss = function (options) {
 					for (var i = 0; i < split.length; i = i + 2) {
 						//step over non DOM CSS selectors (@font-face, @media..)
 						i = getNewValidCssSelector(i);
-						
+
 						//reach end of CSS
 						if (finished) {
 							//call final function to exit outside of phantom evaluate scope
 							window.callPhantom(css);
 						}
-						
+
 						var fullSel = split[i];
 						//fullSel can contain combined selectors
 						//,f.e.  body, html {}
@@ -278,7 +279,8 @@ var getCriticalPathCss = function (options) {
 
 								//these psuedo selectors depend on an element,
 								//so test element instead (would do the same for f.e. :focus, :active IF we wanted to keep them for critical path css, but we don't)
-								temp = temp.replace(/(:hover|:?:before|:?:after)*/g, '');
+                temp = temp.replace(/(:?:before|:?:after)*/g, '');
+
 
 								//if selector is purely psuedo (f.e. ::-moz-placeholder), just keep as is.
 								//we can't match it to anything on page, but it can impact above the fold styles
@@ -303,7 +305,7 @@ var getCriticalPathCss = function (options) {
 
 								//check if selector matched element(s) on page..
 								var aboveFold = false;
-								
+
 								for (var k = 0; k < el.length; k++) {
 									var testEl = el[k];
 									//temporarily force clear none in order to catch elements that clear previous content themselves and who w/o their styles could show up unstyled in above the fold content (if they rely on f.e. "clear:both;" to clear some main content)
@@ -366,13 +368,13 @@ var getCriticalPathCss = function (options) {
 							currIndex = css.indexOf("}", currIndex) + 1;
 						}
 					}
-										
+
 					//we're done - call final function to exit outside of phantom evaluate scope
 					window.callPhantom(css);
-					
+
 
 				},renderWaitTime);
-               
+
             }, options.css);
         }
     });

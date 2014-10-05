@@ -1,0 +1,15 @@
+@media(min-width:40em) {
+	body {
+		font-size: 120%;
+	}
+}
+@document url(http://www.w3.org/){
+	body { 
+		background: yellow; 
+	}
+}
+@supports( transform-origin: 5% 5% ){
+	body {
+		transform-origin: 5% 5%;
+	}
+}
