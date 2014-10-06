@@ -125,7 +125,7 @@ var main = function (options) {
 
 //final cleanup
 //remove all empty rules, and remove leading/trailing whitespace
-function cleanup (css) {
+function cleanup(css) {
 	return css.replace(/[^{}]*\{\s*\}/gm, '').trim();
 }
 
@@ -194,7 +194,7 @@ var getCriticalPathCss = function (options) {
 					//but first, handle stylesheet initial non nested @-rules.
 					//they don't come with any associated rules, and should all be kept,
 					//so just keep them in critical css, but don't include them in split
-					var splitCSS = css.replace(/@(import|charset|namespace)[^;]*;/g,"");
+					var splitCSS = css.replace(/@(import|charset|namespace)[^;]*;/g,'');
 					var split = splitCSS.split(/[{}]/g);
 
 					var getNewValidCssSelector = function (i) {
@@ -207,7 +207,7 @@ var getCriticalPathCss = function (options) {
 							*/
 							if (/@(font-face|page)/gi.test(newSel)) {
 								//skip over this rule
-								currIndex = css.indexOf("}", currIndex) + 1;
+								currIndex = css.indexOf('}', currIndex) + 1;
 								return getNewValidCssSelector(i + 2);
 							}
 							/*Case 2: @-rule with CSS properties inside [REMOVE]
@@ -262,17 +262,16 @@ var getCriticalPathCss = function (options) {
 						}
 						//final selector, cut until open bracket. Also remove previous comma, as the (new) last selector should not be followed by a comma.
 						else {
-							var prevComma = css.lastIndexOf(",", selPos);
+							var prevComma = css.lastIndexOf(',', selPos);
 							css = css.substring(0, prevComma) + css.substring(nextOpenBracket);
 						}
-					}
-					else {
+					} else {
 						//no part of selector (list) matched elements above fold on page - remove whole rule CSS rule
 						var endRuleBracket = css.indexOf('}', nextOpenBracket);
 
 						css = css.substring(0, selPos) + css.substring(endRuleBracket + 1);
 					}
-				}
+				};
 
 
 				var processCssRules = function () {
@@ -293,6 +292,7 @@ var getCriticalPathCss = function (options) {
 						var selSplit = fullSel.split(',');
 						//keep track - if we remove all selectors, we also want to remove the whole rule.
 						var selectorsKept = 0;
+						var aboveFold;
 
 						for (var j = 0; j < selSplit.length; j++) {
 							var sel = selSplit[j];
@@ -301,7 +301,7 @@ var getCriticalPathCss = function (options) {
 							//In these cases we test a slightly modified selectors instead, temp.
 							var temp = sel;
 
-							if (sel.indexOf(":") > -1) {
+							if (sel.indexOf(':') > -1) {
 								//handle special case selectors, the ones that contain a semi colon (:)
 								//many of these selectors can't be matched to anything on page via JS,
 								//but that still might affect the above the fold styling
@@ -325,8 +325,9 @@ var getCriticalPathCss = function (options) {
 
 							if (!forceRemoveNestedRule) {
 								//now we have a selector to test, first grab any matching elements
+								var el;
 								try {
-									var el = document.querySelectorAll(temp);
+									el = document.querySelectorAll(temp);
 								} catch (e) {
 									//not a valid selector, remove it.
 									removeSelector(sel, 0);
@@ -334,12 +335,12 @@ var getCriticalPathCss = function (options) {
 								}
 
 								//check if selector matched element(s) on page..
-								var aboveFold = false;
+								aboveFold = false;
 
 								for (var k = 0; k < el.length; k++) {
 									var testEl = el[k];
-									//temporarily force clear none in order to catch elements that clear previous content themselves and who w/o their styles could show up unstyled in above the fold content (if they rely on f.e. "clear:both;" to clear some main content)
-									testEl.style.clear = "none";
+									//temporarily force clear none in order to catch elements that clear previous content themselves and who w/o their styles could show up unstyled in above the fold content (if they rely on f.e. 'clear:both;' to clear some main content)
+									testEl.style.clear = 'none';
 
 									//check to see if any matched element is above the fold on current page
 									//(in current viewport size)
@@ -352,12 +353,12 @@ var getCriticalPathCss = function (options) {
 										currIndex = css.indexOf(sel, currIndex);
 
 										//set clear style back to what it was
-										testEl.style.clear = "";
+										testEl.style.clear = '';
 										//break, because matching 1 element is enough
 										break;
 									}
 									//set clear style back to what it was
-									testEl.style.clear = "";
+									testEl.style.clear = '';
 								}
 							} else {
 								aboveFold = false;
@@ -365,7 +366,6 @@ var getCriticalPathCss = function (options) {
 
 							//if selector didn't match any elements above fold - delete selector from CSS
 							if (aboveFold === false) {
-								var selPos = css.indexOf(sel, currIndex);
 								//update currIndex so we only search from this point from here on.
 								currIndex = css.indexOf(sel, currIndex);
 								//remove seletor (also removes rule, if nnothing left)
@@ -374,7 +374,7 @@ var getCriticalPathCss = function (options) {
 						}
 						//if rule stayed, move our cursor forward for matching new selectors
 						if (selectorsKept > 0) {
-							currIndex = css.indexOf("}", currIndex) + 1;
+							currIndex = css.indexOf('}', currIndex) + 1;
 						}
 					}
 
@@ -391,7 +391,7 @@ var getCriticalPathCss = function (options) {
 			}, options.css);
 		}
 	});
-};
+}
 
 /* === preFormatCSS ===
  * preformats the css to ensure we won't run into and problems in our parsing
@@ -474,9 +474,9 @@ if (typeof embeddedParser !== 'undefined') { //standalone
 	parse = parseOptions;
 	usage = usageString;
 } else {  // we are running in node
-    parser = require('../options-parser');
-    parse = parser.parse;
-    usage = parser.usageString;
+	parser = require('../options-parser');
+	parse = parser.parse;
+	usage = parser.usage;
 }
 
 try {
