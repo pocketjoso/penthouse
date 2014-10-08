@@ -2,11 +2,12 @@
 > Critical Path CSS Generator
 
 [![NPM version](https://badge.fury.io/js/penthouse.svg)](http://badge.fury.io/js/penthouse)
+[![Build Status](https://travis-ci.org/pocketjoso/penthouse.svg?branch=master)](https://travis-ci.org/pocketjoso/penthouse)
 
 ## About
 Penthouse is a tool generating critical path css for your web pages and web apps in order to speed up page rendering. Supply the tool with your site's full CSS, and the page you want to create the critical CSS for, and it will return all the CSS needed to render the above the fold content of the page. Read more about critical path css [here](http://www.phpied.com/css-and-the-critical-path/).
 
-The process is automatic and the generated css should be ready for production as is. If you run in to problems however, check out the [Problems section](https://github.com/pocketjoso/penthouse/#problems-with-generated-css) further down on this page.
+The process is automatic and the generated css is production ready as is. If you run into problems however, check out the [Problems section](https://github.com/pocketjoso/penthouse/#problems-with-generated-css) further down on this page.
 
 ## Usage
 
@@ -77,8 +78,8 @@ http://jonassebastianohlsson.com/criticalpathcssgenerator/
 
 ## Problems with generated CSS
 
-###Background images missing
-Change any relative paths (f.e. `background-image: url("../images/x.gif");`) to absolute `background-image: url("http://mysite.com/images/x.gif");`, and then try again.
+###Background images or Fonts missing
+Change any relative paths (f.e. `background-image: url("../images/x.gif");`) to absolute (starting with a `/`): `background-image: url("/images/x.gif");`, and then try again.
 
 ###Unstyled content showing
 The most common problem is with clearing floats. Instead of clearing elements appearing after floated elements (f.e. using `clear:both;`), clear the floats themselves by using the [clear-fix pattern](http://css-tricks.com/snippets/css/clear-fix/). Float clearing will now work also in the generated critical css.
@@ -92,6 +93,10 @@ Problems with special characters like &#8594; after converting? Make sure you us
 Please report your issue (check that it's not already there first though!), and I will try to fix it as soon as possible.
 
 ## Changelog
+2014-07-27    v0.2.5    Handle all non nested @-rules (@pocketjoso)  
+2014-07-20    v0.2.4    Fix extra line break bug on Windows (@pocketjoso)  
+2014-07-19    v0.2.3    Improved @-rule handling (@pocketjoso)  
+2014-07-12    v0.2.2    Remove :hover, and invalid, selectors (@pocketjoso)  
 2014-06-20    v0.2.1    Handle previous content clearing styles (@pocketjoso)  
 2014-06-10    v0.2.0    Node module and standalone executable (@fatso83)  
 2014-06-05    v0.1.0    Published on NPM (@pocketjoso)  

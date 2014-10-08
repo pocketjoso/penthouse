@@ -2,7 +2,7 @@
 // https://github.com/pocketjoso/penthouse
 // Author: Jonas Ohlsson
 // License: MIT
-// Version 0.2.0
+// Version 0.2.5
 
 // USAGE (when run standalone):
 // phantomjs penthouse.js [URL to page] [CSS file] > [critical path CSS file]
@@ -48,7 +48,6 @@ var main = function () {
         phantom.exit(1);
     }
 
-
     // start the critical path CSS generation
     getCriticalPathCss(options);
 };
@@ -59,9 +58,11 @@ page.onCallback = function(data) {
 	//final cleanup
 	//remove all empty rules, and remove leading/trailing whitespace
 	var finalCss = data.replace(/[^{}]*\{\s*\}/gm, '').trim();
+	//remove unused @fontface rules
+	finalCss = rmUnusedFontFace(finalCss);
 	//we're done, log the result as the output from phantomjs execution of this script!
 	log(finalCss);
-	
+
 	phantom.exit();
 };
 
@@ -91,18 +92,22 @@ var preFormatCSS = function (css) {
     //remove comments from css (including multi-line coments)
     css = css.replace(/\/\*[\s\S]*?\*\//g, '');
 
+  	//replace Windows \r\n with \n,
+  	//otherwise final output might get converted into /r/r/n
+  	css = css.replace(/\r\n/gm, '\n');
+
     //we also need to replace eventual close curly bracket characters inside content: "" property declarations, replace them with their ASCI code equivalent
-    //\7d = '\' + '}'.charCodeAt(0).toString(16);
-    
+    //\7d (same as:   '\' + '}'.charCodeAt(0).toString(16)  );
+
 	var m,
 		regexP = /(content\s*:\s*['"][^'"]*)}([^'"]*['"])/gm,
 		matchedData = [];
-	
+
 	//for each content: "" rule that contains at least one end bracket ('}')
 	while ((m = regexP.exec(css)) !== null) {
 		//we need to replace ALL end brackets in the rule
 		//we can't do it in here, because it will mess up ongoing exec, store data and do after
-		
+
 		//unshift - add to beginning of array - we need to remove rules in reverse order,
         //otherwise indeces will become incorrect.
 		matchedData.unshift({
@@ -111,12 +116,12 @@ var preFormatCSS = function (css) {
 			,replaceStr: m[0].replace(/\}/gm,"\\7d")
 		});
 	}
-	
+
 	for(var i=0; i<matchedData.length;i++){
 		var item = matchedData[0];
 		css = css.substring(0, item.start) + item.replaceStr + css.substring(item.end);
 	}
-	
+
     return css;
 };
 
@@ -201,61 +206,114 @@ var getCriticalPathCss = function (options) {
             phantom.exit();
         } else {
             page.evaluate(function (css) {
-                var h = window.innerHeight,
-                    split = css.split(/[{}]/g),
-					renderWaitTime = 100, //ms
-                    finished = false,
-                    currIndex = 0,
+    				//==variables==
+    				var h = window.innerHeight,
+    			      renderWaitTime = 100, //ms
+                finished = false,
+                currIndex = 0,
+                forceRemoveNestedRule = false;
+
+            //split CSS so we can value the (selector) rules separately.
+            //but first, handle stylesheet initial non nested @-rules.
+            //they don't come with any associated rules, and should all be kept,
+            //so just keep them in critical css, but don't include them in split
+            var splitCSS = css.replace(/@(import|charset|namespace)[^;]*;/g,"");
+            var split = splitCSS.split(/[{}]/g);
+
+				    //==methods==
+            var getNewValidCssSelector = function (i) {
+                var newSel = split[i];
+      					/* HANDLE Nested @-rules */
+
+      					/*Case 1: @-rule with CSS properties inside [REMAIN]
+      						(@font-face rules get checked at end to see whether they are used or not (too early here)
+      						(@page - don't have a proper check in place currently to handle css selector part - just keep in order not to break)
+      					*/
+                if (/@(font-face|page)/gi.test(newSel)) {
+						      //skip over this rule
+                  currIndex = css.indexOf("}", currIndex) + 1;
+                  return getNewValidCssSelector(i + 2);
+                }
+      					/*Case 2: @-rule with CSS properties inside [TO REMOVE]
+      						currently none..
+      					*/
+
+      					/*Case 3: @-rule with full CSS (rules) inside [REMAIN]
+      						- just skip this particular line (i.e. keep), and continue checking the CSS inside as normal
+      					*/
+					      else if (/@(media|document|supports)/gi.test(newSel)) {
+                    return getNewValidCssSelector(i + 1);
+                }
+      					/*Case 4: @-rule with full CSS (rules) inside [TO REMOVE]
+      						- delete this rule and all its contents - doesn't belong in critical path CSS
+      					*/
+                else if (/@([a-z\-])*keyframe/gi.test(newSel)) {
+                    //force delete on child css rules
+                    forceRemoveNestedRule = true;
+                    return getNewValidCssSelector(i + 1);
+                }
+      					/*
+      						Resume normal execution after end of @-media rule with inside CSS rules (Case 3)
+      						Also identify abrupt file end.
+      					*/
+                else if (newSel.trim().length === 0) {
+		                //abrupt file end
+                    if (i + 1 >= split.length) {
+                        //end of file
+                        finished = true;
+                        return false;
+                    }
+                    //end of @-rule (Case 3)
                     forceRemoveNestedRule = false;
+                    return getNewValidCssSelector(i + 1);
+                }
+              return i;
+            };
 
-                var getNewValidCssSelector = function (i) {
-                    var newSel = split[i];
-					
-                    if (newSel.indexOf("@font-face") > -1) {
-                        //just leave @font-face rules in. TODO: rm unused @fontface rules.
-                        currIndex = css.indexOf("}", currIndex) + 1;
-                        return getNewValidCssSelector(i + 2);
-                    }
-                    else if (newSel.indexOf("@media") > -1) { //media queries..
-                        //skip the media query line, which is not a css selector
-                        return getNewValidCssSelector(i + 1);
-                    }
-                    else if (/@([a-z\-])*keyframe/g.test(newSel)) {
-                        //remove @keyframe rules completely - don't belong in critical path css
-                        //do it via forcing delete on child css rules (inside f.e. @keyframe declaration)
-                        forceRemoveNestedRule = true;
-                        return getNewValidCssSelector(i + 1);
-                    }
-                    else if (newSel.trim().length === 0) {
-                        //end of nested rule (f.e. @media, @keyframe), or file..;
+    				var removeSelector = function(sel, selectorsKept){
+    					var selPos = css.indexOf(sel, currIndex),
+    						//check what comes next: { or ,
+    						nextComma = css.indexOf(',', selPos),
+    						nextOpenBracket = css.indexOf('{', selPos);
 
-                        if (i + 1 >= split.length) {
-                            //end of file
-                            finished = true;
-                            return false;
-                        }
-                        //end of nested selector, f.e. end of media query
-                        forceRemoveNestedRule = false;
-                        return getNewValidCssSelector(i + 1);
-                    }
-                    return i;
-                };
-				
+    					if (selectorsKept > 0 || (nextComma > 0 && nextComma < nextOpenBracket)) {
+    						//we already kept selectors from this rule, so rule will stay
+
+    						//more selectors in selectorList, cut until (and including) next comma
+    						if (nextComma > 0 && nextComma < nextOpenBracket) {
+    							css = css.substring(0, selPos) + css.substring(nextComma + 1);
+    						}
+    						//final selector, cut until open bracket. Also remove previous comma, as the (new) last selector should not be followed by a comma.
+    						else {
+    							var prevComma = css.lastIndexOf(",", selPos);
+    							css = css.substring(0, prevComma) + css.substring(nextOpenBracket);
+    						}
+    					}
+    					else {
+    						//no part of selector (list) matched elements above fold on page - remove whole rule CSS rule
+    						var endRuleBracket = css.indexOf('}', nextOpenBracket);
+
+    						css = css.substring(0, selPos) + css.substring(endRuleBracket + 1);
+    					}
+    				}
+
+
+				//==MAIN function==
 				//give some time (renderWaitTime) for sites like facebook that build their page dynamically,
 				//otherwise we can miss some selectors (and therefor rules)
 				//--tradeoff here: if site is too slow with dynamic content,
 				//	it doesn't deserve to be in critical path.
 				setTimeout(function(){
 					for (var i = 0; i < split.length; i = i + 2) {
-						//step over non DOM CSS selectors (@font-face, @media..)
+						//step over non DOM CSS selectors (@-rules)
 						i = getNewValidCssSelector(i);
-						
+
 						//reach end of CSS
 						if (finished) {
 							//call final function to exit outside of phantom evaluate scope
 							window.callPhantom(css);
 						}
-						
+
 						var fullSel = split[i];
 						//fullSel can contain combined selectors
 						//,f.e.  body, html {}
@@ -277,8 +335,8 @@ var getCriticalPathCss = function (options) {
 								//but that still might affect the above the fold styling
 
 								//these psuedo selectors depend on an element,
-								//so test element instead (would do the same for f.e. :focus, :active IF we wanted to keep them for critical path css, but we don't)
-								temp = temp.replace(/(:hover|:?:before|:?:after)*/g, '');
+								//so test element instead (would do the same for f.e. :hover, :focus, :active IF we wanted to keep them for critical path css, but we don't)
+								temp = temp.replace(/(:?:before|:?:after)*/g, '');
 
 								//if selector is purely psuedo (f.e. ::-moz-placeholder), just keep as is.
 								//we can't match it to anything on page, but it can impact above the fold styles
@@ -298,12 +356,14 @@ var getCriticalPathCss = function (options) {
 								try {
 									var el = document.querySelectorAll(temp);
 								} catch (e) {
+									//not a valid selector, remove it.
+									removeSelector(sel, 0);
 									continue;
 								}
 
 								//check if selector matched element(s) on page..
 								var aboveFold = false;
-								
+
 								for (var k = 0; k < el.length; k++) {
 									var testEl = el[k];
 									//temporarily force clear none in order to catch elements that clear previous content themselves and who w/o their styles could show up unstyled in above the fold content (if they rely on f.e. "clear:both;" to clear some main content)
@@ -332,33 +392,10 @@ var getCriticalPathCss = function (options) {
 
 							//if selector didn't match any elements above fold - delete selector from CSS
 							if (aboveFold === false) {
-								var selPos = css.indexOf(sel, currIndex);
 								//update currIndex so we only search from this point from here on.
 								currIndex = css.indexOf(sel, currIndex);
-
-								//check what comes next: { or ,
-								var nextComma = css.indexOf(',', selPos);
-								var nextOpenBracket = css.indexOf('{', selPos);
-
-								if (selectorsKept > 0 || (nextComma > 0 && nextComma < nextOpenBracket)) {
-									//we already kept selectors from this rule, so rule will stay
-
-									//more selectors in selectorList, cut until (and including) next comma
-									if (nextComma > 0 && nextComma < nextOpenBracket) {
-										css = css.substring(0, selPos) + css.substring(nextComma + 1);
-									}
-									//final selector, cut until open bracket. Also remove previous comma, as the (new) last selector should not be followed by a comma.
-									else {
-										var prevComma = css.lastIndexOf(",", selPos);
-										css = css.substring(0, prevComma) + css.substring(nextOpenBracket);
-									}
-								}
-								else {
-									//no part of selector (list) matched elements above fold on page - remove whole rule CSS rule
-									var endRuleBracket = css.indexOf('}', nextOpenBracket);
-
-									css = css.substring(0, selPos) + css.substring(endRuleBracket + 1);
-								}
+								//remove seletor (also removes rule, if nnothing left)
+								removeSelector(sel, selectorsKept);
 							}
 						}
 						//if rule stayed, move our cursor forward for matching new selectors
@@ -366,13 +403,13 @@ var getCriticalPathCss = function (options) {
 							currIndex = css.indexOf("}", currIndex) + 1;
 						}
 					}
-										
+
 					//we're done - call final function to exit outside of phantom evaluate scope
 					window.callPhantom(css);
-					
+
 
 				},renderWaitTime);
-               
+
             }, options.css);
         }
     });
