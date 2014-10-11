@@ -15,7 +15,7 @@
   "bugs": {
     "url": "https://github.com/pocketjoso/penthouse/issues"
   },
-  "license": [
+  "licenses": [
     {
       "type": "MIT",
       "url": "github.com/pocketjoso/penthouse/blob/master/LICENSE-MIT"

@@ -26,7 +26,7 @@ function concat() {
         fullName, 
         info.homepage, 
         'Author: ' + info.author.name,
-        'License: ' + info.license.type,
+        'License: ' + info.licenses[0].type,
         'Version: ' + info.version
     ].join('\n') 
     + cat('lib/phantomjs/usage.txt') + '*/\n\n\n';
