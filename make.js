@@ -31,7 +31,9 @@ function concat() {
     ].join('\n') 
     + cat('lib/phantomjs/usage.txt') + '*/\n\n\n';
 
-    var js = banner + header + cat('lib/options-parser.js');
+    var js = banner + header
+			+ cat('lib/options-parser.js')
+			+ cat('lib/phantomjs/unused-fontface-remover.js');
 
     js += cat('lib/phantomjs/core.js');
     js += footer;

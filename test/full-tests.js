@@ -253,22 +253,20 @@ describe('penthouse functionality tests', function() {
 
 	it('should remove @fontface rule, because it is not used', function(done) {
 		var fontFaceRemoveCssFilePath = path.join(__dirname, 'static-server', 'fontface--remove.css'),
-			fontFaceRemoveCss = read(fontFaceRemoveCssFilePath).toString();
+			fontFaceRemoveCss = read(fontFaceRemoveCssFilePath).toString(),
+			ffRemover = require('../lib/phantomjs/unused-fontface-remover.js');
 
-		penthouse({
-			urls: [page1],
-			cssFile: fontFaceRemoveCssFilePath
-		}, function(err, result) {
-			try {
-				var resultAst = css.parse(result);
-				var orgAst = css.parse(fontFaceRemoveCss);
-				resultAst.stylesheet.rules.should.have.length.lessThan(orgAst.stylesheet.rules.length);
-				done();
-			} catch (ex) {
-				done(ex);
-			}
+		var result = ffRemover(fontFaceRemoveCss);
 
-		});
+		try {
+			var resultAst = css.parse(result);
+			var orgAst = css.parse(fontFaceRemoveCss);
+			resultAst.stylesheet.rules.should.have.length.lessThan(orgAst.stylesheet.rules.length);
+			done();
+		} catch (ex) {
+			done(ex);
+		}
+
 	});
 
 });
