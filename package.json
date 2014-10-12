@@ -15,12 +15,10 @@
   "bugs": {
     "url": "https://github.com/pocketjoso/penthouse/issues"
   },
-  "licenses": [
-    {
-      "type": "MIT",
-      "url": "github.com/pocketjoso/penthouse/blob/master/LICENSE-MIT"
-    }
-  ],
+  "license": {
+    "type": "MIT",
+    "url": "github.com/pocketjoso/penthouse/blob/master/LICENSE-MIT"
+  },
   "main": "./lib/index.js",
   "bin": {
     "penthouse": "./bin/penthouse"
