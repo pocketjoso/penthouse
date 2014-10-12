@@ -30,35 +30,23 @@ describe('basic tests of penthouse functionality', function () {
 
 	after(function (done) {
 		server.close();
-
-		glob("critical-*.css", function(err, files) {
-			if(err) { throw err; }
-
-			async.map(files, fs.unlink, function(err, results){
-				if(err) throw err;
-				done();
-			});
-		});
+		done();
 	});
 
-	it('should return the contents of a css file', function (done) {
-		penthouse({
-			url    :  page1,
-			css : page1cssPath
-		}, function (err, result) {
-			if (err) {
-				done(err);
-				return;
-			}
-			try {
-				css.parse(result);
-				done();
-			} catch (ex) {
-				done(ex);
-			}
-		});
+	it('should return css', function (done) {
+    penthouse({
+      url: page1,
+      css: page1cssPath
+  	}, function (err, result) {
+      if(err) { done(err); }
+      try {
+        css.parse(result);
+        done();
+      } catch (ex) {
+        done(ex);
+      }
+    });
 	});
-
 
 	it('should return a css file whose parsed AST is equal to the the original\'s AST when the viewport is large', function (done) {
 		var widthLargerThanTotalTestCSS = 1000,

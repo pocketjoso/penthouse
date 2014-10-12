@@ -28,11 +28,12 @@ describe('penthouse functionality tests', function() {
 		});
 	});
 
-	after(function() {
+	after(function(done) {
 		server.close();
+		done();
 	});
 
-	it('should return the contents of a css file', function(done) {
+	it('should save css to a file', function(done) {
 		penthouse({
 			url: page1,
 			css: page1cssPath
@@ -89,7 +90,6 @@ describe('penthouse functionality tests', function() {
 			} catch (ex) {
 				done(ex);
 			}
-
 		});
 	});
 
@@ -102,8 +102,7 @@ describe('penthouse functionality tests', function() {
 			css: pusedoRemoveCssFilePath
 		}, function(err, result) {
 			try {
-				result = result.trim();
-				result.should.equal('');
+				result.trim().should.equal('');
 				done();
 			} catch (ex) {
 				done(ex);
@@ -202,8 +201,7 @@ describe('penthouse functionality tests', function() {
 			css: atRuleCase4RemoveCssFilePath
 		}, function(err, result) {
 			try {
-				result = result.trim();
-				result.should.equal('');
+				result.trim().should.equal('');
 				done();
 			} catch (ex) {
 				done(ex);
@@ -242,8 +240,7 @@ describe('penthouse functionality tests', function() {
 			css: emptyRemoveCssFilePath
 		}, function(err, result) {
 			try {
-				result = result.trim();
-				result.should.equal('');
+				result.trim().should.equal('');
 				done();
 			} catch (ex) {
 				done(ex);
@@ -254,22 +251,50 @@ describe('penthouse functionality tests', function() {
 
 	it('should remove @fontface rule, because it is not used', function(done) {
 		var fontFaceRemoveCssFilePath = path.join(__dirname, 'static-server', 'fontface--remove.css'),
-			fontFaceRemoveCss = read(fontFaceRemoveCssFilePath).toString();
+			fontFaceRemoveCss = read(fontFaceRemoveCssFilePath).toString(),
+			ffRemover = require('../lib/phantomjs/unused-fontface-remover.js');
 
-		penthouse({
-			url: page1,
-			css: fontFaceRemoveCssFilePath
-		}, function(err, result) {
-			try {
-				var resultAst = css.parse(result);
-				var orgAst = css.parse(fontFaceRemoveCss);
-				resultAst.stylesheet.rules.should.have.length.lessThan(orgAst.stylesheet.rules.length);
-				done();
-			} catch (ex) {
-				done(ex);
-			}
+		var result = ffRemover(fontFaceRemoveCss);
 
-		});
+		try {
+			var resultAst = css.parse(result);
+			var orgAst = css.parse(fontFaceRemoveCss);
+			resultAst.stylesheet.rules.should.have.length.lessThan(orgAst.stylesheet.rules.length);
+			done();
+		} catch (ex) {
+			done(ex);
+		}
+
+	});
+
+	it('should preformat css (rm comments etc)', function(done) {
+		var cssPreformatCssFilePath = path.join(__dirname, 'static-server', 'preformat-css--remove.css'),
+			cssPreformatCss = read(cssPreformatCssFilePath).toString(),
+			cssPreformatter = require('../lib/phantomjs/css-preformatter.js');
+
+		var result = cssPreformatter(cssPreformatCss);
+
+		try {
+			var resultAst = css.parse(result);
+			var orgAst = css.parse(cssPreformatCss);
+			//with comments stripped out, fewer 'rules' (comments included) in AST
+			resultAst.stylesheet.rules.should.have.length.lessThan(orgAst.stylesheet.rules.length);
+			//but except for comments, (also inside declarations), everything should be the same
+			var orgAstRulesExceptComments = orgAst.stylesheet.rules.filter(function(rule){
+				if(typeof rule.declarations !== "undefined") {
+					rule.declarations = rule.declarations.filter(function(declaration){
+						return declaration.type !== "comment"
+					})
+				}
+				return rule.type !== "comment";
+			})
+			orgAstRulesExceptComments.should.eql(resultAst.stylesheet.rules);
+
+			done();
+		} catch (ex) {
+			done(ex);
+		}
+
 	});
 
 });

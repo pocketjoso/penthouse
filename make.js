@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-/* 
- * Cross platform Node based build script 
+/*
+ * Cross platform Node based build script
  * https://github.com/arturadib/shelljs
  *
  * Heavily based on Tero Piirainen's makefile for riotjs-admin
@@ -12,8 +12,9 @@ require('shelljs/make');
 var fullName = "Penthouse CSS Critical Path Generator"
 var read = require('fs').readFileSync;
 var info = JSON.parse(read('package.json'));
-var mochaCmd = 'node ./node_modules/mocha/bin/mocha'; 
-var header = '(function() { "use strict"; ';
+var mochaCmd = 'node ./node_modules/mocha/bin/mocha';
+var header = '(function() { "use strict"; \n';
+var standaloneToken = 'var standaloneMode = true;\n';
 var footer = '})();';
 
 //die on errors
@@ -23,18 +24,23 @@ config.fatal = true;
 function concat() {
 
     var banner = '/*\n' + [
-        fullName, 
-        info.homepage, 
+        fullName,
+        info.homepage,
         'Author: ' + info.author.name,
-        'License: ' + info.licenses[0].type,
+        'License: ' + info.license.type,
         'Version: ' + info.version
-    ].join('\n') 
+    ].join('\n')
     + cat('lib/phantomjs/usage.txt') + '*/\n\n\n';
 
-    var js = banner + header + cat('lib/options-parser.js');
+		var js = banner
+		+ header
+		+ cat('lib/options-parser.js')
+		+ cat('lib/phantomjs/unused-fontface-remover.js')
+		+ cat('lib/phantomjs/css-preformatter.js')
+		+ standaloneToken
 
-    js += cat('lib/phantomjs/core.js');
-    js += footer;
+		+ cat('lib/phantomjs/core.js')
+		+ footer;
 
     // dist
     js.to('penthouse.js');

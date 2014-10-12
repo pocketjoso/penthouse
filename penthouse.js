@@ -3,7 +3,7 @@ Penthouse CSS Critical Path Generator
 https://github.com/pocketjoso/penthouse
 Author: Jonas Ohlsson
 License: MIT
-Version: 0.2.5
+Version: 0.2.51
 
 USAGE:
     phantomjs penthouse.js [CSS file] [URL to page] > [critical path CSS file]
@@ -20,14 +20,13 @@ DEPENDENCIES
 */
 
 
-(function() { "use strict"; /*
+(function() { "use strict"; 
+/*
 parser for the script - can be used both for the standalone node binary and the phantomjs script
 */
-/*jshint unused:false*/ // we detect embeddedParser when concatenating the script
+/*jshint unused:false*/
 
 var usageString = '[--width <width>] [--height <height>] <url> <main.css>';
-
-var embeddedParser = true; // we test for this symbol in the concatenated script
 
 function buildError(msg, problemToken, args) {
     var error = new Error( msg  + problemToken);
@@ -68,8 +67,9 @@ function parseOptions(argsOriginal) {
     parsed.css = args[1];
 
     if( ! parsed.url.match(/https?:\/\//) ) {
-        buildError('Invalid url: ', parsed.url, args);
+      buildError('Invalid url: ', parsed.url, args);
     }
+
     return parsed;
 }
 
@@ -79,7 +79,123 @@ if(typeof module !== 'undefined') {
         usage : usageString
     };
 }
+/*
+module for removing unused fontface rules - can be used both for the standalone node binary and the phantomjs script
+*/
+/*jshint unused:false*/
+
+function unusedFontfaceRemover (css){
+  var toDeleteSections = [];
+
+  //extract full @font-face rules
+  var fontFaceRegex = /(@font-face[ \s\S]*?\{([\s\S]*?)\})/gm,
+    ff;
+
+  while ((ff = fontFaceRegex.exec(css)) !== null) {
+
+    //grab the font name declared in the @font-face rule
+    //(can still be in quotes, f.e. 'Lato Web'
+    var t = /font-family[^:]*?:[ ]*([^;]*)/.exec(ff[1]);
+    if (typeof t[1] === 'undefined')
+      continue; //no font-family in @fontface rule!
+
+    //rm quotes
+    var fontName = t[1].replace(/['"]/gm, '');
+
+    // does this fontname appear as a font-family or font (shorthand) value?
+    var fontNameRegex = new RegExp('([^{}]*?){[^}]*?font(-family)?[^:]*?:[^;]*' + fontName + '[^,;]*[,;]', 'gmi');
+
+
+    var fontFound = false,
+      m;
+
+    while ((m = fontNameRegex.exec(css)) !== null) {
+      if (m[1].indexOf('@font-face') === -1) {
+        //log('FOUND, keep rule');
+        fontFound = true;
+        break;
+      }
+    }
+    if (!fontFound) {
+      //NOT FOUND, rm!
+
+      //can't remove rule here as it will screw up ongoing while (exec ...) loop.
+      //instead: save indices and delete AFTER for loop
+      var closeRuleIndex = css.indexOf('}', ff.index);
+      //unshift - add to beginning of array - we need to remove rules in reverse order,
+      //otherwise indeces will become incorrect again.
+      toDeleteSections.unshift({
+        start: ff.index,
+        end: closeRuleIndex + 1
+      });
+    }
+  }
+  //now delete the @fontface rules we registed as having no matches in the css
+  for (var i = 0; i < toDeleteSections.length; i++) {
+    var start = toDeleteSections[i].start,
+      end = toDeleteSections[i].end;
+    css = css.substring(0, start) + css.substring(end);
+  }
+
+  return css;
+};
+
+
+
+if(typeof module !== 'undefined') {
+    module.exports = unusedFontfaceRemover;
+}
+/*jshint unused:false*/
+
+/* === preFormatCSS ===
+ * preformats the css to ensure we won't run into and problems in our parsing
+ * removes comments (actually would be anough to remove/replace {} chars.. TODO
+ * replaces } char inside content: '' properties.
+ */
+
+function cssPreformatter (css){
+  //remove comments from css (including multi-line coments)
+  css = css.replace(/\/\*[\s\S]*?\*\//g, '');
+
+  //replace Windows \r\n with \n,
+  //otherwise final output might get converted into /r/r/n
+  css = css.replace(/\r\n/gm, '\n');
+
+  //we also need to replace eventual close curly bracket characters inside content: '' property declarations, replace them with their ASCI code equivalent
+  //\7d (same as:   '\' + '}'.charCodeAt(0).toString(16)  );
+
+  var m,
+    regexP = /(content\s*:\s*['"][^'"]*)}([^'"]*['"])/gm,
+    matchedData = [];
+
+  //for each content: '' rule that contains at least one end bracket ('}')
+  while ((m = regexP.exec(css)) !== null) {
+    //we need to replace ALL end brackets in the rule
+    //we can't do it in here, because it will mess up ongoing exec, store data and do after
+
+    //unshift - add to beginning of array - we need to remove rules in reverse order,
+    //otherwise indeces will become incorrect.
+    matchedData.unshift({
+      start: m.index,
+      end: m.index + m[0].length,
+      replaceStr: m[0].replace(/\}/gm, '\\7d')
+    });
+  }
+
+  for (var i = 0; i < matchedData.length; i++) {
+    var item = matchedData[0];
+    css = css.substring(0, item.start) + item.replaceStr + css.substring(item.end);
+  }
+
+  return css;
+};
+
+if(typeof module !== 'undefined') {
+    module.exports = cssPreformatter;
+}
+var standaloneMode = true;
 'use strict';
+var standaloneMode = standaloneMode || false;
 
 var page = require('webpage').create(),
 	fs = require('fs'),
@@ -109,75 +225,73 @@ page.onError = function(msg, trace) {
 	//do nothing
 };
 
-var main = function (options) {
-	debug('main(): ', JSON.stringify(options));
-<<<<<<< HEAD
-  try {
-      var f = fs.open(options.css, "r");
-      options.css = preFormatCSS(f.read());
-  } catch (e) {
-      errorlog(e);
-      phantom.exit(1);
-  }
+var main = function(options) {
+  debug('main(): ', JSON.stringify(options));
+//final cleanup
+//remove all empty rules, and remove leading/trailing whitespace
+	try {
+		var f = fs.open(options.css, 'r');
+
+		//preformat css
+		var cssPreformat;
+		if (standaloneMode) {
+			cssPreformat = cssPreformatter;
+		} else {
+			cssPreformat = require('./css-preformatter.js');
+		}
+		options.css = cssPreformat(f.read());
+	} catch (e) {
+		errorlog(e);
+		phantom.exit(1);
+	}
 
   // start the critical path CSS generation
   getCriticalPathCss(options);
-=======
-    try {
-        var f = fs.open(options.cssFile, "r");
-        options.css = preFormatCSS(f.read());
-    } catch (e) {
-        errorlog(e);
-        phantom.exit(1);
-    }
-
-    // start the critical path CSS generation
-    getCriticalPathCss(options);
 };
 
-/* Final function
- * Get's called from getCriticalPathCss when CSS extraction from page is done*/
-page.onCallback = function(data) {
-	//final cleanup
-	//remove all empty rules, and remove leading/trailing whitespace
-	var finalCss = data.replace(/[^{}]*\{\s*\}/gm, '').trim();
-	//we're done, log the result as the output from phantomjs execution of this script!
-	log(finalCss);
-
-	phantom.exit();
->>>>>>> 38b97af... cleanup whitespace
-};
-
-//final cleanup
-//remove all empty rules, and remove leading/trailing whitespace
 function cleanup(css) {
+	//remove all animation rules, as keyframes have already been removed
+	css = css.replace(/(-webkit-|-moz-|-ms-|-o-)?animation[ ]?:[^;{}]*;/gm, '');
+	//remove all empty rules, and remove leading/trailing whitespace
 	return css.replace(/[^{}]*\{\s*\}/gm, '').trim();
 }
 
-// usually it is a bad idea to overwrite globals
-// in this case it is ok, since we are queing the async
-// operations that are modifying this field, so the
-// function calls will never overlap in time
-page.onCallback = function (css) {
-	debug('phantom.onCallback');
+/* Final function
+ * Get's called from getCriticalPathCss when CSS extraction from page is done*/
+page.onCallback = function(css) {
+  debug('phantom.onCallback');
 
-	try {
-		if(css) {
-		// we are done - write the resulting css to the file stream
-			var finalCss = cleanup(css);
-			finalCss = rmUnusedFontFace(finalCss);
-			console.log(finalCss);
-      phantom.exit();
-		} else {
-			// No css. This is not an error on our part
-			errorlog("No CSS. This means passed in CSS matched nothing on the URL: " + options.url);
-      phantom.exit();
-		}
-	} catch (ex) {
-		debug('phantom.onCallback -> error', ex);
-    errorlog('error: ' + ex)
-    phantom.exit();
-	}
+  try {
+    if (css) {
+      // we are done - clean up the final css
+      var finalCss = cleanup(css);
+
+      // remove unused @fontface rules
+			var ffRemover;
+      if (standaloneMode) {
+        ffRemover = unusedFontfaceRemover;
+      } else {
+        ffRemover = require('./unused-fontface-remover.js');
+      }
+      finalCss = ffRemover(finalCss);
+
+      // return the critical css!
+      stdout.write(finalCss);
+      phantom.exit(0);
+    } else {
+      // No css. This is not an error on our part
+      // but still safer to warn the end user, in case they made a mistake
+      errorlog('Note: Generated critical css was empty for URL: ' + options.url);
+      // for consisteny, still generate output (will be empty)
+      stdout.write(css);
+      phantom.exit(0);
+    }
+
+  } catch (ex) {
+    debug('phantom.onCallback -> error', ex);
+    errorlog('error: ' + ex);
+    phantom.exit(1);
+  }
 };
 
 /*
@@ -418,87 +532,14 @@ function getCriticalPathCss(options) {
 	});
 }
 
-/* === preFormatCSS ===
- * preformats the css to ensure we won't run into and problems in our parsing
- * removes comments (actually would be anough to remove/replace {} chars.. TODO
- * replaces } char inside content: "" properties.
- */
-var preFormatCSS = function (css) {
-    //remove comments from css (including multi-line coments)
-    css = css.replace(/\/\*[\s\S]*?\*\//g, '');
-
-    //we also need to replace eventual close curly bracket characters inside content: "" property declarations, replace them with their ASCI code equivalent
-    //\7d = '\' + '}'.charCodeAt(0).toString(16);
-    css = css.replace(/(content(.|[\r\n])*['"].*)}((.|[\r\n])*;)/gm, "$1" + "\\7d" + "$3");
-
-    return css;
-};
-
-/*=== rmUnusedFontFace ===
- * find @fontface declarations where font isn't used in
- * above the fold css, and removes those.
- ---------------------------------------------------------*/
-var rmUnusedFontFace = function (css) {
-    var toDeleteSections = [];
-
-    //extract full @font-face rules
-    var fontFaceRegex = /(@font-face[ \s\S]*?\{([\s\S]*?)\})/gm,
-        ff;
-
-    while ((ff = fontFaceRegex.exec(css)) !== null) {
-
-        //grab the font name declared in the @font-face rule
-        //(can still be in quotes, f.e. "Lato Web"
-        var t = /font-family[^:]*?:[ ]*([^;]*)/.exec(ff[1]);
-        if (typeof t[1] === "undefined")
-            continue; //no font-family in @fontface rule!
-
-        //rm quotes
-        var fontName = t[1].replace(/['"]/gm, "");
-
-        // does this fontname appear as a font-family or font (shorthand) value?
-        var fontNameRegex = new RegExp("([^{}]*?)\{[^}]*?font(-family)?[^:]*?:[^;]*" + fontName + "[^,;]*[,;]", "gmi");
-
-
-        var fontFound = false,
-            m;
-
-        while ((m = fontNameRegex.exec(css)) !== null) {
-            if (m[1].indexOf("@font-face") === -1) {
-                //log("FOUND, keep rule");
-                fontFound = true;
-                break;
-            }
-        }
-        if (!fontFound) {
-            //"NOT FOUND, rm!
-
-            //can't remove rule here as it will screw up ongoing while (exec ...) loop.
-            //instead: save indices and delete AFTER for loop
-            var closeRuleIndex = css.indexOf("}", ff.index);
-            //unshift - add to beginning of array - we need to remove rules in reverse order,
-            //otherwise indeces will become incorrect again.
-            toDeleteSections.unshift({start: ff.index, end: closeRuleIndex + 1});
-        }
-    }
-    //now delete the @fontface rules we registed as having no matches in the css
-    for (var i = 0; i < toDeleteSections.length; i++) {
-        var start = toDeleteSections[i].start,
-            end = toDeleteSections[i].end;
-        css = css.substring(0, start) + css.substring(end, css.length);
-    }
-
-    return css;
-};
-
 var parser, parse, usage, options;
 
 // test to see if we are running as a standalone script
 // or as part of the node module
-if (typeof embeddedParser !== 'undefined') { //standalone
+if (standaloneMode) {
 	parse = parseOptions;
 	usage = usageString;
-} else { // we are running in node
+} else {
 	parser = require('../options-parser');
 	parse = parser.parse;
 	usage = parser.usage;

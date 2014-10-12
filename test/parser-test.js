@@ -13,6 +13,15 @@ describe('options parsing ', function() {
     });
 
     it('should handle argument strings with one option', function() {
+        var options = parse(['--width', '100', 'http://hw.no', 'main.css']);
+        expect(options).to.eql({
+            url : 'http://hw.no',
+            css : 'main.css',
+            width : 100
+        });
+    });
+
+    it('should handle argument strings with two options', function() {
         var options = parse([
             '--height', '200', '--width', '100',
             'http://hw.no', 'main.css'
@@ -37,5 +46,4 @@ describe('options parsing ', function() {
             parse(['--width', 'http://hw.no', 'main.css']);
         }).to.throw(/Parsing error/);
     });
-
 });
