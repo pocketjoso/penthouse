@@ -14,6 +14,7 @@ var read = require('fs').readFileSync;
 var info = JSON.parse(read('package.json'));
 var mochaCmd = 'node ./node_modules/mocha/bin/mocha'; 
 var header = '(function() { "use strict"; \n';
+var standaloneToken = 'var standaloneMode = true;\n';
 var footer = '})();';
 
 //die on errors
@@ -31,12 +32,14 @@ function concat() {
     ].join('\n') 
     + cat('lib/phantomjs/usage.txt') + '*/\n\n\n';
 
-    var js = banner + header
-			+ cat('lib/options-parser.js')
-			+ cat('lib/phantomjs/unused-fontface-remover.js');
+		var js = banner
+		+ header
+		+ cat('lib/options-parser.js')
+		+ cat('lib/phantomjs/unused-fontface-remover.js')
+		+ standaloneToken
 
-    js += cat('lib/phantomjs/core.js');
-    js += footer;
+		+ cat('lib/phantomjs/core.js')
+		+ footer;
 
     // dist
     js.to('penthouse.js');

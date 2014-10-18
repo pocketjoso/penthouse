@@ -21,14 +21,12 @@ DEPENDENCIES
 
 
 (function() { "use strict"; 
-/* 
+/*
 parser for the script - can be used both for the standalone node binary and the phantomjs script
 */
-/*jshint unused:false*/ // we detect embeddedParser when concatenating the script
+/*jshint unused:false*/
 
 var usageString = '[--width <width>] [--height <height>]  <main.css> <url> [<url> [...]]';
-
-var embeddedParser = true; // we test for this symbol in the concatenated script
 
 function buildError(msg, problemToken, args) {
     var error = new Error( msg  + problemToken);
@@ -40,7 +38,7 @@ function buildError(msg, problemToken, args) {
 // Parses the arguments passed in
 // @returns { width, height, url, cssFile }
 // throws an error on wrong options or parsing error
-function parseOptions(argsOriginal) {   
+function parseOptions(argsOriginal) {
     var args = argsOriginal.slice(0),
     validOptions = ['--width', '--height'],
     parsed = {},
@@ -60,7 +58,7 @@ function parseOptions(argsOriginal) {
         val = args[1];
 
         parsed[option] = parseInt(val, 10);
-        if(isNaN(parsed[option])) buildError('Parsing error when parsing ', val, args); 
+        if(isNaN(parsed[option])) buildError('Parsing error when parsing ', val, args);
 
         // remove the two parsed arguments from the list
         args = args.slice(2);
@@ -70,8 +68,8 @@ function parseOptions(argsOriginal) {
     parsed.urls = args.slice(1);
 
     parsed.urls.forEach(function(url) {
-        if( ! url.match(/https?:\/\//) ) { 
-            buildError('Invalid url: ', parsed.url, args); 
+        if( ! url.match(/https?:\/\//) ) {
+            buildError('Invalid url: ', parsed.url, args);
         }
     });
     return parsed;
@@ -82,13 +80,11 @@ if(typeof module !== 'undefined') {
         parse : parseOptions,
         usage : usageString
     };
-} 
+}
 /*
 module for removing unused fontface rules - can be used both for the standalone node binary and the phantomjs script
 */
-/*jshint unused:false*/ // we detect embeddedUnusedFontfaceRemover when concatenating the script
-
-var embeddedUnusedFontfaceRemover = true; // we test for this symbol in the concatenated script
+/*jshint unused:false*/
 
 function unusedFontfaceRemover (css){
   var toDeleteSections = [];
@@ -151,7 +147,9 @@ function unusedFontfaceRemover (css){
 if(typeof module !== 'undefined') {
     module.exports = unusedFontfaceRemover;
 }
+var standaloneMode = true;
 'use strict';
+var standaloneMode = standaloneMode || false;
 
 var page = require('webpage').create(),
 	fs = require('fs'),
@@ -307,10 +305,10 @@ function getCssAndWriteToFile(fp, options, callback) {
 
 				// test to see if we are running as a standalone script
 				// or as part of the node module
-				if (typeof embeddedUnusedFontfaceRemover === 'undefined') { //we are running in node
-					var ffRemover = require('./unused-fontface-remover.js');
-				} else { //standalone
+				if (standaloneMode) {
 					var ffRemover = unusedFontfaceRemover;
+				} else {
+					var ffRemover = require('./unused-fontface-remover.js');
 				}
 
 				finalCss = ffRemover(finalCss);
@@ -619,10 +617,10 @@ var parser, parse, usage, options;
 
 // test to see if we are running as a standalone script
 // or as part of the node module
-if (typeof embeddedParser !== 'undefined') { //standalone
+if (standaloneMode) {
 	parse = parseOptions;
 	usage = usageString;
-} else { // we are running in node
+} else {
 	parser = require('../options-parser');
 	parse = parser.parse;
 	usage = parser.usage;
