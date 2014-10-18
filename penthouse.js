@@ -21,14 +21,12 @@ DEPENDENCIES
 
 
 (function() { "use strict"; 
-/* 
+/*
 parser for the script - can be used both for the standalone node binary and the phantomjs script
 */
-/*jshint unused:false*/ // we detect embeddedParser when concatenating the script
+/*jshint unused:false*/
 
 var usageString = '[--width <width>] [--height <height>]  <main.css> <url> [<url> [...]]';
-
-var embeddedParser = true; // we test for this symbol in the concatenated script
 
 function buildError(msg, problemToken, args) {
     var error = new Error( msg  + problemToken);
@@ -40,7 +38,7 @@ function buildError(msg, problemToken, args) {
 // Parses the arguments passed in
 // @returns { width, height, url, cssFile }
 // throws an error on wrong options or parsing error
-function parseOptions(argsOriginal) {   
+function parseOptions(argsOriginal) {
     var args = argsOriginal.slice(0),
     validOptions = ['--width', '--height'],
     parsed = {},
@@ -60,7 +58,7 @@ function parseOptions(argsOriginal) {
         val = args[1];
 
         parsed[option] = parseInt(val, 10);
-        if(isNaN(parsed[option])) buildError('Parsing error when parsing ', val, args); 
+        if(isNaN(parsed[option])) buildError('Parsing error when parsing ', val, args);
 
         // remove the two parsed arguments from the list
         args = args.slice(2);
@@ -70,8 +68,8 @@ function parseOptions(argsOriginal) {
     parsed.urls = args.slice(1);
 
     parsed.urls.forEach(function(url) {
-        if( ! url.match(/https?:\/\//) ) { 
-            buildError('Invalid url: ', parsed.url, args); 
+        if( ! url.match(/https?:\/\//) ) {
+            buildError('Invalid url: ', parsed.url, args);
         }
     });
     return parsed;
@@ -82,8 +80,76 @@ if(typeof module !== 'undefined') {
         parse : parseOptions,
         usage : usageString
     };
-} 
+}
+/*
+module for removing unused fontface rules - can be used both for the standalone node binary and the phantomjs script
+*/
+/*jshint unused:false*/
+
+function unusedFontfaceRemover (css){
+  var toDeleteSections = [];
+
+  //extract full @font-face rules
+  var fontFaceRegex = /(@font-face[ \s\S]*?\{([\s\S]*?)\})/gm,
+    ff;
+
+  while ((ff = fontFaceRegex.exec(css)) !== null) {
+
+    //grab the font name declared in the @font-face rule
+    //(can still be in quotes, f.e. 'Lato Web'
+    var t = /font-family[^:]*?:[ ]*([^;]*)/.exec(ff[1]);
+    if (typeof t[1] === 'undefined')
+      continue; //no font-family in @fontface rule!
+
+    //rm quotes
+    var fontName = t[1].replace(/['"]/gm, '');
+
+    // does this fontname appear as a font-family or font (shorthand) value?
+    var fontNameRegex = new RegExp('([^{}]*?){[^}]*?font(-family)?[^:]*?:[^;]*' + fontName + '[^,;]*[,;]', 'gmi');
+
+
+    var fontFound = false,
+      m;
+
+    while ((m = fontNameRegex.exec(css)) !== null) {
+      if (m[1].indexOf('@font-face') === -1) {
+        //log('FOUND, keep rule');
+        fontFound = true;
+        break;
+      }
+    }
+    if (!fontFound) {
+      //NOT FOUND, rm!
+
+      //can't remove rule here as it will screw up ongoing while (exec ...) loop.
+      //instead: save indices and delete AFTER for loop
+      var closeRuleIndex = css.indexOf('}', ff.index);
+      //unshift - add to beginning of array - we need to remove rules in reverse order,
+      //otherwise indeces will become incorrect again.
+      toDeleteSections.unshift({
+        start: ff.index,
+        end: closeRuleIndex + 1
+      });
+    }
+  }
+  //now delete the @fontface rules we registed as having no matches in the css
+  for (var i = 0; i < toDeleteSections.length; i++) {
+    var start = toDeleteSections[i].start,
+      end = toDeleteSections[i].end;
+    css = css.substring(0, start) + css.substring(end);
+  }
+
+  return css;
+};
+
+
+
+if(typeof module !== 'undefined') {
+    module.exports = unusedFontfaceRemover;
+}
+var standaloneMode = true;
 'use strict';
+var standaloneMode = standaloneMode || false;
 
 var page = require('webpage').create(),
 	fs = require('fs'),
@@ -236,7 +302,17 @@ function getCssAndWriteToFile(fp, options, callback) {
 				// we are done - clean up the final css
 				var finalCss = cleanup(css);
 				// remove unused @fontface rules
-				finalCss = rmUnusedFontFace(finalCss);
+
+				// test to see if we are running as a standalone script
+				// or as part of the node module
+				if (standaloneMode) {
+					var ffRemover = unusedFontfaceRemover;
+				} else {
+					var ffRemover = require('./unused-fontface-remover.js');
+				}
+
+				finalCss = ffRemover(finalCss);
+
 				// write the resulting css to the file stream
 				fp.write(finalCss);
 			} else {
@@ -293,66 +369,6 @@ function preFormatCSS(css) {
 	for (var i = 0; i < matchedData.length; i++) {
 		var item = matchedData[0];
 		css = css.substring(0, item.start) + item.replaceStr + css.substring(item.end);
-	}
-
-	return css;
-}
-
-/*=== rmUnusedFontFace ===
-* find @fontface declarations where font isn't used in
-* above the fold css, and removes those.
----------------------------------------------------------*/
-function rmUnusedFontFace(css) {
-	var toDeleteSections = [];
-
-	//extract full @font-face rules
-	var fontFaceRegex = /(@font-face[ \s\S]*?\{([\s\S]*?)\})/gm,
-		ff;
-
-	while ((ff = fontFaceRegex.exec(css)) !== null) {
-
-		//grab the font name declared in the @font-face rule
-		//(can still be in quotes, f.e. 'Lato Web'
-		var t = /font-family[^:]*?:[ ]*([^;]*)/.exec(ff[1]);
-		if (typeof t[1] === 'undefined')
-			continue; //no font-family in @fontface rule!
-
-		//rm quotes
-		var fontName = t[1].replace(/['"]/gm, '');
-
-		// does this fontname appear as a font-family or font (shorthand) value?
-		var fontNameRegex = new RegExp('([^{}]*?){[^}]*?font(-family)?[^:]*?:[^;]*' + fontName + '[^,;]*[,;]', 'gmi');
-
-
-		var fontFound = false,
-			m;
-
-		while ((m = fontNameRegex.exec(css)) !== null) {
-			if (m[1].indexOf('@font-face') === -1) {
-				//log('FOUND, keep rule');
-				fontFound = true;
-				break;
-			}
-		}
-		if (!fontFound) {
-			//NOT FOUND, rm!
-
-			//can't remove rule here as it will screw up ongoing while (exec ...) loop.
-			//instead: save indices and delete AFTER for loop
-			var closeRuleIndex = css.indexOf('}', ff.index);
-			//unshift - add to beginning of array - we need to remove rules in reverse order,
-			//otherwise indeces will become incorrect again.
-			toDeleteSections.unshift({
-				start: ff.index,
-				end: closeRuleIndex + 1
-			});
-		}
-	}
-	//now delete the @fontface rules we registed as having no matches in the css
-	for (var i = 0; i < toDeleteSections.length; i++) {
-		var start = toDeleteSections[i].start,
-			end = toDeleteSections[i].end;
-		css = css.substring(0, start) + css.substring(end);
 	}
 
 	return css;
@@ -601,10 +617,10 @@ var parser, parse, usage, options;
 
 // test to see if we are running as a standalone script
 // or as part of the node module
-if (typeof embeddedParser !== 'undefined') { //standalone
+if (standaloneMode) {
 	parse = parseOptions;
 	usage = usageString;
-} else { // we are running in node
+} else {
 	parser = require('../options-parser');
 	parse = parser.parse;
 	usage = parser.usage;
