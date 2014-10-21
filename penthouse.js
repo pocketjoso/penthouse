@@ -202,36 +202,27 @@ var main = function(options) {
 		return clone;
 	}
 
-	// support the standard old operation of logging to the console
-	if (options.urls.length === 1) {
-		debug('Creating single job');
+	options.urls.forEach(function(url, index) {
+		debug('Creating job ', index);
+
 		jobs.push(function(done) {
-			debug('Starting single job');
-			getCssAndWriteToFile(stdout, createOptionsObject(0), done);
-		});
-	} else {
-		options.urls.forEach(function(url, index) {
-			debug('Creating job ', index);
+			debug('Starting job ', index);
 
-			jobs.push(function(done) {
-				debug('Starting job ', index);
+			var fp = fs.open('critical-' + (index + 1) + '.css', 'w');
 
-				var fp = fs.open('critical-' + (index + 1) + '.css', 'w');
+			getCssAndWriteToFile(fp, createOptionsObject(index), function(err) {
+				fp.close();
 
-				getCssAndWriteToFile(fp, createOptionsObject(index), function(err) {
-					fp.close();
+				if (err) {
+					debug('Job', index, 'FAILED');
+					done(err);
+					return;
+				}
 
-					if (err) {
-						debug('Job', index, 'FAILED');
-						done(err);
-						return;
-					}
-
-					done();
-				});
+				done();
 			});
 		});
-	}
+	});
 
 	queueAsync(jobs, function(err) {
 		if (err) {
