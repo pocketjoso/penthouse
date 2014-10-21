@@ -28,8 +28,17 @@ describe('penthouse functionality tests', function() {
 		});
 	});
 
-	after(function() {
+	after(function(done) {
 		server.close();
+
+		glob("critical-*.css", function(err, files) {
+			if(err) { throw err; }
+
+			async.map(files, fs.unlink, function(err, results){
+				if(err) throw err;
+				done();
+			});
+		});
 	});
 
 	it('should return the contents of a css file', function(done) {
