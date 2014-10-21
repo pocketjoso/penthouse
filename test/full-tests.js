@@ -269,6 +269,24 @@ describe('penthouse functionality tests', function() {
 
 	});
 
+	it('should preformat css (rm comments etc)', function(done) {
+		var cssPreformatCssFilePath = path.join(__dirname, 'static-server', 'preformat-css--remove.css'),
+			cssPreformatCss = read(cssPreformatCssFilePath).toString(),
+			cssPreformatter = require('../lib/phantomjs/css-preformatter.js');
+
+		var result = cssPreformatter(cssPreformatCss);
+
+		try {
+			var resultAst = css.parse(result);
+			var orgAst = css.parse(cssPreformatCss);
+			resultAst.stylesheet.rules.should.have.length.lessThan(orgAst.stylesheet.rules.length);
+			done();
+		} catch (ex) {
+			done(ex);
+		}
+
+	});
+
 });
 
 function startServer(done) {
