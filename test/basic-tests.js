@@ -41,7 +41,7 @@ describe('basic tests of penthouse functionality', function () {
 		});
 	});
 
-	it('should return the contents of a css file', function (done) {
+	it('should save css to a file', function (done) {
 		penthouse({
 			urls    : [ page1],
 			cssFile : page1cssPath
@@ -51,7 +51,7 @@ describe('basic tests of penthouse functionality', function () {
 				return;
 			}
 			try {
-				css.parse(result);
+				css.parse(read('critical-1.css', 'utf8'));
 				done();
 			} catch (ex) {
 				done(ex);
@@ -74,7 +74,7 @@ describe('basic tests of penthouse functionality', function () {
 				return;
 			}
 			try {
-				var resultAst = css.parse(result);
+				var resultAst = css.parse(read('critical-1.css', 'utf8'));
 				var orgAst = css.parse(originalCss);
 				resultAst.should.eql(orgAst);
 				done();
@@ -96,7 +96,7 @@ describe('basic tests of penthouse functionality', function () {
 		}, function (err, result) {
 			if (err) { done(err); }
 			try {
-				var resultAst = css.parse(result);
+				var resultAst = css.parse(read('critical-1.css', 'utf8'));
 				var orgAst = css.parse(originalCss);
 				resultAst.stylesheet.rules.should.have.length.lessThan(orgAst.stylesheet.rules.length);
 				// not be empty
