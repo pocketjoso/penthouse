@@ -3,7 +3,7 @@ Penthouse CSS Critical Path Generator
 https://github.com/pocketjoso/penthouse
 Author: Jonas Ohlsson
 License: MIT
-Version: 0.2.5
+Version: 0.2.51
 
 USAGE:
     phantomjs penthouse.js [CSS file] [URL to page] > [critical path CSS file]
@@ -320,9 +320,10 @@ function queueAsync(functions, callback) {
 	iter();
 }
 
-//final cleanup
-//remove all empty rules, and remove leading/trailing whitespace
 function cleanup(css) {
+	//remove all animation rules, as keyframes have already been removed
+	var css = css.replace(/(-webkit-|-moz-|-ms-|-o-)?animation[ ]?:[^;{}]*;/gm, '');
+	//remove all empty rules, and remove leading/trailing whitespace
 	return css.replace(/[^{}]*\{\s*\}/gm, '').trim();
 }
 
