@@ -293,15 +293,27 @@ var getCriticalPathCss = function (options) {
 						css = css.substring(0, selPos) + css.substring(endRuleBracket + 1);
 					}
 				}
-				
+
 				//==MAIN function==
 				//split CSS so we can value the (selector) rules separately.
-				
+
 				//but first, handle stylesheet initial non nested @-rules.
 				//they don't come with any associated rules, and should all be kept,
 				//so just keep them in critical css, but don't include them in split
 				var splitCSS = css.replace(/@(import|charset|namespace)[^;]*;/g,"");
-				split = splitCSS.split(/[{}]/g);
+
+        //need to have the index of each split point, so can't use native split
+        var splitsWithIndexes=function(splits){
+          var ret=[];
+          var index=0;
+          for(var i=0;i<splits.length;i++){
+            ret.push([index,splits[i]]);
+            index+=splits[i].length + 1; //length of '}' - good enough
+          }
+          return ret;
+        }
+        var split = splitCSS.split(/[{}]/g);
+        var splitWithIndex = splitsWithIndexes(split);
 				//give some time (renderWaitTime) for sites like facebook that build their page dynamically,
 				//otherwise we can miss some selectors (and therefor rules)
 				//--tradeoff here: if site is too slow with dynamic content,
@@ -344,7 +356,7 @@ var getCriticalPathCss = function (options) {
 								//if selector is purely psuedo (f.e. ::-moz-placeholder), just keep as is.
 								//we can't match it to anything on page, but it can impact above the fold styles
 								if (temp.replace(/:[:]?([a-zA-Z0-9\-\_])*/g, '').trim().length === 0) {
-									currIndex = css.indexOf(sel, currIndex) + sel.length;
+                  currIndex = splitWithIndex[i][0] + sel.length;
 									continue;
 								}
 
@@ -380,7 +392,7 @@ var getCriticalPathCss = function (options) {
 										selectorsKept++;
 
 										//update currIndex so we only search from this point from here on.
-										currIndex = css.indexOf(sel, currIndex);
+                    currIndex = splitWithIndex[i][0];
 
 										//set clear style back to what it was
 										testEl.style.clear = "";
@@ -396,7 +408,7 @@ var getCriticalPathCss = function (options) {
 							//if selector didn't match any elements above fold - delete selector from CSS
 							if (aboveFold === false) {
 								//update currIndex so we only search from this point from here on.
-								currIndex = css.indexOf(sel, currIndex);
+                currIndex = splitWithIndex[i][0];
 								//remove seletor (also removes rule, if nnothing left)
 								removeSelector(sel, selectorsKept);
 							}
