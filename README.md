@@ -93,7 +93,7 @@ Problems with special characters like &#8594; after converting? Make sure you us
 Please report your issue (check that it's not already there first though!), and I will try to fix it as soon as possible.
 
 ## Changelog
-2015-01-17    v0.2.6    Fix bug from 2.52, improved tests (@pocketjoso)  
+2015-01-17    v0.2.53    Fix bug from 2.52, improved tests (@pocketjoso)  
 2015-01-11    v0.2.52   Fix minor removal bug with minified css (@pocketjoso)  
 2014-10-24    v0.2.51   Remove animation declarations (@pocketjoso)  
 2014-07-27    v0.2.5    Handle all non nested @-rules (@pocketjoso)  
