@@ -27,12 +27,12 @@ Install [PhantomJS](https://github.com/ariya/phantomjs) first, and make sure it 
 #### Usage
 
 	phantomjs penthouse.js [URL to page] [CSS file] > [critical path CSS file]
-	
+
 	//for example
 	phantomjs penthouse.js http://mySite.com/page1 allStyles.css > page1-critical-styles.css
 	phantomjs penthouse.js http://mySite.com/page2 allStyles.css > page2-critical-styles.css
 
-##### HTTPS	
+##### HTTPS
 
 To run on HTTPS pages two extra flags must be passed in, directly after phantomjs in the call:
 
@@ -69,7 +69,7 @@ Require as normal and execute with a callback
     }, function(err, criticalCss) {
         console.log(criticalCss);
     });
-	
+
 The Penthouse Node module can also be used as in Gulp.
 
 ## Online version
@@ -93,6 +93,7 @@ Problems with special characters like &#8594; after converting? Make sure you us
 Please report your issue (check that it's not already there first though!), and I will try to fix it as soon as possible.
 
 ## Changelog
+2015-01-17    v0.2.6    Fix bug from 2.52, improved tests (@pocketjoso)  
 2015-01-11    v0.2.52   Fix minor removal bug with minified css (@pocketjoso)  
 2014-10-24    v0.2.51   Remove animation declarations (@pocketjoso)  
 2014-07-27    v0.2.5    Handle all non nested @-rules (@pocketjoso)  

@@ -2,7 +2,7 @@
 // https://github.com/pocketjoso/penthouse
 // Author: Jonas Ohlsson
 // License: MIT
-// Version 0.2.5
+// Version 0.2.6
 
 // USAGE (when run standalone):
 // phantomjs penthouse.js [URL to page] [CSS file] > [critical path CSS file]
@@ -60,7 +60,7 @@ page.onCallback = function(data) {
 
   //remove all animation rules, as keyframes have already been removed
   var data = data.replace(/(-webkit-|-moz-|-ms-|-o-)?animation[ ]?:[^;{}]*;/gm, '');
-  //remove all empty rules, and remove leading/trailing whitespace
+	//remove all empty rules, and remove leading/trailing whitespace
 	var finalCss = data.replace(/[^{}]*\{\s*\}/gm, '').trim();
 	//remove unused @fontface rules
 	finalCss = rmUnusedFontFace(finalCss);
@@ -105,12 +105,12 @@ var preFormatCSS = function (css) {
 	var m,
 		regexP = /(content\s*:\s*['"][^'"]*)}([^'"]*['"])/gm,
 		matchedData = [];
-	
+
 	//for each content: "" rule that contains at least one end bracket ('}')
 	while ((m = regexP.exec(css)) !== null) {
 		//we need to replace ALL end brackets in the rule
 		//we can't do it in here, because it will mess up ongoing exec, store data and do after
-		
+
 		//unshift - add to beginning of array - we need to remove rules in reverse order,
         //otherwise indeces will become incorrect.
 		matchedData.unshift({
@@ -119,12 +119,12 @@ var preFormatCSS = function (css) {
 			,replaceStr: m[0].replace(/\}/gm,"\\7d")
 		});
 	}
-	
+
 	for(var i=0; i<matchedData.length;i++){
 		var item = matchedData[0];
 		css = css.substring(0, item.start) + item.replaceStr + css.substring(item.end);
 	}
-	
+
     return css;
 };
 
@@ -216,12 +216,12 @@ var getCriticalPathCss = function (options) {
                     currIndex = 0,
                     forceRemoveNestedRule = false,
 					split;
-				
+
 				//==methods==
                 var getNewValidCssSelector = function (i) {
                     var newSel = split[i];
 					/* HANDLE Nested @-rules */
-					
+
 					/*Case 1: @-rule with CSS properties inside [REMAIN]
 						(@font-face rules get checked at end to see whether they are used or not (too early here)
 						(@page - don't have a proper check in place currently to handle css selector part - just keep in order not to break)
@@ -234,7 +234,7 @@ var getCriticalPathCss = function (options) {
 					/*Case 2: @-rule with CSS properties inside [REMOVE]
 						currently none..
 					*/
-					
+
 					/*Case 3: @-rule with full CSS (rules) inside [REMAIN]
 						- just skip this particular line (i.e. keep), and continue checking the CSS inside as normal
 					*/
@@ -266,7 +266,7 @@ var getCriticalPathCss = function (options) {
                     }
                     return i;
                 };
-				
+
 				var removeSelector = function(sel, selectorsKept){
 					var selPos = css.indexOf(sel, currIndex),
 						//check what comes next: { or ,
@@ -301,19 +301,7 @@ var getCriticalPathCss = function (options) {
 				//they don't come with any associated rules, and should all be kept,
 				//so just keep them in critical css, but don't include them in split
 				var splitCSS = css.replace(/@(import|charset|namespace)[^;]*;/g,"");
-
-        //need to have the index of each split point, so can't use native split
-        var splitsWithIndexes=function(splits){
-          var ret=[];
-          var index=0;
-          for(var i=0;i<splits.length;i++){
-            ret.push([index,splits[i]]);
-            index+=splits[i].length + 1; //length of '}' - good enough
-          }
-          return ret;
-        }
-        var split = splitCSS.split(/[{}]/g);
-        var splitWithIndex = splitsWithIndexes(split);
+				split = splitCSS.split(/[{}]/g);
 				//give some time (renderWaitTime) for sites like facebook that build their page dynamically,
 				//otherwise we can miss some selectors (and therefor rules)
 				//--tradeoff here: if site is too slow with dynamic content,
@@ -322,13 +310,13 @@ var getCriticalPathCss = function (options) {
 					for (var i = 0; i < split.length; i = i + 2) {
 						//step over non DOM CSS selectors (@-rules)
 						i = getNewValidCssSelector(i);
-						
+
 						//reach end of CSS
 						if (finished) {
 							//call final function to exit outside of phantom evaluate scope
 							window.callPhantom(css);
 						}
-						
+
 						var fullSel = split[i];
 						//fullSel can contain combined selectors
 						//,f.e.  body, html {}
@@ -356,7 +344,8 @@ var getCriticalPathCss = function (options) {
 								//if selector is purely psuedo (f.e. ::-moz-placeholder), just keep as is.
 								//we can't match it to anything on page, but it can impact above the fold styles
 								if (temp.replace(/:[:]?([a-zA-Z0-9\-\_])*/g, '').trim().length === 0) {
-                  currIndex = splitWithIndex[i][0] + sel.length;
+									currIndex = css.indexOf(sel, currIndex) + sel.length;
+                  selectorsKept++;
 									continue;
 								}
 
@@ -378,7 +367,7 @@ var getCriticalPathCss = function (options) {
 
 								//check if selector matched element(s) on page..
 								var aboveFold = false;
-								
+
 								for (var k = 0; k < el.length; k++) {
 									var testEl = el[k];
 									//temporarily force clear none in order to catch elements that clear previous content themselves and who w/o their styles could show up unstyled in above the fold content (if they rely on f.e. "clear:both;" to clear some main content)
@@ -392,7 +381,7 @@ var getCriticalPathCss = function (options) {
 										selectorsKept++;
 
 										//update currIndex so we only search from this point from here on.
-                    currIndex = splitWithIndex[i][0];
+										currIndex = css.indexOf(sel, currIndex);
 
 										//set clear style back to what it was
 										testEl.style.clear = "";
@@ -408,7 +397,7 @@ var getCriticalPathCss = function (options) {
 							//if selector didn't match any elements above fold - delete selector from CSS
 							if (aboveFold === false) {
 								//update currIndex so we only search from this point from here on.
-                currIndex = splitWithIndex[i][0];
+								currIndex = css.indexOf(sel, currIndex);
 								//remove seletor (also removes rule, if nnothing left)
 								removeSelector(sel, selectorsKept);
 							}
@@ -418,13 +407,13 @@ var getCriticalPathCss = function (options) {
 							currIndex = css.indexOf("}", currIndex) + 1;
 						}
 					}
-										
+
 					//we're done - call final function to exit outside of phantom evaluate scope
 					window.callPhantom(css);
-					
+
 
 				},renderWaitTime);
-               
+
             }, options.css);
         }
     });
