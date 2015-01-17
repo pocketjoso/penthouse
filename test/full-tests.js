@@ -24,33 +24,36 @@ describe('penthouse functionality tests', function () {
     after(function () {
         server.close();
     });
-	
-	it('should return a subset of the original AST rules when the viewport is small', function (done) {
-        var widthLargerThanTotalTestCSS = 1000,
-            heightSmallerThanTotalTestCSS = 100;
-        penthouse({
-            url: 'http://localhost:' + port,
-            css: originalCssFilePath,
-            width: widthLargerThanTotalTestCSS,
-            height: heightSmallerThanTotalTestCSS
-        }, function (err, result) {
-            if(err) { done(err); }
-            try {
-                var resultAst = css.parse(result);
-                var orgAst = css.parse(originalCss);
-                resultAst.stylesheet.rules.should.have.length.lessThan(orgAst.stylesheet.rules.length);
-                done();
-            } catch (ex) {
-                done(ex);
-            }
 
-        });
+  it('should match exactly the css in the yeoman test', function(done) {
+    var yeomanFullCssFilePath = path.join(__dirname, 'static-server', 'yeoman-full.css'),
+        yeomanFullCss = read(yeomanFullCssFilePath).toString(),
+        yeomanExpectedCssFilePath = path.join(__dirname, 'static-server', 'yeoman-small-expected.css'),
+        yeomanExpectedCss = read(yeomanExpectedCssFilePath).toString();
+
+    penthouse({
+        url: 'http://localhost:' + port + '/yeoman.html',
+        css: yeomanFullCssFilePath,
+        width: 320,
+        height: 70
+    }, function (err, result) {
+        if(err) { done(err); }
+        try {
+            var resultAst = css.parse(result);
+            var expectedAst = css.parse(yeomanExpectedCss);
+            resultAst.should.eql(expectedAst);
+            done();
+        } catch (ex) {
+            done(ex);
+        }
+
     });
-	
+  });
+
 	it('should keep :before, :after rules (because el above fold)', function (done) {
         var pusedoRemainCssFilePath = path.join(__dirname, 'static-server', 'psuedo--remain.css'),
 			pusedoRemainCss = read(pusedoRemainCssFilePath).toString();
-		
+
         penthouse({
             url: 'http://localhost:' + port,
             css: pusedoRemainCssFilePath
@@ -66,10 +69,10 @@ describe('penthouse functionality tests', function () {
 
         });
     });
-	
+
 	it('should remove :hover, :active, etc rules - always', function (done) {
         var pusedoRemoveCssFilePath = path.join(__dirname, 'static-server', 'psuedo--remove.css');
-		
+
         penthouse({
             url: 'http://localhost:' + port,
             css: pusedoRemoveCssFilePath
@@ -84,16 +87,16 @@ describe('penthouse functionality tests', function () {
 
         });
     });
-	
+
 	/*==@-rule handling==*/
-	
+
 	/* - Case 0 : Non nested @-rule [REMAIN]
 		(@charset, @import, @namespace)
 	*/
 	it('should keep complete case 0 @-rules (@import, @charset, @namespace)', function (done) {
         var atRuleCase0RemainCssFilePath = path.join(__dirname, 'static-server', 'at-rule-case-0--remain.css'),
 			atRuleCase0RemainCss = read(atRuleCase0RemainCssFilePath).toString();
-		
+
         penthouse({
             url: 'http://localhost:' + port,
             css: atRuleCase0RemainCssFilePath
@@ -109,7 +112,7 @@ describe('penthouse functionality tests', function () {
 
         });
     });
-	
+
 	/*	- Case 1: @-rule with CSS properties inside [REMAIN]
 		(NOTE: @font-face is removed later in code, unless it is used.
 				Therefor currently this test has to include CSS 'using' the @font-face)
@@ -117,7 +120,7 @@ describe('penthouse functionality tests', function () {
 	it('should keep complete case 1 @-rules (@font-face, @page)', function (done) {
         var atRuleCase1RemainCssFilePath = path.join(__dirname, 'static-server', 'at-rule-case-1--remain.css'),
 			atRuleCase1RemainCss = read(atRuleCase1RemainCssFilePath).toString();
-		
+
         penthouse({
             url: 'http://localhost:' + port,
             css: atRuleCase1RemainCssFilePath
@@ -133,18 +136,18 @@ describe('penthouse functionality tests', function () {
 
         });
     });
-	
+
 	/*Case 2: @-rule with CSS properties inside [REMOVE]
 		currently none..
 	*/
-	
+
 	/*Case 3: @-rule with full CSS (rules) inside [REMAIN]
 		@media, @document, @supports..
 	*/
 	it('should keep case 3 @-rules (@media, @document..)', function (done) {
         var atRuleCase3RemainCssFilePath = path.join(__dirname, 'static-server', 'at-rule-case-3--remain.css'),
 			atRuleCase3RemainCss = read(atRuleCase3RemainCssFilePath).toString();
-		
+
         penthouse({
             url: 'http://localhost:' + port,
             css: atRuleCase3RemainCssFilePath
@@ -160,13 +163,13 @@ describe('penthouse functionality tests', function () {
 
         });
     });
-	
+
 	/*Case 4: @-rule with full CSS (rules) inside [REMOVE]
 		- currently just @keyframe
 	*/
 	it('should remove case 4 @-rules (@keyframe..)', function (done) {
         var atRuleCase4RemoveCssFilePath = path.join(__dirname, 'static-server', 'at-rule-case-4--remove.css');
-		
+
         penthouse({
             url: 'http://localhost:' + port,
             css: atRuleCase4RemoveCssFilePath
@@ -181,11 +184,11 @@ describe('penthouse functionality tests', function () {
 
         });
     });
-	
+
 	it('should keep self clearing rules when needed to stay outside the fold', function (done) {
         var clearSelfRemainCssFilePath = path.join(__dirname, 'static-server', 'clearSelf--remain.css'),
 			clearSelfRemainCss = read(clearSelfRemainCssFilePath).toString();
-		
+
         penthouse({
             url: 'http://localhost:' + port + '/clearSelf.html',
             css: clearSelfRemainCssFilePath
@@ -201,11 +204,11 @@ describe('penthouse functionality tests', function () {
 
         });
     });
-	
+
 	/* non core (non breaking) functionality tests */
 	it('should remove empty rules', function (done) {
         var emptyRemoveCssFilePath = path.join(__dirname, 'static-server', 'empty-rules--remove.css');
-		
+
         penthouse({
             url: 'http://localhost:' + port,
             css: emptyRemoveCssFilePath
@@ -220,11 +223,11 @@ describe('penthouse functionality tests', function () {
 
         });
     });
-	
+
 	it('should remove @fontface rule, because it is not used', function (done) {
         var fontFaceRemoveCssFilePath = path.join(__dirname, 'static-server', 'fontface--remove.css'),
 			fontFaceRemoveCss = read(fontFaceRemoveCssFilePath).toString();
-		
+
         penthouse({
             url: 'http://localhost:' + port,
             css: fontFaceRemoveCssFilePath
@@ -240,7 +243,7 @@ describe('penthouse functionality tests', function () {
 
         });
     });
-	
+
 });
 
 function startServer(done) {
