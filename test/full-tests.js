@@ -144,7 +144,7 @@ describe('penthouse functionality tests', function() {
 		(NOTE: @font-face is removed later in code, unless it is used.
 				Therefor currently this test has to include CSS 'using' the @font-face)
 	*/
-	it('should keep complete case 1 @-rules (@font-face, @page)', function(done) {
+	it('should keep complete case 1 @-rules (@font-face)', function(done) {
 		var atRuleCase1RemainCssFilePath = path.join(__dirname, 'static-server', 'at-rule-case-1--remain.css'),
 			atRuleCase1RemainCss = read(atRuleCase1RemainCssFilePath).toString();
 
@@ -165,8 +165,24 @@ describe('penthouse functionality tests', function() {
 	});
 
 	/*Case 2: @-rule with CSS properties inside [REMOVE]
-		currently none..
+		@page
 	*/
+  it('should remove complete case 2 @-rules (@page..)', function(done) {
+		var atRuleCase2RemoveCssFilePath = path.join(__dirname, 'static-server', 'at-rule-case-4--remove.css');
+
+		penthouse({
+			url: page1,
+			css: atRuleCase2RemoveCssFilePath
+		}, function(err, result) {
+			try {
+				result.trim().should.equal('');
+				done();
+			} catch (ex) {
+				done(ex);
+			}
+
+		});
+	});
 
 	/*Case 3: @-rule with full CSS (rules) inside [REMAIN]
 		@media, @document, @supports..
@@ -192,9 +208,9 @@ describe('penthouse functionality tests', function() {
 	});
 
 	/*Case 4: @-rule with full CSS (rules) inside [REMOVE]
-		- currently just @keyframe
+		- @keyframes, @media print|speech|arual
 	*/
-	it('should remove case 4 @-rules (@keyframe..)', function(done) {
+	it('should remove case 4 @-rules (@media print|speech, @keyframes..)', function(done) {
 		var atRuleCase4RemoveCssFilePath = path.join(__dirname, 'static-server', 'at-rule-case-4--remove.css');
 
 		penthouse({
