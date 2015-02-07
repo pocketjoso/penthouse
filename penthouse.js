@@ -233,10 +233,11 @@ var main = function(options) {
 		var f = fs.open(options.css, 'r');
 
 		//preformat css
+		var cssPreformat;
 		if (standaloneMode) {
-			var cssPreformat = cssPreformatter;
+			cssPreformat = cssPreformatter;
 		} else {
-			var cssPreformat = require('./css-preformatter.js');
+			cssPreformat = require('./css-preformatter.js');
 		}
 		options.css = cssPreformat(f.read());
 	} catch (e) {
@@ -250,7 +251,7 @@ var main = function(options) {
 
 function cleanup(css) {
 	//remove all animation rules, as keyframes have already been removed
-	var css = css.replace(/(-webkit-|-moz-|-ms-|-o-)?animation[ ]?:[^;{}]*;/gm, '');
+	css = css.replace(/(-webkit-|-moz-|-ms-|-o-)?animation[ ]?:[^;{}]*;/gm, '');
 	//remove all empty rules, and remove leading/trailing whitespace
 	return css.replace(/[^{}]*\{\s*\}/gm, '').trim();
 }
@@ -266,10 +267,11 @@ page.onCallback = function(css) {
       var finalCss = cleanup(css);
 
       // remove unused @fontface rules
+			var ffRemover;
       if (standaloneMode) {
-        var ffRemover = unusedFontfaceRemover;
+        ffRemover = unusedFontfaceRemover;
       } else {
-        var ffRemover = require('./unused-fontface-remover.js');
+        ffRemover = require('./unused-fontface-remover.js');
       }
       finalCss = ffRemover(finalCss);
 
