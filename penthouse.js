@@ -8,8 +8,8 @@ Version: 0.2.51
 USAGE:
     phantomjs penthouse.js [CSS file] [URL to page] > [critical path CSS file]
     Options:
-    --width <width>      The viewport width in pixels. Defaults to 1300 
-    --height <height>    The viewport height in pixels. Defaults to 900 
+    --width <width>      The viewport width in pixels. Defaults to 1300
+    --height <height>    The viewport height in pixels. Defaults to 900
 
     to run on HTTPS sites two flags must be passed in, directly after phantomjs in the call:
     --ignore-ssl-errors=true --ssl-protocol=tlsv1
@@ -20,7 +20,7 @@ DEPENDENCIES
 */
 
 
-(function() { "use strict"; 
+(function() { "use strict";
 /*
 parser for the script - can be used both for the standalone node binary and the phantomjs script
 */
@@ -228,11 +228,10 @@ page.onError = function(msg, trace) {
 };
 
 var main = function(options) {
-	debug('main(): ', JSON.stringify(options));
-
-	var jobs = [];
+  debug('main(): ', JSON.stringify(options));
 
 	try {
+    //TODO: cssFilePath?
 		var f = fs.open(options.cssFile, 'r');
 
 		//preformat css
@@ -247,78 +246,32 @@ var main = function(options) {
 		phantom.exit(1);
 	}
 
-	// since the various async operations might overlap it might make
-	// sense to not let them share the same object
-	function createOptionsObject(urlIndex) {
-		var clone = JSON.parse(JSON.stringify(options));
-		delete clone.urls;
-		delete clone.cssFile;
-		clone.url = options.urls[urlIndex];
-		return clone;
-	}
+  // start the critical path CSS generation
+  getCriticalPathCss(options);
 
-	options.urls.forEach(function(url, index) {
-		debug('Creating job ', index);
 
-		jobs.push(function(done) {
-			debug('Starting job ', index);
-
-			var fp = fs.open('critical-' + (index + 1) + '.css', 'w');
-
-			getCssAndWriteToFile(fp, createOptionsObject(index), function(err) {
-				fp.close();
-
-				if (err) {
-					debug('Job', index, 'FAILED');
-					done(err);
-					return;
-				}
-
-				done();
-			});
-		});
-	});
-
-	queueAsync(jobs, function(err) {
-		if (err) {
-			errorlog(err);
-			phantom.exit(1);
-		} else {
-			phantom.exit(0);
-		}
-	});
+	// options.urls.forEach(function(url, index) {
+	// 	debug('Creating job ', index);
+  //
+	// 	jobs.push(function(done) {
+	// 		debug('Starting job ', index);
+  //
+	// 		var fp = fs.open('critical-' + (index + 1) + '.css', 'w');
+  //
+	// 		getCssAndWriteToFile(fp, createOptionsObject(index), function(err) {
+	// 			fp.close();
+  //
+	// 			if (err) {
+	// 				debug('Job', index, 'FAILED');
+	// 				done(err);
+	// 				return;
+	// 			}
+  //
+	// 			done();
+	// 		});
+	// 	});
+	// });
 };
-
-// Queue async operations
-// @author fatso83@github
-// Expect callbacks on the form  ( callback : (err?) => void )
-function queueAsync(functions, callback) {
-	var fns = functions.slice(0);
-	var fn, iter, index = 0;
-
-	// functional looping, aka SICP 101 :)
-	iter = function() {
-		if (!fns.length) {
-			// tell the mothership we want to go home
-			callback();
-			return;
-		}
-
-		// get first from queue
-		fn = fns.splice(0, 1)[0];
-		fn.index = index++;
-		fn(function(err) {
-			if (err) {
-				debug('Job', fn.index, 'FAILED');
-				callback(err);
-			} else {
-				debug('Job', fn.index, 'completed');
-				iter();
-			}
-		});
-	};
-	iter();
-}
 
 function cleanup(css) {
 	//remove all animation rules, as keyframes have already been removed
@@ -327,53 +280,63 @@ function cleanup(css) {
 	return css.replace(/[^{}]*\{\s*\}/gm, '').trim();
 }
 
+/* Final function
+ * Get's called from getCriticalPathCss when CSS extraction from page is done*/
+page.onCallback = function(css) {
+  debug('phantom.onCallback');
+
+  try {
+    if (css) {
+      // we are done - clean up the final css
+      var finalCss = cleanup(css);
+
+      // remove unused @fontface rules
+      if (standaloneMode) {
+        var ffRemover = unusedFontfaceRemover;
+      } else {
+        var ffRemover = require('./unused-fontface-remover.js');
+      }
+      finalCss = ffRemover(finalCss);
+
+      // Is this the proper way to return the css now?
+      // log(finalCss);
+      // or stdout?
+      stdout.write(finalCss);
+      phantom.exit(0);
+
+      // write the resulting css to the file stream
+      // fp.write(finalCss);
+    } else {
+      // No css. This is not an error on our part
+      errorlog('No CSS. This means passed in CSS matched nothing on the URL: ' + options.url);
+      phantom.exit(1);
+    }
+
+  } catch (ex) {
+    debug('phantom.onCallback -> error', ex);
+    errorlog('error: ' + ex);
+    phantom.exit(1);
+  }
+};
+
+
 /**
  * Get the CSS and write to file
  * fp - a stream to write to
  * options - an options object with width, height, url and css
  * callback - a function that is called on finish, optionally with an error
  */
-function getCssAndWriteToFile(fp, options, callback) {
-	// start the critical path CSS generation
-
-	// usually it is a bad idea to overwrite globals
-	// in this case it is ok, since we are queing the async
-	// operations that are modifying this field, so the
-	// function calls will never overlap in time
-	page.onCallback = function(css) {
-		debug('phantom.onCallback');
-
-		try {
-
-			if (css) {
-				// we are done - clean up the final css
-				var finalCss = cleanup(css);
-
-				// remove unused @fontface rules
-				if (standaloneMode) {
-					var ffRemover = unusedFontfaceRemover;
-				} else {
-					var ffRemover = require('./unused-fontface-remover.js');
-				}
-				finalCss = ffRemover(finalCss);
-
-				// write the resulting css to the file stream
-				fp.write(finalCss);
-			} else {
-				// No css. This is not an error on our part
-				errorlog('No CSS. This means passed in CSS matched nothing on the URL: ' + options.url);
-			}
-
-			callback();
-		} catch (ex) {
-			debug('phantom.onCallback -> error', ex);
-			callback(ex);
-		}
-	};
-
-	getCriticalPathCss(options);
-
-}
+// function getCssAndWriteToFile(fp, options, callback) {
+// 	// start the critical path CSS generation
+//
+// 	// usually it is a bad idea to overwrite globals
+// 	// in this case it is ok, since we are queing the async
+// 	// operations that are modifying this field, so the
+// 	// function calls will never overlap in time
+//
+// 	getCriticalPathCss(options);
+//
+// }
 
 
 

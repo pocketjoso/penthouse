@@ -67,7 +67,7 @@ Require as normal and execute with a callback.
       path = require('path');
 
   penthouse({
-      urls : ['http://google.com', ...],
+      url : 'http://google.com',
       cssFile : path.join(__basedir + 'static/main.css'),
       width : 1300,   // viewport width
       height : 900   // viewport height
@@ -75,11 +75,6 @@ Require as normal and execute with a callback.
       console.log(criticalCss);
   });
 ```
-**NOTE**: When you pass in multiple `urls`, the critical css gets saved to
-files in the current folder, named
-`Critical-1.css`, `Critical-2.css` ...
-In this case, the CSS will **not** be passed as the result to the callback.
-
 The Penthouse Node module can also be used in `Gulp`.
 
 ### Online version

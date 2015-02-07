@@ -30,41 +30,29 @@ describe('basic tests of penthouse functionality', function () {
 
 	after(function (done) {
 		server.close();
-
-		glob("critical-*.css", function(err, files) {
-			if(err) { throw err; }
-
-			async.map(files, fs.unlink, function(err, results){
-				if(err) throw err;
-				done();
-			});
-		});
+		done();
 	});
 
-	it('should save css to a file', function (done) {
-		penthouse({
-			urls    : [ page1],
-			cssFile : page1cssPath
-		}, function (err, result) {
-			if (err) {
-				done(err);
-				return;
-			}
-			try {
-				css.parse(read('critical-1.css', 'utf8'));
-				done();
-			} catch (ex) {
-				done(ex);
-			}
-		});
+	it('should return css', function (done) {
+    penthouse({
+      url: page1,
+      cssFile: page1cssPath
+  	}, function (err, result) {
+      if(err) { done(err); }
+      try {
+        css.parse(result);
+        done();
+      } catch (ex) {
+        done(ex);
+      }
+    });
 	});
-
 
 	it('should return a css file whose parsed AST is equal to the the original\'s AST when the viewport is large', function (done) {
 		var widthLargerThanTotalTestCSS = 1000,
 			heightLargerThanTotalTestCSS = 1000;
 		penthouse({
-			urls    : [page1],
+			url    : page1,
 			cssFile : page1cssPath,
 			width   : widthLargerThanTotalTestCSS,
 			height  : heightLargerThanTotalTestCSS
@@ -74,7 +62,7 @@ describe('basic tests of penthouse functionality', function () {
 				return;
 			}
 			try {
-				var resultAst = css.parse(read('critical-1.css', 'utf8'));
+				var resultAst = css.parse(result);
 				var orgAst = css.parse(originalCss);
 				resultAst.should.eql(orgAst);
 				done();
@@ -89,14 +77,14 @@ describe('basic tests of penthouse functionality', function () {
 		var widthLargerThanTotalTestCSS = 1000,
 			heightSmallerThanTotalTestCSS = 100;
 		penthouse({
-			urls    : [page1],
+			url    : page1,
 			cssFile : page1cssPath,
 			width   : widthLargerThanTotalTestCSS,
 			height  : heightSmallerThanTotalTestCSS
 		}, function (err, result) {
 			if (err) { done(err); }
 			try {
-				var resultAst = css.parse(read('critical-1.css', 'utf8'));
+				var resultAst = css.parse(result);
 				var orgAst = css.parse(originalCss);
 				resultAst.stylesheet.rules.should.have.length.lessThan(orgAst.stylesheet.rules.length);
 				// not be empty
@@ -105,47 +93,6 @@ describe('basic tests of penthouse functionality', function () {
 				done(ex);
 			}
 
-		});
-	});
-
-
-	it('should create multiple output files for multiple urls', function (done) {
-		penthouse({
-			urls    : [page1, page1, page1],
-			cssFile : page1cssPath
-		}, function (err, result) {
-			if (err) {
-				done(err);
-				return;
-			}
-
-			fs.existsSync('critical-1.css').should.be.true;
-			fs.existsSync('critical-2.css').should.be.true;
-			fs.existsSync('critical-3.css').should.be.true;
-			done();
-		});
-	});
-
-
-	it('should create different css for different urls', function (done) {
-		var css1, css2,
-			page2 = ('http://localhost:' + port + '/page2.html');
-
-		penthouse({
-			urls    : [ page1, page2],
-			cssFile : sharedCssFilePath
-		}, function (err, result) {
-			if (err) {
-				done(err);
-				return;
-			}
-
-			css1 = read('critical-1.css');
-			css2 = read('critical-2.css');
-			css1.should.not.be.empty;
-			css2.should.not.be.empty;
-			css1.should.not.eql(css2);
-			done();
 		});
 	});
 
