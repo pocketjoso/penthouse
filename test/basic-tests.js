@@ -36,7 +36,7 @@ describe('basic tests of penthouse functionality', function () {
 	it('should return css', function (done) {
     penthouse({
       url: page1,
-      cssFile: page1cssPath
+      css: page1cssPath
   	}, function (err, result) {
       if(err) { done(err); }
       try {
@@ -53,7 +53,7 @@ describe('basic tests of penthouse functionality', function () {
 			heightLargerThanTotalTestCSS = 1000;
 		penthouse({
 			url    : page1,
-			cssFile : page1cssPath,
+			css : page1cssPath,
 			width   : widthLargerThanTotalTestCSS,
 			height  : heightLargerThanTotalTestCSS
 		}, function (err, result) {
@@ -78,7 +78,7 @@ describe('basic tests of penthouse functionality', function () {
 			heightSmallerThanTotalTestCSS = 100;
 		penthouse({
 			url    : page1,
-			cssFile : page1cssPath,
+			css : page1cssPath,
 			width   : widthLargerThanTotalTestCSS,
 			height  : heightSmallerThanTotalTestCSS
 		}, function (err, result) {

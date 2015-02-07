@@ -68,7 +68,7 @@ Require as normal and execute with a callback.
 
   penthouse({
       url : 'http://google.com',
-      cssFile : path.join(__basedir + 'static/main.css'),
+      css : path.join(__basedir + 'static/main.css'),
       width : 1300,   // viewport width
       height : 900   // viewport height
   }, function(err, criticalCss) {

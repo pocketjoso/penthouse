@@ -8,8 +8,8 @@ Version: 0.2.51
 USAGE:
     phantomjs penthouse.js [CSS file] [URL to page] > [critical path CSS file]
     Options:
-    --width <width>      The viewport width in pixels. Defaults to 1300
-    --height <height>    The viewport height in pixels. Defaults to 900
+    --width <width>      The viewport width in pixels. Defaults to 1300 
+    --height <height>    The viewport height in pixels. Defaults to 900 
 
     to run on HTTPS sites two flags must be passed in, directly after phantomjs in the call:
     --ignore-ssl-errors=true --ssl-protocol=tlsv1
@@ -20,13 +20,13 @@ DEPENDENCIES
 */
 
 
-(function() { "use strict";
+(function() { "use strict"; 
 /*
 parser for the script - can be used both for the standalone node binary and the phantomjs script
 */
 /*jshint unused:false*/
 
-var usageString = '[--width <width>] [--height <height>]  <main.css> <url> [<url> [...]]';
+var usageString = ' [--width <width>] [--height <height>] <url> <main.css>';
 
 function buildError(msg, problemToken, args) {
     var error = new Error( msg  + problemToken);
@@ -36,7 +36,7 @@ function buildError(msg, problemToken, args) {
 }
 
 // Parses the arguments passed in
-// @returns { width, height, url, cssFile }
+// @returns { width, height, url, css }
 // throws an error on wrong options or parsing error
 function parseOptions(argsOriginal) {
     var args = argsOriginal.slice(0),
@@ -64,14 +64,13 @@ function parseOptions(argsOriginal) {
         args = args.slice(2);
     }
 
-    parsed.cssFile = args[0];
-    parsed.urls = args.slice(1);
+    parsed.url = args[0];
+    parsed.css = args[1];
 
-    parsed.urls.forEach(function(url) {
-        if( ! url.match(/https?:\/\//) ) {
-            buildError('Invalid url: ', parsed.url, args);
-        }
-    });
+    if( ! parsed.url.match(/https?:\/\//) ) {
+      buildError('Invalid url: ', parsed.url, args);
+    }
+
     return parsed;
 }
 
@@ -231,8 +230,7 @@ var main = function(options) {
   debug('main(): ', JSON.stringify(options));
 
 	try {
-    //TODO: cssFilePath?
-		var f = fs.open(options.cssFile, 'r');
+		var f = fs.open(options.css, 'r');
 
 		//preformat css
 		if (standaloneMode) {
@@ -248,29 +246,6 @@ var main = function(options) {
 
   // start the critical path CSS generation
   getCriticalPathCss(options);
-
-
-	// options.urls.forEach(function(url, index) {
-	// 	debug('Creating job ', index);
-  //
-	// 	jobs.push(function(done) {
-	// 		debug('Starting job ', index);
-  //
-	// 		var fp = fs.open('critical-' + (index + 1) + '.css', 'w');
-  //
-	// 		getCssAndWriteToFile(fp, createOptionsObject(index), function(err) {
-	// 			fp.close();
-  //
-	// 			if (err) {
-	// 				debug('Job', index, 'FAILED');
-	// 				done(err);
-	// 				return;
-	// 			}
-  //
-	// 			done();
-	// 		});
-	// 	});
-	// });
 };
 
 function cleanup(css) {
@@ -298,18 +273,16 @@ page.onCallback = function(css) {
       }
       finalCss = ffRemover(finalCss);
 
-      // Is this the proper way to return the css now?
-      // log(finalCss);
-      // or stdout?
+      // return the critical css!
       stdout.write(finalCss);
       phantom.exit(0);
-
-      // write the resulting css to the file stream
-      // fp.write(finalCss);
     } else {
       // No css. This is not an error on our part
-      errorlog('No CSS. This means passed in CSS matched nothing on the URL: ' + options.url);
-      phantom.exit(1);
+      // but still safer to warn the end user, in case they made a mistake
+      errorlog('Note: Generated critical css was empty for URL: ' + options.url);
+      // for consisteny, still generate output (will be empty)
+      stdout.write(css);
+      phantom.exit(0);
     }
 
   } catch (ex) {
@@ -318,27 +291,6 @@ page.onCallback = function(css) {
     phantom.exit(1);
   }
 };
-
-
-/**
- * Get the CSS and write to file
- * fp - a stream to write to
- * options - an options object with width, height, url and css
- * callback - a function that is called on finish, optionally with an error
- */
-// function getCssAndWriteToFile(fp, options, callback) {
-// 	// start the critical path CSS generation
-//
-// 	// usually it is a bad idea to overwrite globals
-// 	// in this case it is ok, since we are queing the async
-// 	// operations that are modifying this field, so the
-// 	// function calls will never overlap in time
-//
-// 	getCriticalPathCss(options);
-//
-// }
-
-
 
 
 /*

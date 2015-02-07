@@ -36,7 +36,7 @@ describe('penthouse functionality tests', function() {
 	it('should save css to a file', function(done) {
 		penthouse({
 			url: page1,
-			cssFile: page1cssPath
+			css: page1cssPath
 		}, function(err, result) {
 			if (err) {
 				done(err);
@@ -56,7 +56,7 @@ describe('penthouse functionality tests', function() {
 			heightSmallerThanTotalTestCSS = 100;
 		penthouse({
 			url: page1,
-			cssFile: page1cssPath,
+			css: page1cssPath,
 			width: widthLargerThanTotalTestCSS,
 			height: heightSmallerThanTotalTestCSS
 		}, function(err, result) {
@@ -80,7 +80,7 @@ describe('penthouse functionality tests', function() {
 
 		penthouse({
 			url: page1,
-			cssFile: pusedoRemainCssFilePath
+			css: pusedoRemainCssFilePath
 		}, function(err, result) {
 			try {
 				var resultAst = css.parse(result);
@@ -99,7 +99,7 @@ describe('penthouse functionality tests', function() {
 
 		penthouse({
 			url: page1,
-			cssFile: pusedoRemoveCssFilePath
+			css: pusedoRemoveCssFilePath
 		}, function(err, result) {
 			try {
 				result.trim().should.equal('');
@@ -123,7 +123,7 @@ describe('penthouse functionality tests', function() {
 
 		penthouse({
 			url: page1,
-			cssFile: atRuleCase0RemainCssFilePath
+			css: atRuleCase0RemainCssFilePath
 		}, function(err, result) {
 			try {
 				var resultAst = css.parse(result);
@@ -148,7 +148,7 @@ describe('penthouse functionality tests', function() {
 
 		penthouse({
 			url: page1,
-			cssFile: atRuleCase1RemainCssFilePath
+			css: atRuleCase1RemainCssFilePath
 		}, function(err, result) {
 			try {
 				var resultAst = css.parse(result);
@@ -175,7 +175,7 @@ describe('penthouse functionality tests', function() {
 
 		penthouse({
 			url: page1,
-			cssFile: atRuleCase3RemainCssFilePath
+			css: atRuleCase3RemainCssFilePath
 		}, function(err, result) {
 			try {
 				var resultAst = css.parse(result);
@@ -197,7 +197,7 @@ describe('penthouse functionality tests', function() {
 
 		penthouse({
 			url: page1,
-			cssFile: atRuleCase4RemoveCssFilePath
+			css: atRuleCase4RemoveCssFilePath
 		}, function(err, result) {
 			try {
 				result.trim().should.equal('');
@@ -216,7 +216,7 @@ describe('penthouse functionality tests', function() {
 
 		penthouse({
 			url: 'http://localhost:' + port + '/clearSelf.html',
-			cssFile: clearSelfRemainCssFilePath
+			css: clearSelfRemainCssFilePath
 		}, function(err, result) {
 			try {
 				var resultAst = css.parse(result);
@@ -236,7 +236,7 @@ describe('penthouse functionality tests', function() {
 
 		penthouse({
 			url: page1,
-			cssFile: emptyRemoveCssFilePath
+			css: emptyRemoveCssFilePath
 		}, function(err, result) {
 			try {
 				result.trim().should.equal('');
