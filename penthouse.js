@@ -275,6 +275,10 @@ page.onCallback = function(css) {
       }
       finalCss = ffRemover(finalCss);
 
+			if(finalCss.trim().length === 0){
+				errorlog('Note: Generated critical css was empty for URL: ' + options.url);
+			}
+
       // return the critical css!
       stdout.write(finalCss);
       phantom.exit(0);
@@ -341,30 +345,38 @@ function getCriticalPathCss(options) {
 					/* HANDLE Nested @-rules */
 
 					/*Case 1: @-rule with CSS properties inside [REMAIN]
-						(@font-face rules get checked at end to see whether they are used or not (too early here)
-						(@page - don't have a proper check in place currently to handle css selector part - just keep in order not to break)
+						Can't remove @font-face rules here, don't know if used or not.
+						Another check at end for this purpose.
 					*/
-					if (/@(font-face|page)/gi.test(newSel)) {
+					if (/@(font-face)/gi.test(newSel)) {
 						//skip over this rule
 						currIndex = css.indexOf('}', currIndex) + 1;
 						return getNewValidCssSelector(i + 2);
 					}
 					/*Case 2: @-rule with CSS properties inside [REMOVE]
-						currently none..
+						@page
+						This case doesn't need any special handling,
+						as this "selector" won't match anything on the page,
+						and will therefor be removed, together with it's css props
 					*/
 
+					/*Case 4: @-rule with full CSS (rules) inside [REMOVE]
+						@media print|speech|aural, @keyframes
+						Delete this rule and all its contents - doesn't belong in critical path CSS
+					*/
+					else if (/@(media (print|speech|aural)|(([a-z\-])*keyframes))/gi.test(newSel)) {
+						//force delete on child css rules
+						forceRemoveNestedRule = true;
+						return getNewValidCssSelector(i + 1);
+					}
+
 					/*Case 3: @-rule with full CSS (rules) inside [REMAIN]
+						This test is executed AFTER Case 4,
+						since we here match every remaining @media,
+						after @media print has been removed by Case 4 rule)
 						- just skip this particular line (i.e. keep), and continue checking the CSS inside as normal
 					*/
 					else if (/@(media|document|supports)/gi.test(newSel)) {
-						return getNewValidCssSelector(i + 1);
-					}
-					/*Case 4: @-rule with full CSS (rules) inside [REMOVE]
-						- delete this rule and all its contents - doesn't belong in critical path CSS
-					*/
-					else if (/@([a-z\-])*keyframe/gi.test(newSel)) {
-						//force delete on child css rules
-						forceRemoveNestedRule = true;
 						return getNewValidCssSelector(i + 1);
 					}
 					/*
