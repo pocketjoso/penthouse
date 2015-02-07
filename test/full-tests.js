@@ -51,28 +51,30 @@ describe('penthouse functionality tests', function() {
 		});
 	});
 
-	it('should return a subset of the original AST rules when the viewport is small', function(done) {
-		var widthLargerThanTotalTestCSS = 1000,
-			heightSmallerThanTotalTestCSS = 100;
-		penthouse({
-			url: page1,
-			css: page1cssPath,
-			width: widthLargerThanTotalTestCSS,
-			height: heightSmallerThanTotalTestCSS
-		}, function(err, result) {
-			if (err) {
-				done(err);
-			}
-			try {
-				var resultAst = css.parse(result);
-				var orgAst = css.parse(originalCss);
-				resultAst.stylesheet.rules.should.have.length.lessThan(orgAst.stylesheet.rules.length);
-				done();
-			} catch (ex) {
-				done(ex);
-			}
-		});
-	});
+	it('should match exactly the css in the yeoman test', function(done) {
+    var yeomanFullCssFilePath = path.join(__dirname, 'static-server', 'yeoman-full.css'),
+        yeomanFullCss = read(yeomanFullCssFilePath).toString(),
+        yeomanExpectedCssFilePath = path.join(__dirname, 'static-server', 'yeoman-small-expected.css'),
+        yeomanExpectedCss = read(yeomanExpectedCssFilePath).toString();
+
+    penthouse({
+        url: 'http://localhost:' + port + '/yeoman.html',
+        css: yeomanFullCssFilePath,
+        width: 320,
+        height: 70
+    }, function (err, result) {
+        if(err) { done(err); }
+        try {
+            var resultAst = css.parse(result);
+            var expectedAst = css.parse(yeomanExpectedCss);
+            resultAst.should.eql(expectedAst);
+            done();
+        } catch (ex) {
+            done(ex);
+        }
+
+    });
+  });
 
 	it('should keep :before, :after rules (because el above fold)', function(done) {
 		var pusedoRemainCssFilePath = path.join(__dirname, 'static-server', 'psuedo--remain.css'),
