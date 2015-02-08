@@ -3,7 +3,7 @@ Penthouse CSS Critical Path Generator
 https://github.com/pocketjoso/penthouse
 Author: Jonas Ohlsson
 License: MIT
-Version: 0.2.51
+Version: 0.3.0-rc
 
 USAGE:
     phantomjs penthouse.js [CSS file] [URL to page] > [critical path CSS file]
