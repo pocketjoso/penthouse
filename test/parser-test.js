@@ -3,6 +3,7 @@ chai = require('chai'),
 expect = chai.expect;
 
 describe('options parsing ', function() {
+
     it('should handle argument strings without options', function() {
         var options = parse(['http://hw.no', 'main.css']);
 
@@ -45,5 +46,13 @@ describe('options parsing ', function() {
         expect(function() {
             parse(['--width', 'http://hw.no', 'main.css']);
         }).to.throw(/Parsing error/);
+    });
+
+    it('should accept local file paths', function() {
+       expect( parse(['index.html', 'main.css'])
+       ).to.eql({
+            url : 'index.html',
+            css : 'main.css'
+        });
     });
 });
