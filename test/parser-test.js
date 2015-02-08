@@ -4,32 +4,32 @@ expect = chai.expect;
 
 describe('options parsing ', function() {
     it('should handle argument strings without options', function() {
-        var options = parse(['main.css', 'http://hw.no' ]);
+        var options = parse(['http://hw.no', 'main.css' ]);
 
-        expect(options).to.eql({ 
-            urls : ['http://hw.no'], 
-            cssFile : 'main.css'
+        expect(options).to.eql({
+            url : 'http://hw.no',
+            css : 'main.css'
         });
     });
 
     it('should handle argument strings with one option', function() {
-        var options = parse(['--width', '100', 'main.css', 'http://hw.no']);
-        expect(options).to.eql({ 
-            urls : ['http://hw.no'], 
-            cssFile : 'main.css',
+        var options = parse(['--width', '100', 'http://hw.no', 'main.css']);
+        expect(options).to.eql({
+            url : 'http://hw.no',
+            css : 'main.css',
             width : 100
         });
     });
 
-    it('should handle argument strings with one option', function() {
+    it('should handle argument strings with two options', function() {
         var options = parse([
-            '--height', '200', '--width', '100', 
-            'main.css', 'http://hw.no'
+            '--height', '200', '--width', '100',
+            'http://hw.no', 'main.css'
         ]);
 
-        expect(options).to.eql({ 
-            urls : ['http://hw.no'], 
-            cssFile : 'main.css',
+        expect(options).to.eql({
+            url : 'http://hw.no',
+            css : 'main.css',
             width : 100,
             height : 200
         });
@@ -46,20 +46,4 @@ describe('options parsing ', function() {
             parse(['--width', 'main.css' , 'http://hw.no']);
         }).to.throw(/Parsing error/);
     });
-
-    // see discussion in #issue-8 and #issue-10
-    it('should handle a multitude of urls', function() {
-        var options = parse([
-            '--height', '200', '--width', '100', 
-            'main.css', 'http://hw.no', 'http://hw.dk'
-        ]);
-
-        expect(options).to.eql({ 
-            urls : ['http://hw.no', 'http://hw.dk'],
-            cssFile : 'main.css',
-            width : 100,
-            height : 200
-        });
-    });
-
 });

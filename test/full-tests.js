@@ -30,28 +30,20 @@ describe('penthouse functionality tests', function() {
 
 	after(function(done) {
 		server.close();
-
-		glob("critical-*.css", function(err, files) {
-			if(err) { throw err; }
-
-			async.map(files, fs.unlink, function(err, results){
-				if(err) throw err;
-				done();
-			});
-		});
+		done();
 	});
 
 	it('should save css to a file', function(done) {
 		penthouse({
-			urls: [page1],
-			cssFile: page1cssPath
+			url: page1,
+			css: page1cssPath
 		}, function(err, result) {
 			if (err) {
 				done(err);
 				return;
 			}
 			try {
-				css.parse(read('critical-1.css', 'utf8'));
+				css.parse(result);
 				done();
 			} catch (ex) {
 				done(ex);
@@ -59,46 +51,47 @@ describe('penthouse functionality tests', function() {
 		});
 	});
 
-	it('should return a subset of the original AST rules when the viewport is small', function(done) {
-		var widthLargerThanTotalTestCSS = 1000,
-			heightSmallerThanTotalTestCSS = 100;
-		penthouse({
-			urls: [page1],
-			cssFile: page1cssPath,
-			width: widthLargerThanTotalTestCSS,
-			height: heightSmallerThanTotalTestCSS
-		}, function(err, result) {
-			if (err) {
-				done(err);
-			}
-			try {
-				var resultAst = css.parse(read('critical-1.css', 'utf8'));
-				var orgAst = css.parse(originalCss);
-				resultAst.stylesheet.rules.should.have.length.lessThan(orgAst.stylesheet.rules.length);
-				done();
-			} catch (ex) {
-				done(ex);
-			}
-		});
-	});
+	it('should match exactly the css in the yeoman test', function(done) {
+    var yeomanFullCssFilePath = path.join(__dirname, 'static-server', 'yeoman-full.css'),
+        yeomanFullCss = read(yeomanFullCssFilePath).toString(),
+        yeomanExpectedCssFilePath = path.join(__dirname, 'static-server', 'yeoman-small-expected.css'),
+        yeomanExpectedCss = read(yeomanExpectedCssFilePath).toString();
+
+    penthouse({
+        url: 'http://localhost:' + port + '/yeoman.html',
+        css: yeomanFullCssFilePath,
+        width: 320,
+        height: 70
+    }, function (err, result) {
+        if(err) { done(err); }
+        try {
+            var resultAst = css.parse(result);
+            var expectedAst = css.parse(yeomanExpectedCss);
+            resultAst.should.eql(expectedAst);
+            done();
+        } catch (ex) {
+            done(ex);
+        }
+
+    });
+  });
 
 	it('should keep :before, :after rules (because el above fold)', function(done) {
 		var pusedoRemainCssFilePath = path.join(__dirname, 'static-server', 'psuedo--remain.css'),
 			pusedoRemainCss = read(pusedoRemainCssFilePath).toString();
 
 		penthouse({
-			urls: [page1],
-			cssFile: pusedoRemainCssFilePath
+			url: page1,
+			css: pusedoRemainCssFilePath
 		}, function(err, result) {
 			try {
-				var resultAst = css.parse(read('critical-1.css', 'utf8'));
+				var resultAst = css.parse(result);
 				var orgAst = css.parse(pusedoRemainCss);
 				resultAst.should.eql(orgAst);
 				done();
 			} catch (ex) {
 				done(ex);
 			}
-
 		});
 	});
 
@@ -107,12 +100,11 @@ describe('penthouse functionality tests', function() {
 		var pusedoRemoveCssFilePath = path.join(__dirname, 'static-server', 'psuedo--remove.css');
 
 		penthouse({
-			urls: [page1],
-			cssFile: pusedoRemoveCssFilePath
+			url: page1,
+			css: pusedoRemoveCssFilePath
 		}, function(err, result) {
 			try {
-				result = read('critical-1.css', 'utf8').trim();
-				result.should.equal('');
+				result.trim().should.equal('');
 				done();
 			} catch (ex) {
 				done(ex);
@@ -132,11 +124,11 @@ describe('penthouse functionality tests', function() {
 			atRuleCase0RemainCss = read(atRuleCase0RemainCssFilePath).toString();
 
 		penthouse({
-			urls: [page1],
-			cssFile: atRuleCase0RemainCssFilePath
+			url: page1,
+			css: atRuleCase0RemainCssFilePath
 		}, function(err, result) {
 			try {
-				var resultAst = css.parse(read('critical-1.css', 'utf8'));
+				var resultAst = css.parse(result);
 				var orgAst = css.parse(atRuleCase0RemainCss);
 				resultAst.should.eql(orgAst);
 				done();
@@ -152,16 +144,16 @@ describe('penthouse functionality tests', function() {
 		(NOTE: @font-face is removed later in code, unless it is used.
 				Therefor currently this test has to include CSS 'using' the @font-face)
 	*/
-	it('should keep complete case 1 @-rules (@font-face, @page)', function(done) {
+	it('should keep complete case 1 @-rules (@font-face)', function(done) {
 		var atRuleCase1RemainCssFilePath = path.join(__dirname, 'static-server', 'at-rule-case-1--remain.css'),
 			atRuleCase1RemainCss = read(atRuleCase1RemainCssFilePath).toString();
 
 		penthouse({
-			urls: [page1],
-			cssFile: atRuleCase1RemainCssFilePath
+			url: page1,
+			css: atRuleCase1RemainCssFilePath
 		}, function(err, result) {
 			try {
-				var resultAst = css.parse(read('critical-1.css', 'utf8'));
+				var resultAst = css.parse(result);
 				var orgAst = css.parse(atRuleCase1RemainCss);
 				resultAst.should.eql(orgAst);
 				done();
@@ -173,8 +165,24 @@ describe('penthouse functionality tests', function() {
 	});
 
 	/*Case 2: @-rule with CSS properties inside [REMOVE]
-		currently none..
+		@page
 	*/
+  it('should remove complete case 2 @-rules (@page..)', function(done) {
+		var atRuleCase2RemoveCssFilePath = path.join(__dirname, 'static-server', 'at-rule-case-4--remove.css');
+
+		penthouse({
+			url: page1,
+			css: atRuleCase2RemoveCssFilePath
+		}, function(err, result) {
+			try {
+				result.trim().should.equal('');
+				done();
+			} catch (ex) {
+				done(ex);
+			}
+
+		});
+	});
 
 	/*Case 3: @-rule with full CSS (rules) inside [REMAIN]
 		@media, @document, @supports..
@@ -184,11 +192,11 @@ describe('penthouse functionality tests', function() {
 			atRuleCase3RemainCss = read(atRuleCase3RemainCssFilePath).toString();
 
 		penthouse({
-			urls: [page1],
-			cssFile: atRuleCase3RemainCssFilePath
+			url: page1,
+			css: atRuleCase3RemainCssFilePath
 		}, function(err, result) {
 			try {
-				var resultAst = css.parse(read('critical-1.css', 'utf8'));
+				var resultAst = css.parse(result);
 				var orgAst = css.parse(atRuleCase3RemainCss);
 				resultAst.should.eql(orgAst);
 				done();
@@ -200,18 +208,17 @@ describe('penthouse functionality tests', function() {
 	});
 
 	/*Case 4: @-rule with full CSS (rules) inside [REMOVE]
-		- currently just @keyframe
+		- @keyframes, @media print|speech|arual
 	*/
-	it('should remove case 4 @-rules (@keyframe..)', function(done) {
+	it('should remove case 4 @-rules (@media print|speech, @keyframes..)', function(done) {
 		var atRuleCase4RemoveCssFilePath = path.join(__dirname, 'static-server', 'at-rule-case-4--remove.css');
 
 		penthouse({
-			urls: [page1],
-			cssFile: atRuleCase4RemoveCssFilePath
+			url: page1,
+			css: atRuleCase4RemoveCssFilePath
 		}, function(err, result) {
 			try {
-				result = read('critical-1.css', 'utf8').trim();
-				result.should.equal('');
+				result.trim().should.equal('');
 				done();
 			} catch (ex) {
 				done(ex);
@@ -226,11 +233,11 @@ describe('penthouse functionality tests', function() {
 			clearSelfRemainCss = read(clearSelfRemainCssFilePath).toString();
 
 		penthouse({
-			urls: ['http://localhost:' + port + '/clearSelf.html'],
-			cssFile: clearSelfRemainCssFilePath
+			url: 'http://localhost:' + port + '/clearSelf.html',
+			css: clearSelfRemainCssFilePath
 		}, function(err, result) {
 			try {
-				var resultAst = css.parse(read('critical-1.css', 'utf8'));
+				var resultAst = css.parse(result);
 				var orgAst = css.parse(clearSelfRemainCss);
 				resultAst.should.eql(orgAst);
 				done();
@@ -246,12 +253,11 @@ describe('penthouse functionality tests', function() {
 		var emptyRemoveCssFilePath = path.join(__dirname, 'static-server', 'empty-rules--remove.css');
 
 		penthouse({
-			urls: [page1],
-			cssFile: emptyRemoveCssFilePath
+			url: page1,
+			css: emptyRemoveCssFilePath
 		}, function(err, result) {
 			try {
-				result = read('critical-1.css', 'utf8').trim();
-				result.should.equal('');
+				result.trim().should.equal('');
 				done();
 			} catch (ex) {
 				done(ex);
@@ -268,7 +274,7 @@ describe('penthouse functionality tests', function() {
 		var result = ffRemover(fontFaceRemoveCss);
 
 		try {
-			var resultAst = css.parse(read('critical-1.css', 'utf8'));
+			var resultAst = css.parse(result);
 			var orgAst = css.parse(fontFaceRemoveCss);
 			resultAst.stylesheet.rules.should.have.length.lessThan(orgAst.stylesheet.rules.length);
 			done();
