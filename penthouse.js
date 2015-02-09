@@ -6,7 +6,7 @@ License: MIT
 Version: 0.3.0-rc
 
 USAGE:
-    phantomjs penthouse.js [CSS file] [URL to page] > [critical path CSS file]
+    phantomjs penthouse.js [options] <URL to page> <CSS file>
     Options:
     --width <width>      The viewport width in pixels. Defaults to 1300 
     --height <height>    The viewport height in pixels. Defaults to 900 
@@ -85,7 +85,6 @@ if (typeof module !== 'undefined') {
         usage: usageString
     };
 }
-
 /*
 module for removing unused fontface rules - can be used both for the standalone node binary and the phantomjs script
 */
@@ -145,7 +144,7 @@ function unusedFontfaceRemover (css){
   }
 
   return css;
-}
+};
 
 
 
@@ -195,7 +194,7 @@ function cssPreformatter (css){
   }
 
   return css;
-}
+};
 
 if(typeof module !== 'undefined') {
     module.exports = cssPreformatter;
@@ -568,8 +567,14 @@ if (standaloneMode) {
 try {
 	options = parse(system.args.slice(1));
 } catch (ex) {
-	debug('Caught error parsing arguments: ' + ex.message);
-	errorlog('Usage: phantomjs penthouse.js ' + usage);
+
+    errorlog('Caught error parsing arguments: ' + ex.message);
+
+    // the usage string does not make sense to show if running via Node
+    if(standaloneMode) {
+        errorlog('\nUsage: phantomjs penthouse.js ' + usage);
+    }
+
 	phantom.exit(1);
 }
 
