@@ -1,7 +1,7 @@
 
 
 USAGE:
-    phantomjs penthouse.js [CSS file] [URL to page] > [critical path CSS file]
+    phantomjs penthouse.js [options] <URL to page> <CSS file>
     Options:
     --width <width>      The viewport width in pixels. Defaults to 1300 
     --height <height>    The viewport height in pixels. Defaults to 900 
