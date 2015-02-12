@@ -6,7 +6,7 @@ License: MIT
 Version: 0.3.0-rc
 
 USAGE:
-    phantomjs penthouse.js [CSS file] [URL to page] > [critical path CSS file]
+    phantomjs penthouse.js [options] <URL to page> <CSS file>
     Options:
     --width <width>      The viewport width in pixels. Defaults to 1300 
     --height <height>    The viewport height in pixels. Defaults to 900 
@@ -22,14 +22,15 @@ DEPENDENCIES
 
 (function() { "use strict"; 
 /*
-parser for the script - can be used both for the standalone node binary and the phantomjs script
-*/
+ * parser for the script - can be used both for the standalone node binary and the phantomjs script
+ */
+
 /*jshint unused:false*/
 
 var usageString = '[--width <width>] [--height <height>] <url> <main.css>';
 
 function buildError(msg, problemToken, args) {
-    var error = new Error( msg  + problemToken);
+    var error = new Error(msg + problemToken);
     error.token = problemToken;
     error.args = args;
     throw error;
@@ -40,25 +41,25 @@ function buildError(msg, problemToken, args) {
 // throws an error on wrong options or parsing error
 function parseOptions(argsOriginal) {
     var args = argsOriginal.slice(0),
-    validOptions = ['--width', '--height'],
-    parsed = {},
-    val,
-    len = args.length,
-    optIndex,
-    option;
+        validOptions = ['--width', '--height'],
+        parsed = {},
+        val,
+        len = args.length,
+        optIndex,
+        option;
 
-    if(len < 2 ) buildError('Invalid number of arguments', args, args);
+    if (len < 2) buildError('Invalid number of arguments', args, args);
 
-    while(args.length > 2 && args[0].match(/^(--width|--height)$/)) {
+    while (args.length > 2 && args[0].match(/^(--width|--height)$/)) {
         optIndex = validOptions.indexOf(args[0]);
-        if(optIndex === -1) buildError('Logic/Parsing error ', args[0], args);
+        if (optIndex === -1) buildError('Logic/Parsing error ', args[0], args);
 
         // lose the dashes
         option = validOptions[optIndex].slice(2);
         val = args[1];
 
         parsed[option] = parseInt(val, 10);
-        if(isNaN(parsed[option])) buildError('Parsing error when parsing ', val, args);
+        if (isNaN(parsed[option])) buildError('Parsing error when parsing ', val, args);
 
         // remove the two parsed arguments from the list
         args = args.slice(2);
@@ -67,19 +68,25 @@ function parseOptions(argsOriginal) {
     parsed.url = args[0];
     parsed.css = args[1];
 
-    if( ! parsed.url.match(/https?:\/\//) ) {
-      buildError('Invalid url: ', parsed.url, args);
+    if (!parsed.url) {
+        buildError('Missing url/path to html file', '', args);
     }
+
+    if (!parsed.css) {
+        buildError('Missing css file', '', args);
+    }
+
 
     return parsed;
 }
 
-if(typeof module !== 'undefined') {
+if (typeof module !== 'undefined') {
     module.exports = exports = {
-        parse : parseOptions,
-        usage : usageString
+        parse: parseOptions,
+        usage: usageString
     };
 }
+
 /*
 module for removing unused fontface rules - can be used both for the standalone node binary and the phantomjs script
 */
@@ -563,8 +570,14 @@ if (standaloneMode) {
 try {
 	options = parse(system.args.slice(1));
 } catch (ex) {
-	debug('Caught error parsing arguments: ' + ex.message);
-	errorlog('Usage: phantomjs penthouse.js ' + usage);
+
+    errorlog('Caught error parsing arguments: ' + ex.message);
+
+    // the usage string does not make sense to show if running via Node
+    if(standaloneMode) {
+        errorlog('\nUsage: phantomjs penthouse.js ' + usage);
+    }
+
 	phantom.exit(1);
 }
 
