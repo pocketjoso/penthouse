@@ -1,0 +1,14 @@
+/*this is a
+multi
+line
+comment that should be removed*/
+html {
+  color: red;
+}
+body {
+  /*color: blue;*/
+  font-size: 12px;
+  /*font-size: 24px;
+  margin-bottom: 20px;
+  */
+}
