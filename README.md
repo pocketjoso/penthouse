@@ -25,32 +25,33 @@ Penthouse can be used:
 Install [PhantomJS](https://github.com/ariya/phantomjs) first, and make sure it works for you. Then download the `penthouse.js` file.
 
 #### Usage
-
+```
 	phantomjs penthouse.js [URL to page] [CSS file] > [critical path CSS file]
 
 	//for example
 	phantomjs penthouse.js http://mySite.com/page1 allStyles.css > page1-critical-styles.css
 	phantomjs penthouse.js http://mySite.com/page2 allStyles.css > page2-critical-styles.css
+```
 
 ##### HTTPS
 
 To run on HTTPS pages two extra flags must be passed in, directly after phantomjs in the call:
 
-	--ignore-ssl-errors=true --ssl-protocol=tlsv1
+	`--ignore-ssl-errors=true --ssl-protocol=tlsv1`
 	//as such:
-	phantomjs --ignore-ssl-errors=true --ssl-protocol=tlsv1 penthouse.js [URL to page] [CSS file] > [critical path CSS file]
+	`phantomjs --ignore-ssl-errors=true --ssl-protocol=tlsv1 penthouse.js [URL to page] [CSS file] > [critical path CSS file]``
 
 ##### Optional parameters
 By default penthouse gives you the css needed to render a viewport of size `1300x900`. This css will cover all smaller viewport sizes, unless you're delivering a different DOM or doing something crazy. You can pass in your a different `viewport width` and `viewport height` if you want; these two params must follow the `[CSS file]` like this:
 
+```
 	phantomjs penthouse.js [URL to page] [CSS file] [Viewport WIDTH] [Viewport HEIGHT] > [critical path CSS file]
-
+```
 
 ### As a Node module
 
 #### Installation
-
-    npm install --save-dev penthouse
+`npm install --save-dev penthouse`
 
 This will add penthouse to the list of dependencies
 
@@ -58,6 +59,7 @@ This will add penthouse to the list of dependencies
 
 Require as normal and execute with a callback
 
+```
     var penthouse = require('penthouse'),
         path = require('path');
 
@@ -69,6 +71,7 @@ Require as normal and execute with a callback
     }, function(err, criticalCss) {
         console.log(criticalCss);
     });
+```
 
 The Penthouse Node module can also be used as in Gulp.
 
