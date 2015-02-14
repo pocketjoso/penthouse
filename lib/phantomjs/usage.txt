@@ -1,0 +1,14 @@
+
+
+USAGE:
+    phantomjs penthouse.js [options] <URL to page> <CSS file>
+    Options:
+    --width <width>      The viewport width in pixels. Defaults to 1300 
+    --height <height>    The viewport height in pixels. Defaults to 900 
+
+    to run on HTTPS sites two flags must be passed in, directly after phantomjs in the call:
+    --ignore-ssl-errors=true --ssl-protocol=tlsv1
+
+DEPENDENCIES
+    + "phantomjs" : "~1.9.7"
+

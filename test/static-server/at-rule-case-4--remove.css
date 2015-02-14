@@ -1,3 +1,27 @@
+@media print {
+  * {
+    color: #000 !important;
+    text-shadow: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  a{
+    text-decoration: underline;
+  }
+  a[href]:after {
+    content: " (" attr(href) ")";
+  }
+  a[href^="#"]:after {
+    content: "";
+  }
+  h3 {
+    orphans: 3;
+    widows: 3;
+  }
+  h3 {
+    page-break-after: avoid;
+  }
+}
 @keyframes spinAround {
     /*start and end point of animation*/
     33%, 51.001% {
@@ -11,5 +35,20 @@
 
     /*then between 51% and 51.001% we reset the animation, without showing user*/
     51%, 51.001% {
-      animation-duration: 0; } 
+      animation-duration: 0; }
+}
+@-webkit-keyframes spinAround {
+    /*start and end point of animation*/
+    33%, 51.001% {
+      -ms-transform: translateZ(-50px) rotateX(0deg);
+      transform: translateZ(-50px) rotateX(0deg); }
+
+    /*between 33% and 50% we animate to this state*/
+    50%, 51% {
+      -ms-transform: translateZ(-50px) rotateX(360deg);
+      transform: translateZ(-50px) rotateX(360deg); }
+
+    /*then between 51% and 51.001% we reset the animation, without showing user*/
+    51%, 51.001% {
+      animation-duration: 0; }
 }
