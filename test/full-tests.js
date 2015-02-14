@@ -6,7 +6,6 @@ var penthouse = require('../lib/'),
     read = fs.readFileSync,
     path = require('path');
 
-//penthouse.DEBUG = true;
 
 describe('penthouse functionality tests', function () {
     var page1cssPath = path.join(__dirname, 'static-server', 'page1.css'),
@@ -96,7 +95,6 @@ describe('penthouse functionality tests', function () {
         });
     });
 
-
     /*==@-rule handling==*/
 
     /* - Case 0 : Non nested @-rule [REMAIN]
@@ -121,7 +119,6 @@ describe('penthouse functionality tests', function () {
 
         });
     });
-
 
     /*	- Case 1: @-rule with CSS properties inside [REMAIN]
      (NOTE: @font-face is removed later in code, unless it is used.
@@ -209,7 +206,6 @@ describe('penthouse functionality tests', function () {
 
         });
     });
-
 
     it('should keep self clearing rules when needed to stay outside the fold', function (done) {
         var clearSelfRemainCssFilePath = path.join(__dirname, 'static-server', 'clearSelf--remain.css'),

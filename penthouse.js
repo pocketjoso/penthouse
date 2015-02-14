@@ -3,7 +3,7 @@ Penthouse CSS Critical Path Generator
 https://github.com/pocketjoso/penthouse
 Author: Jonas Ohlsson
 License: MIT
-Version: 0.3.0-rc
+Version: 0.3.0
 
 USAGE:
     phantomjs penthouse.js [options] <URL to page> <CSS file>
@@ -48,7 +48,7 @@ function parseOptions(argsOriginal) {
         optIndex,
         option;
 
-    if (len < 2) buildError('Invalid number of arguments', args, args);
+    if (len < 2) buildError('Not enough arguments, ', args);
 
     while (args.length > 2 && args[0].match(/^(--width|--height)$/)) {
         optIndex = validOptions.indexOf(args[0]);

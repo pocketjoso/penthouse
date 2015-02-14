@@ -26,15 +26,13 @@ Install [PhantomJS](https://github.com/ariya/phantomjs) first, and make sure it 
 
 #### Usage
 ```
-  phantomjs penthouse.js [CSS file] [URL to page] > [critical path CSS file]
+	phantomjs penthouse.js [URL to page] [CSS file] > [critical path CSS file]
 
-  //for example
-  phantomjs penthouse.js allStyles.css http://mySite.com/page1 > page1-critical-styles.css
-  phantomjs penthouse.js allStyles.css http://mySite.com/page2 > page2-critical-styles.css
-```
+	//for example
+	phantomjs penthouse.js http://mySite.com/page1 allStyles.css > page1-critical-styles.css
+	phantomjs penthouse.js http://mySite.com/page2 allStyles.css > page2-critical-styles.css
 
-##### Multiple URL's in the same call
-  `phantomjs penthouse.js [CSS file] [URL1] [URL2] [...]`
+##### HTTPS
 
 This will generate critical css files in the current folder, named
 `Critical-1.css`, `Critical-2.css` ...
@@ -98,6 +96,9 @@ Problems with special characters like &#8594; after converting? Make sure you us
 Please report your issue (check that it's not already there first though!), and I will try to fix it as soon as possible.
 
 ## Changelog
+2015-02-14    v0.3.0    Better internal code, tests, remove printstyles (@fatso83, @pocketjoso)
+2015-01-17    v0.2.53   Fix bug from 2.52, improved tests (@pocketjoso)  
+2015-01-11    v0.2.52   Fix minor removal bug with minified css (@pocketjoso)  
 2014-10-24    v0.2.51   Remove animation declarations (@pocketjoso)  
 2014-07-27    v0.2.5    Handle all non nested @-rules (@pocketjoso)  
 2014-07-20    v0.2.4    Fix extra line break bug on Windows (@pocketjoso)  
