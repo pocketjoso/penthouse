@@ -13,25 +13,11 @@ var penthouse = require('../lib/'),
 describe('basic tests of penthouse functionality', function () {
   var page1cssPath = path.join(__dirname, 'static-server', 'page1.css'),
 		sharedCssFilePath = path.join(__dirname, 'static-server', 'shared.css'),
-		originalCss = read(page1cssPath).toString(),
-		page1, server, port;
+    page1 = path.join(__dirname, 'static-server', 'page1.html'),
+		originalCss = read(page1cssPath).toString();
 
 	// phantomjs takes a while to start up
 	this.timeout(5000);
-
-	before(function (done) {
-		startServer(function (instance, serverPort) {
-			server = instance;
-			port = serverPort;
-			page1 = ('http://localhost:' + port + '/page1.html');
-			done();
-		});
-	});
-
-	after(function (done) {
-		server.close();
-		done();
-	});
 
 	it('should return css', function (done) {
     penthouse({
@@ -96,18 +82,3 @@ describe('basic tests of penthouse functionality', function () {
 		});
 	});
 });
-
-function startServer (done) {
-	var portfinder = require('portfinder');
-
-	portfinder.getPort(function (err, port) {
-		//
-		// `port` is guaranteed to be a free port
-		// in this scope.
-
-		var app = require('./static-server/app.js');
-		var server = app.listen(port);
-
-		done(server, port);
-	});
-}

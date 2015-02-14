@@ -10,24 +10,10 @@ var penthouse = require('../lib/'),
 
 describe('penthouse functionality tests', function () {
     var page1cssPath = path.join(__dirname, 'static-server', 'page1.css'),
-        page1, server, port;
+        page1 = path.join(__dirname, 'static-server', 'page1.html');
 
     // phantomjs takes a while to start up
     this.timeout(5000);
-
-    before(function (done) {
-        startServer(function (instance, serverPort) {
-            server = instance;
-            port = serverPort;
-            page1 = ('http://localhost:' + port + '/page1.html');
-            done();
-        });
-    });
-
-    after(function (done) {
-        server.close();
-        done();
-    });
 
     it('should save css to a file', function (done) {
         penthouse({
@@ -53,7 +39,7 @@ describe('penthouse functionality tests', function () {
             yeomanExpectedCss = read(yeomanExpectedCssFilePath).toString();
 
         penthouse({
-            url: 'http://localhost:' + port + '/yeoman.html',
+            url: path.join(__dirname, 'static-server', 'yeoman.html'),
             css: yeomanFullCssFilePath,
             width: 320,
             height: 70
@@ -165,7 +151,7 @@ describe('penthouse functionality tests', function () {
      @page
      */
     it('should remove complete case 2 @-rules (@page..)', function (done) {
-        var atRuleCase2RemoveCssFilePath = path.join(__dirname, 'static-server', 'at-rule-case-4--remove.css');
+        var atRuleCase2RemoveCssFilePath = path.join(__dirname, 'static-server', 'at-rule-case-2--remove.css');
 
         penthouse({
             url: page1,
@@ -230,7 +216,7 @@ describe('penthouse functionality tests', function () {
             clearSelfRemainCss = read(clearSelfRemainCssFilePath).toString();
 
         penthouse({
-            url: 'http://localhost:' + port + '/clearSelf.html',
+            url: path.join(__dirname, 'static-server', 'clearSelf.html'),
             css: clearSelfRemainCssFilePath
         }, function (err, result) {
             try {
@@ -290,20 +276,4 @@ describe('penthouse functionality tests', function () {
             else { done(new Error('Did not get error'));}
         });
     });
-
 });
-
-function startServer(done) {
-    var portfinder = require('portfinder');
-
-    portfinder.getPort(function (err, port) {
-        //
-        // `port` is guaranteed to be a free port
-        // in this scope.
-
-        var app = require('./static-server/app.js');
-        var server = app.listen(port);
-
-        done(server, port);
-    });
-}
