@@ -1,0 +1,6 @@
+@page :first {
+  font-size: 120%;
+}
+@page :left {
+  margin: 2in 3in;
+}

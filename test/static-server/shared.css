@@ -21,3 +21,7 @@
     padding-top: 200px;
     background: green;
 }
+
+.some_class_only_used_on_index2 {
+    background : magenta;
+}
