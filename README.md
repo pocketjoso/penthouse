@@ -56,7 +56,7 @@ This will add penthouse to the list of dependencies
 
 #### Usage
 
-Require as normal and execute with a callback
+Require as normal and execute with a callback:
 
 ```
 var penthouse = require('penthouse'),
@@ -72,7 +72,7 @@ penthouse({
 });
 ```
 
-The Penthouse Node module can also be used as in Gulp.
+The Penthouse Node module can also be used in Gulp.
 
 ## Online version
 http://jonassebastianohlsson.com/criticalpathcssgenerator/
@@ -84,8 +84,6 @@ http://jonassebastianohlsson.com/criticalpathcssgenerator/
 Change any relative paths (f.e. `background-image: url("../images/x.gif");`) to absolute (starting with a `/`): `background-image: url("/images/x.gif");`, and then try again.
 
 ###Unstyled content showing
-The most common problem is with clearing floats. Instead of clearing elements appearing after floated elements (f.e. using `clear:both;`), clear the floats themselves by using the [clear-fix pattern](http://css-tricks.com/snippets/css/clear-fix/). Float clearing will now work also in the generated critical css.
-
 If you for some reason have an element appearing early in the DOM, but that you apply styles to move outside of the above the fold content (using absolute position or transforms), consider whether it really should appear so early in the DOM.
 
 ###Special glyphs not showing/showing incorrectly
@@ -95,7 +93,7 @@ Problems with special characters like &#8594; after converting? Make sure you us
 Please report your issue (check that it's not already there first though!), and I will try to fix it as soon as possible.
 
 ## Changelog
-2015-02-14    v0.3.0    Better internal code, tests, remove printstyles (@fatso83, @pocketjoso)  
+2015-02-14    [v0.3.0](https://github.com/pocketjoso/penthouse/releases/tag/v0.3.0)    Better internal code, tests, remove printstyles (@fatso83, @pocketjoso)  
 2015-01-17    v0.2.53   Fix bug from 2.52, improved tests (@pocketjoso)  
 2015-01-11    v0.2.52   Fix minor removal bug with minified css (@pocketjoso)  
 2014-10-24    v0.2.51   Remove animation declarations (@pocketjoso)  
