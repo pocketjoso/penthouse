@@ -3,9 +3,14 @@
 		font-size: 120%;
 	}
 }
+@-moz-document url(http://www.w3.org/){
+	body {
+		background: yellow;
+	}
+}
 @document url(http://www.w3.org/){
-	body { 
-		background: yellow; 
+	body {
+		background: yellow;
 	}
 }
 @supports( transform-origin: 5% 5% ){
