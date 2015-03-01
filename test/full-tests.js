@@ -6,6 +6,7 @@ var penthouse = require('../lib/'),
     read = fs.readFileSync,
     path = require('path');
 
+process.setMaxListeners(0);
 
 describe('penthouse functionality tests', function () {
     var page1cssPath = path.join(__dirname, 'static-server', 'page1.css'),
