@@ -3,7 +3,7 @@ Penthouse CSS Critical Path Generator
 https://github.com/pocketjoso/penthouse
 Author: Jonas Ohlsson
 License: MIT
-Version: 0.3.0
+Version: 0.3.1
 
 USAGE:
     phantomjs penthouse.js [options] <URL to page> <CSS file>
@@ -382,7 +382,7 @@ function getCriticalPathCss(options) {
 						after @media print has been removed by Case 4 rule)
 						- just skip this particular line (i.e. keep), and continue checking the CSS inside as normal
 					*/
-					else if (/@(media|document|supports)/gi.test(newSel)) {
+					else if (/@(media|(-moz-)?document|supports)/gi.test(newSel)) {
 						return getNewValidCssSelector(i + 1);
 					}
 					/*
