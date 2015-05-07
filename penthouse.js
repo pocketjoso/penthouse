@@ -3,7 +3,7 @@ Penthouse CSS Critical Path Generator
 https://github.com/pocketjoso/penthouse
 Author: Jonas Ohlsson
 License: MIT
-Version: 0.3.1
+Version: 0.3.2
 
 USAGE:
     phantomjs penthouse.js [options] <URL to page> <CSS file>
@@ -231,6 +231,11 @@ page.onError = function(msg, trace) {
 	//do nothing
 };
 
+page.onResourceError = function(resourceError) {
+  page.reason = resourceError.errorString;
+  page.reason_url = resourceError.url;
+};
+
 var main = function(options) {
   debug('main(): ', JSON.stringify(options));
 //final cleanup
@@ -324,7 +329,7 @@ function getCriticalPathCss(options) {
 
 	page.open(options.url, function(status) {
 		if (status !== 'success') {
-			errorlog('Unable to access network');
+			errorlog('Error opening url \'' + page.reason_url + '\': ' + page.reason);
 			phantom.exit(1);
 		} else {
 
