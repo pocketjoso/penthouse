@@ -65,8 +65,8 @@ var penthouse = require('penthouse'),
 penthouse({
     url : 'http://google.com',
     css : path.join(__basedir + 'static/main.css'),
-    width : 400,   // viewport width
-    height : 240   // viewport height
+    width : 1300,   // viewport width
+    height : 900   // viewport height
 }, function(err, criticalCss) {
     console.log(criticalCss);
 });
