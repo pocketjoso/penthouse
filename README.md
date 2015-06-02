@@ -13,10 +13,10 @@ The process is automatic and the generated css is production ready as is. If you
 
 Penthouse can be used:
  * from the command line
- * [as a Node module](https://github.com/pocketjoso/penthouse/#as-a-node-module)
+ * [as a Node module](https://github.com/pocketjoso/penthouse/blob/master/README.md#as-a-node-module)
  * [as a Grunt task](https://github.com/fatso83/grunt-penthouse)
  * as a Gulp task (just require Node module straight from your script)
- * via [the online version](https://github.com/pocketjoso/penthouse#online-version)
+ * via [the online version](https://github.com/pocketjoso/penthouse/blob/master/README.md#online-version)
 
 ### From command line
 
