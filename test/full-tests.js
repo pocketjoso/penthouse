@@ -273,4 +273,28 @@ describe('penthouse functionality tests', function () {
             else { done(new Error('Did not get error'));}
         });
     });
+
+
+    it('should handle html passed in as string', function (done) {
+      var yeomanFullCssFilePath = path.join(__dirname, 'static-server', 'yeoman-full.css'),
+      // TODO: replace with full-expected
+          yeomanExpectedCssFilePath = path.join(__dirname, 'static-server', 'yeoman-small-expected.css'),
+          yeomanExpectedCss = read(yeomanExpectedCssFilePath).toString(),
+          yeomanHtmlString = read(path.join(__dirname, 'static-server', 'yeoman.html')).toString();
+
+      penthouse({
+        url: yeomanHtmlString,
+        css: yeomanFullCssFilePath
+      }, function (err, result) {
+        if(err) { done(err); }
+        try {
+          var resultAst = css.parse(result);
+          var expectedAst = css.parse(yeomanExpectedCss);
+          resultAst.should.eql(expectedAst);
+          done();
+        } catch (ex) {
+          done(ex);
+        }
+      });
+  });
 });
