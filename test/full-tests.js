@@ -35,14 +35,14 @@ describe('penthouse functionality tests', function () {
 
     it('should match exactly the css in the yeoman test', function (done) {
         var yeomanFullCssFilePath = path.join(__dirname, 'static-server', 'yeoman-full.css'),
-            yeomanExpectedCssFilePath = path.join(__dirname, 'static-server', 'yeoman-small-expected.css'),
+            yeomanExpectedCssFilePath = path.join(__dirname, 'static-server', 'yeoman-medium--expected.css'),
             yeomanExpectedCss = read(yeomanExpectedCssFilePath).toString();
 
         penthouse({
             url: path.join(__dirname, 'static-server', 'yeoman.html'),
             css: yeomanFullCssFilePath,
-            width: 320,
-            height: 70
+            width: 800,
+            height: 450
         }, function (err, result) {
             if (err) {
                 done(err);
