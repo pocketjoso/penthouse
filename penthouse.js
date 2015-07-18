@@ -3,7 +3,7 @@ Penthouse CSS Critical Path Generator
 https://github.com/pocketjoso/penthouse
 Author: Jonas Ohlsson
 License: MIT
-Version: 0.3.2
+Version: 0.3.4
 
 USAGE:
     phantomjs penthouse.js [options] <URL to page> <CSS file>
@@ -223,6 +223,16 @@ var debug = function() {
 	if (DEBUG) errorlog('DEBUG: ' + combineArgsString(arguments));
 };
 
+// discard stdout from phantom exit;
+var phantomExit = function(code) {
+	if (page) {
+		page.close();
+	}
+	setTimeout(function() {
+		phantom.exit(code);
+	}, 0);
+};
+
 //don't confuse analytics more than necessary when visiting websites
 page.settings.userAgent = 'Penthouse Critical Path CSS Generator';
 
@@ -253,7 +263,7 @@ var main = function(options) {
 		options.css = cssPreformat(f.read());
 	} catch (e) {
 		errorlog(e);
-		phantom.exit(1);
+		phantomExit(1);
 	}
 
   // start the critical path CSS generation
@@ -292,20 +302,20 @@ page.onCallback = function(css) {
 
       // return the critical css!
       stdout.write(finalCss);
-      phantom.exit(0);
+      phantomExit(0);
     } else {
       // No css. This is not an error on our part
       // but still safer to warn the end user, in case they made a mistake
       errorlog('Note: Generated critical css was empty for URL: ' + options.url);
       // for consisteny, still generate output (will be empty)
       stdout.write(css);
-      phantom.exit(0);
+      phantomExit(0);
     }
 
   } catch (ex) {
     debug('phantom.onCallback -> error', ex);
     errorlog('error: ' + ex);
-    phantom.exit(1);
+    phantomExit(1);
   }
 };
 
@@ -330,7 +340,7 @@ function getCriticalPathCss(options) {
 	page.open(options.url, function(status) {
 		if (status !== 'success') {
 			errorlog('Error opening url \'' + page.reason_url + '\': ' + page.reason);
-			phantom.exit(1);
+			phantomExit(1);
 		} else {
 
 			debug('Starting sandboxed evaluation of CSS\n', options.css);
@@ -580,7 +590,7 @@ try {
         errorlog('\nUsage: phantomjs penthouse.js ' + usage);
     }
 
-	phantom.exit(1);
+	phantomExit(1);
 }
 
 // set defaults
