@@ -1,0 +1,9 @@
+html {
+	color: red;
+}
+.test  { /* there is a special Unicode Character 'LINE SEPARATOR' (U+2028) after t, before space.. breaks phantomJS */
+	color: red;
+}
+.test💩 {
+	color: red;
+}

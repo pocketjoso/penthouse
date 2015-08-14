@@ -81,4 +81,19 @@ describe('basic tests of penthouse functionality', function () {
 
 		});
 	});
+
+	it('should not crash on special chars', function (done) {
+		penthouse({
+			url: page1,
+			css: path.join(__dirname, 'static-server', 'special-chars.css')
+		}, function (err, result) {
+			if(err) { done(err); }
+			try {
+				css.parse(result);
+				done();
+			} catch (ex) {
+				done(ex);
+			}
+		});
+	});
 });
