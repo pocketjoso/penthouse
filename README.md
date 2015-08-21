@@ -68,7 +68,8 @@ penthouse({
     width : 1300,   // viewport width
     height : 900   // viewport height
 }, function(err, criticalCss) {
-    console.log(criticalCss);
+    if (err) { // handle error }
+    fs.writeFileSync('outfile.css', criticalCss);
 });
 ```
 
