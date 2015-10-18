@@ -36,7 +36,6 @@ function concat() {
 		+ header
 		+ cat('lib/options-parser.js')
 		+ cat('lib/phantomjs/unused-fontface-remover.js')
-		+ cat('lib/phantomjs/css-preformatter.js')
 		+ standaloneToken
 
 		+ cat('lib/phantomjs/core.js')
