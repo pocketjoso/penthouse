@@ -92,19 +92,3 @@ Problems with special characters like &#8594; after converting? Make sure you us
 
 ###Other problems
 Please report your issue (check that it's not already there first though!), and I will try to fix it as soon as possible.
-
-## Changelog
-2015-05-07    [v0.3.2](https://github.com/pocketjoso/penthouse/releases/tag/v0.3.2)    Better error message when failing to open url (@pocketjoso)  
-2015-03-01    [v0.3.1](https://github.com/pocketjoso/penthouse/releases/tag/v0.3.1)    Handle @-moz-document properly (@pocketjoso)  
-2015-02-14    [v0.3.0](https://github.com/pocketjoso/penthouse/releases/tag/v0.3.0)    Better internal code, tests, remove printstyles (@fatso83, @pocketjoso)  
-2015-01-17    v0.2.53   Fix bug from 2.52, improved tests (@pocketjoso)  
-2015-01-11    v0.2.52   Fix minor removal bug with minified css (@pocketjoso)  
-2014-10-24    v0.2.51   Remove animation declarations (@pocketjoso)  
-2014-07-27    v0.2.5    Handle all non nested @-rules (@pocketjoso)  
-2014-07-20    v0.2.4    Fix extra line break bug on Windows (@pocketjoso)  
-2014-07-19    v0.2.3    Improved @-rule handling (@pocketjoso)  
-2014-07-12    v0.2.2    Remove :hover, and invalid, selectors (@pocketjoso)  
-2014-06-20    v0.2.1    Handle previous content clearing styles (@pocketjoso)  
-2014-06-10    v0.2.0    Node module and standalone executable (@fatso83)  
-2014-06-05    v0.1.0    Published on NPM (@pocketjoso)  
-2014-06-04    v0.0.0    PhantomJS script /core logic (@pocketjoso)
