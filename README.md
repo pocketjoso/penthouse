@@ -12,40 +12,11 @@ The process is automatic and the generated css is production ready as is. If you
 ## Usage
 
 Penthouse can be used:
- * from the command line
  * [as a Node module](https://github.com/pocketjoso/penthouse/blob/master/README.md#as-a-node-module)
  * [as a Grunt task](https://github.com/fatso83/grunt-penthouse)
  * as a Gulp task (just require Node module straight from your script)
  * via [the online version](https://github.com/pocketjoso/penthouse/blob/master/README.md#online-version)
-
-### From command line
-
-#### Installation
-
-Install [PhantomJS](https://github.com/ariya/phantomjs) first, and make sure it works for you. Then download the `penthouse.js` file.
-
-#### Usage
-```
-phantomjs penthouse.js [URL to page] [CSS file] > [critical path CSS file]
-
-//for example
-phantomjs penthouse.js http://mySite.com/page1 allStyles.css > page1-critical-styles.css
-phantomjs penthouse.js http://mySite.com/page2 allStyles.css > page2-critical-styles.css
-```
-
-##### Optional parameters
-```
---width <width>      The viewport width in pixels. Defaults to 1300
---height <height>    The viewport height in pixels. Defaults to 900
-```
-
-##### HTTPS
-To be able to run on all HTTPS sites two flags must be passed in, directly after phantomjs in the call:
-`--ignore-ssl-errors=true` and `--ssl-protocol=tlsv1`
-
-```
-phantomjs penthouse.js [URL to page] [CSS file] [Viewport WIDTH] [Viewport HEIGHT] > [critical path CSS file]
-```
+ * [from the command line](https://github.com/pocketjoso/penthouse/blob/master/README.md#from-command-line)
 
 ### As a Node module
 
@@ -78,6 +49,10 @@ The Penthouse Node module can also be used in Gulp.
 ## Online version
 http://jonassebastianohlsson.com/criticalpathcssgenerator/
 
+### From command line
+
+The command line version is no longer supported. Either use the [Node module](https://github.com/pocketjoso/penthouse/blob/master/README.md#as-a-node-module), or download the last
+supported command line version and follow the instructions in the README there: [v.0.3.6](https://github.com/pocketjoso/penthouse/releases/tag/v0.3.6).
 
 ## Problems with generated CSS
 
