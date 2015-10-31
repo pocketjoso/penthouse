@@ -85,6 +85,24 @@ describe('basic tests of penthouse functionality', function () {
 		});
 	});
 
+	/* future improvements
+		- return parsingErrors from core; requires css@ >= 2.1, which requires Phantom@2.x
+		- fault tolerant css parsing via postcss - also requires Phantom@2.x (and Node > 12 (?)) */
+	it('should not crash on invalid css', function (done) {
+		penthouse({
+			url: page1,
+			css: path.join(__dirname, 'static-server', 'invalid.css')
+		}, function (err, result) {
+			if(err) { done(err); }
+			try {
+				css.parse(result);
+				done();
+			} catch (ex) {
+				done(ex);
+			}
+		});
+	});
+
 	it('should not crash on special chars', function (done) {
 		penthouse({
 			url: page1,
