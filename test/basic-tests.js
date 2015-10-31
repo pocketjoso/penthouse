@@ -8,7 +8,10 @@ var penthouse = require('../lib/'),
 	async = require('async'),
 	glob = require('glob');
 
-//penthouse.DEBUG = true;
+// becasuse dont want to fail tests on white space differences
+function normalisedCssAst (cssString) {
+	return css.parse(css.stringify(css.parse(cssString), { compress: true }));
+}
 
 describe('basic tests of penthouse functionality', function () {
   var page1cssPath = path.join(__dirname, 'static-server', 'page1.css'),
@@ -48,9 +51,9 @@ describe('basic tests of penthouse functionality', function () {
 				return;
 			}
 			try {
-				var resultAst = css.parse(result);
-				var orgAst = css.parse(originalCss);
-				resultAst.should.eql(orgAst);
+				var resultAst = normalisedCssAst(result);
+				var expectedAst = normalisedCssAst(originalCss);
+				resultAst.should.eql(expectedAst);
 				done();
 			} catch (ex) {
 				done(ex);

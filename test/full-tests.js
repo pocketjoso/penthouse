@@ -8,6 +8,11 @@ var penthouse = require('../lib/'),
 
 process.setMaxListeners(0);
 
+// becasuse dont want to fail tests on white space differences
+function normalisedCssAst (cssString) {
+	return css.parse(css.stringify(css.parse(cssString), { compress: true }));
+}
+
 describe('penthouse functionality tests', function () {
     var page1cssPath = path.join(__dirname, 'static-server', 'page1.css'),
         page1 = path.join(__dirname, 'static-server', 'page1.html');
@@ -48,8 +53,8 @@ describe('penthouse functionality tests', function () {
                 done(err);
             }
             try {
-                var resultAst = css.parse(result);
-                var expectedAst = css.parse(yeomanExpectedCss);
+                var resultAst = normalisedCssAst(result);
+                var expectedAst = normalisedCssAst(yeomanExpectedCss)
                 resultAst.should.eql(expectedAst);
                 done();
             } catch (ex) {
@@ -68,9 +73,9 @@ describe('penthouse functionality tests', function () {
             css: pusedoRemainCssFilePath
         }, function (err, result) {
             try {
-                var resultAst = css.parse(result);
-                var orgAst = css.parse(pusedoRemainCss);
-                resultAst.should.eql(orgAst);
+                var resultAst = normalisedCssAst(result);
+                var expectedAst = normalisedCssAst(pusedoRemainCss);
+                resultAst.should.eql(expectedAst);
                 done();
             } catch (ex) {
                 done(ex);
@@ -110,9 +115,9 @@ describe('penthouse functionality tests', function () {
             css: atRuleCase0RemainCssFilePath
         }, function (err, result) {
             try {
-                var resultAst = css.parse(result);
-                var orgAst = css.parse(atRuleCase0RemainCss);
-                resultAst.should.eql(orgAst);
+                var resultAst = normalisedCssAst(result);
+                var expectedAst = normalisedCssAst(atRuleCase0RemainCss);
+                resultAst.should.eql(expectedAst);
                 done();
             } catch (ex) {
                 done(ex);
@@ -134,9 +139,9 @@ describe('penthouse functionality tests', function () {
             css: atRuleCase1RemainCssFilePath
         }, function (err, result) {
             try {
-                var resultAst = css.parse(result);
-                var orgAst = css.parse(atRuleCase1RemainCss);
-                resultAst.should.eql(orgAst);
+                var resultAst = normalisedCssAst(result);
+                var expectedAst = normalisedCssAst(atRuleCase1RemainCss);
+                resultAst.should.eql(expectedAst);
                 done();
             } catch (ex) {
                 done(ex);
@@ -177,9 +182,9 @@ describe('penthouse functionality tests', function () {
             css: atRuleCase3RemainCssFilePath
         }, function (err, result) {
             try {
-                var resultAst = css.parse(result);
-                var orgAst = css.parse(atRuleCase3RemainCss);
-                resultAst.should.eql(orgAst);
+                var resultAst = normalisedCssAst(result);
+                var expectedAst = normalisedCssAst(atRuleCase3RemainCss);
+                resultAst.should.eql(expectedAst);
                 done();
             } catch (ex) {
                 done(ex);
@@ -217,9 +222,9 @@ describe('penthouse functionality tests', function () {
             css: clearSelfRemainCssFilePath
         }, function (err, result) {
             try {
-                var resultAst = css.parse(result);
-                var orgAst = css.parse(clearSelfRemainCss);
-                resultAst.should.eql(orgAst);
+                var resultAst = normalisedCssAst(result);
+                var expectedAst = normalisedCssAst(clearSelfRemainCss);
+                resultAst.should.eql(expectedAst);
                 done();
             } catch (ex) {
                 done(ex);
@@ -254,9 +259,9 @@ describe('penthouse functionality tests', function () {
         var result = ffRemover(fontFaceRemoveCss);
 
         try {
-            var resultAst = css.parse(result);
-            var orgAst = css.parse(fontFaceRemoveCss);
-            resultAst.stylesheet.rules.should.have.length.lessThan(orgAst.stylesheet.rules.length);
+            var resultAst = normalisedCssAst(result);
+            var expectedAst = normalisedCssAst(fontFaceRemoveCss);
+            resultAst.stylesheet.rules.should.have.length.lessThan(expectedAst.stylesheet.rules.length);
             done();
         } catch (ex) {
             done(ex);
