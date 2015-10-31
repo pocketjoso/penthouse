@@ -56,14 +56,17 @@ supported command line version and follow the instructions in the README there: 
 
 ## Problems with generated CSS
 
-###Background images or Fonts missing
+### Invalid css
+Before going further, make sure that you fix any errors in css as detected by [this css parser](http://iamdustan.com/reworkcss_ast_explorer/), as they can cause problem with critical css generation.
+
+### Background images or Fonts missing
 Change any relative paths (f.e. `background-image: url("../images/x.gif");`) to absolute (starting with a `/`): `background-image: url("/images/x.gif");`, and then try again.
 
-###Unstyled content showing
+### Unstyled content showing
 If you for some reason have an element appearing early in the DOM, but that you apply styles to move outside of the above the fold content (using absolute position or transforms), consider whether it really should appear so early in the DOM.
 
-###Special glyphs not showing/showing incorrectly
+### Special glyphs not showing/showing incorrectly
 Problems with special characters like &#8594; after converting? Make sure you use the correct hexadecimal format in your CSS. You can always get this format from your browser console, by entering '&#8594;'`.charCodeAt(0).toString(16)` (answer for this arrow glyph is `2192`). When using hexadecimal format in CSS it needs to be prepended with a backslash, like so: `\2192` (f.e. `content: '\2192';`)
 
-###Other problems
+### Other problems
 Please report your issue (check that it's not already there first though!), and I will try to fix it as soon as possible.
