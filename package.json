@@ -20,15 +20,11 @@
     "url": "github.com/pocketjoso/penthouse/blob/master/LICENSE-MIT"
   },
   "main": "./lib/index.js",
-  "bin": {
-    "penthouse": "./bin/penthouse"
-  },
   "scripts": {
     "test": "node_modules/.bin/mocha test"
   },
   "dependencies": {
     "css": "2.0.0",
-    "nopt": "^3.0.0",
     "phantomjs": "~1.9.7"
   },
   "devDependencies": {
