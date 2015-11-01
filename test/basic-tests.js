@@ -118,6 +118,15 @@ describe('basic tests of penthouse functionality', function () {
 		});
 	});
 
+	it('should surface parsing errors to the end user', function (done) {
+			penthouse({
+					css: 'some.css'
+			}, function (err) {
+					if(err) done();
+					else { done(new Error('Did not get error'));}
+			});
+	});
+
 	it('should exit after timeout', function (done) {
 		penthouse({
 			url    : page1,
