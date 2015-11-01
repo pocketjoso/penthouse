@@ -27,20 +27,20 @@
     "test": "node_modules/.bin/mocha test"
   },
   "dependencies": {
-    "phantomjs": "~1.9.7",
-    "nopt": "^3.0.0"
+    "css": "2.0.0",
+    "nopt": "^3.0.0",
+    "phantomjs": "~1.9.7"
   },
   "devDependencies": {
+    "async": "^0.9.0",
     "chai": "^1.9.1",
-    "css": "^1.6.0",
     "express": "^4.4.2",
+    "glob": "^4.0.2",
     "grunt": "~0.4.2",
     "mocha": "^1.20.1",
     "morgan": "^1.1.1",
     "portfinder": "^0.2.1",
-    "shelljs": "^0.3.0",
-    "glob": "^4.0.2",
-    "async": "^0.9.0"
+    "shelljs": "^0.3.0"
   },
   "keywords": [
     "CSS Critical Path Generator",

@@ -3,3 +3,9 @@ color: red;
 }
 
 html, body {}
+
+@media (min-width: 400px) {
+  .mySelectorThatDoesntMatchAnythingOnThePage{
+  color: red;
+  }
+}
