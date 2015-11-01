@@ -1,0 +1,17 @@
+.myLoggedInSelectorRemainsEvenThoughNotFoundOnPage {
+  color: red;
+}
+/* #box1 appears on page, but normally :hover styles would be removed */
+#box1:hover {
+  color: red;
+}
+/* used to demonstrate regex forceInclude of full component */
+.component {
+  color: red;
+}
+  .component__part {
+    color: blue;
+  }
+  .component__part--modifier {
+    color: green;
+  }

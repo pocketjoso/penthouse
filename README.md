@@ -39,6 +39,10 @@ penthouse({
     // OPTIONAL params
     width : 1300,   // viewport width
     height : 900,   // viewport height
+    forceInclude : [
+      '.keepMeEvenIfNotSeenInDom',
+      /^\.regexWorksToo/
+    ],
     timeout: 30000 // ms; abort critical css generation after this timeout
 }, function(err, criticalCss) {
     if (err) { // handle error }
