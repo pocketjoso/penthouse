@@ -13,7 +13,7 @@ function normalisedCssAst (cssString) {
 	return css.parse(css.stringify(css.parse(cssString), { compress: true }));
 }
 
-describe('penthouse functionality tests', function () {
+describe('penthouse core tests', function () {
     var page1cssPath = path.join(__dirname, 'static-server', 'page1.css'),
         page1 = path.join(__dirname, 'static-server', 'page1.html');
 
@@ -267,15 +267,5 @@ describe('penthouse functionality tests', function () {
             done(ex);
         }
 
-    });
-
-
-    it('should surface parsing errors to the end user', function (done) {
-        penthouse({
-            css: 'some.css'
-        }, function (err) {
-            if(err) done();
-            else { done(new Error('Did not get error'));}
-        });
     });
 });
