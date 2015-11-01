@@ -36,8 +36,10 @@ var penthouse = require('penthouse'),
 penthouse({
     url : 'http://google.com',
     css : path.join(__basedir + 'static/main.css'),
+    // OPTIONAL params
     width : 1300,   // viewport width
-    height : 900   // viewport height
+    height : 900,   // viewport height
+    timeout: 30000 // ms; abort critical css generation after this timeout
 }, function(err, criticalCss) {
     if (err) { // handle error }
     fs.writeFileSync('outfile.css', criticalCss);
