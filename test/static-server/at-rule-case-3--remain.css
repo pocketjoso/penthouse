@@ -1,4 +1,4 @@
-@media(min-width:40em) {
+@media (min-width:40em) {
 	body {
 		font-size: 120%;
 	}
@@ -13,7 +13,7 @@
 		background: yellow;
 	}
 }
-@supports( transform-origin: 5% 5% ){
+@supports ( transform-origin: 5% 5% ){
 	body {
 		transform-origin: 5% 5%;
 	}

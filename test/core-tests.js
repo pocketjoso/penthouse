@@ -20,24 +20,6 @@ describe('penthouse core tests', function () {
     // phantomjs takes a while to start up
     this.timeout(5000);
 
-    it('should save css to a file', function (done) {
-        penthouse({
-            url: page1,
-            css: page1cssPath
-        }, function (err, result) {
-            if (err) {
-                done(err);
-                return;
-            }
-            try {
-                css.parse(result);
-                done();
-            } catch (ex) {
-                done(ex);
-            }
-        });
-    });
-
     it('should match exactly the css in the yeoman test', function (done) {
         var yeomanFullCssFilePath = path.join(__dirname, 'static-server', 'yeoman-full.css'),
             yeomanExpectedCssFilePath = path.join(__dirname, 'static-server', 'yeoman-medium--expected.css'),
@@ -83,7 +65,6 @@ describe('penthouse core tests', function () {
         });
     });
 
-
     it('should remove :hover, :active, etc rules - always', function (done) {
         var pusedoRemoveCssFilePath = path.join(__dirname, 'static-server', 'psuedo--remove.css');
 
@@ -106,6 +87,7 @@ describe('penthouse core tests', function () {
     /* - Case 0 : Non nested @-rule [REMAIN]
      (@charset, @import, @namespace)
      */
+    // TODO: @namespace need to be kept if normalising..
     it('should keep complete case 0 @-rules (@import, @charset, @namespace)', function (done) {
         var atRuleCase0RemainCssFilePath = path.join(__dirname, 'static-server', 'at-rule-case-0--remain.css'),
             atRuleCase0RemainCss = read(atRuleCase0RemainCssFilePath).toString();
@@ -173,6 +155,7 @@ describe('penthouse core tests', function () {
     /*Case 3: @-rule with full CSS (rules) inside [REMAIN]
      @media, @document, @supports..
      */
+    // TODO: @document, @supports not in Chrome.. (qt)
     it('should keep case 3 @-rules (@media, @document..)', function (done) {
         var atRuleCase3RemainCssFilePath = path.join(__dirname, 'static-server', 'at-rule-case-3--remain.css'),
             atRuleCase3RemainCss = read(atRuleCase3RemainCssFilePath).toString();
