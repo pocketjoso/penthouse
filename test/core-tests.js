@@ -14,6 +14,7 @@ function normalisedCssAst (cssString) {
 }
 
 describe('penthouse core tests', function () {
+
     var page1cssPath = path.join(__dirname, 'static-server', 'page1.css'),
         page1 = path.join(__dirname, 'static-server', 'page1.html');
 
@@ -87,7 +88,6 @@ describe('penthouse core tests', function () {
     /* - Case 0 : Non nested @-rule [REMAIN]
      (@charset, @import, @namespace)
      */
-    // TODO: @namespace need to be kept if normalising..
     it('should keep complete case 0 @-rules (@import, @charset, @namespace)', function (done) {
         var atRuleCase0RemainCssFilePath = path.join(__dirname, 'static-server', 'at-rule-case-0--remain.css'),
             atRuleCase0RemainCss = read(atRuleCase0RemainCssFilePath).toString();
@@ -155,14 +155,15 @@ describe('penthouse core tests', function () {
     /*Case 3: @-rule with full CSS (rules) inside [REMAIN]
      @media, @document, @supports..
      */
-    // TODO: @document, @supports not in Chrome.. (qt)
+    // TODO: handle @document, @supports also in invalid css (normalising)
     it('should keep case 3 @-rules (@media, @document..)', function (done) {
         var atRuleCase3RemainCssFilePath = path.join(__dirname, 'static-server', 'at-rule-case-3--remain.css'),
             atRuleCase3RemainCss = read(atRuleCase3RemainCssFilePath).toString();
 
         penthouse({
             url: page1,
-            css: atRuleCase3RemainCssFilePath
+            css: atRuleCase3RemainCssFilePath,
+            strict: true
         }, function (err, result) {
             try {
                 var resultAst = normalisedCssAst(result);
