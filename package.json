@@ -21,7 +21,7 @@
   },
   "main": "./lib/index.js",
   "scripts": {
-    "test": "node_modules/.bin/mocha test"
+    "test": "node_modules/.bin/mocha --compilers js:babel-core/register"
   },
   "dependencies": {
     "css": "2.0.0",
@@ -29,6 +29,8 @@
   },
   "devDependencies": {
     "async": "^0.9.0",
+    "babel-core": "^6.1.2",
+    "babel-preset-es2015": "^6.1.2",
     "chai": "^1.9.1",
     "express": "^4.4.2",
     "glob": "^4.0.2",
