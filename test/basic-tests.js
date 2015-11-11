@@ -58,7 +58,6 @@ describe('basic tests of penthouse functionality', function () {
 			} catch (ex) {
 				done(ex);
 			}
-
 		});
 	});
 
@@ -85,9 +84,6 @@ describe('basic tests of penthouse functionality', function () {
 		});
 	});
 
-	/* future improvements
-		- return parsingErrors from core; requires css@ >= 2.1, which requires Phantom@2.x
-		- fault tolerant css parsing via postcss - also requires Phantom@2.x (and Node > 12 (?)) */
 	it('should not crash on invalid css', function (done) {
 		penthouse({
 			url: page1,
@@ -100,6 +96,17 @@ describe('basic tests of penthouse functionality', function () {
 			} catch (ex) {
 				done(ex);
 			}
+		});
+	});
+
+	it('should crash with errors in strict mode on invalid css', function (done) {
+		penthouse({
+			url: page1,
+			css: path.join(__dirname, 'static-server', 'invalid.css'),
+			strict: true
+		}, function (err) {
+			if(err) done();
+			else { done(new Error('Did not get error'));}
 		});
 	});
 
@@ -137,6 +144,4 @@ describe('basic tests of penthouse functionality', function () {
 			else { done(new Error('Did not get timeout error'));}
 		});
 	});
-
-
 });

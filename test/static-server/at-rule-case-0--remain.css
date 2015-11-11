@@ -1,6 +1,6 @@
 @charset "UTF-8";
-@import url(//fonts.googleapis.com/css?family=Lobster+Two:700);
 @namespace svg url(http://www.w3.org/2000/svg);
+@import url(//fonts.googleapis.com/css?family=Lobster+Two:700);
 html {
-background:black;
+background-color:black;
 }

@@ -14,29 +14,12 @@ function normalisedCssAst (cssString) {
 }
 
 describe('penthouse core tests', function () {
+
     var page1cssPath = path.join(__dirname, 'static-server', 'page1.css'),
         page1 = path.join(__dirname, 'static-server', 'page1.html');
 
     // phantomjs takes a while to start up
     this.timeout(5000);
-
-    it('should save css to a file', function (done) {
-        penthouse({
-            url: page1,
-            css: page1cssPath
-        }, function (err, result) {
-            if (err) {
-                done(err);
-                return;
-            }
-            try {
-                css.parse(result);
-                done();
-            } catch (ex) {
-                done(ex);
-            }
-        });
-    });
 
     it('should match exactly the css in the yeoman test', function (done) {
         var yeomanFullCssFilePath = path.join(__dirname, 'static-server', 'yeoman-full.css'),
@@ -82,7 +65,6 @@ describe('penthouse core tests', function () {
             }
         });
     });
-
 
     it('should remove :hover, :active, etc rules - always', function (done) {
         var pusedoRemoveCssFilePath = path.join(__dirname, 'static-server', 'psuedo--remove.css');
@@ -173,13 +155,15 @@ describe('penthouse core tests', function () {
     /*Case 3: @-rule with full CSS (rules) inside [REMAIN]
      @media, @document, @supports..
      */
+    // TODO: handle @document, @supports also in invalid css (normalising)
     it('should keep case 3 @-rules (@media, @document..)', function (done) {
         var atRuleCase3RemainCssFilePath = path.join(__dirname, 'static-server', 'at-rule-case-3--remain.css'),
             atRuleCase3RemainCss = read(atRuleCase3RemainCssFilePath).toString();
 
         penthouse({
             url: page1,
-            css: atRuleCase3RemainCssFilePath
+            css: atRuleCase3RemainCssFilePath,
+            strict: true
         }, function (err, result) {
             try {
                 var resultAst = normalisedCssAst(result);

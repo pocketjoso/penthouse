@@ -1,13 +1,10 @@
 ::-webkit-input-placeholder {
-	remain: always;
-    color: #AAA;
+  color: #aaa;
 }
 
-div:before, div:after {
-	remain: el-above-fold;
+div::before, div::after {
 	content: 'some extra content here';
 }
-div::-moz-focus-inner{
-	remain: el-above-fold;
+div ::-moz-focus-inner{
 	padding: 0;
 }

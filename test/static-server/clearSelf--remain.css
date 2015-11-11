@@ -2,10 +2,10 @@
 float: left;
 width: 100px;
 height: 800px;
-background: red;
+background-color: red;
 }
 .clearSelf {
 clear:both;
-background: blue;
+background-color: blue;
 height: 200px;
 }
