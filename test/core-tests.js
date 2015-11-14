@@ -6,6 +6,9 @@ var penthouse = require('../lib/'),
     read = fs.readFileSync,
     path = require('path');
 
+import ffRemover from '../lib/phantomjs/unused-fontface-remover'
+import embeddedbase64Remover from '../lib/phantomjs/embedded-base64-remover'
+
 process.setMaxListeners(0);
 
 // becasuse dont want to fail tests on white space differences
@@ -258,10 +261,21 @@ describe('penthouse core tests', function () {
         });
     });
 
+    it('should remove embedded base64', function (done) {
+      const originalCss = read(path.join(__dirname, 'static-server', 'embedded-base64--remove.css')).toString()
+      // NOTE: penthouse's default max uri length is 1000.
+      const result = embeddedbase64Remover(originalCss, 250)
+      try {
+        result.trim().should.equal('@media (min-width: 10px) {\n\n}')
+        done()
+      } catch (ex) {
+        done(ex)
+      }
+    })
+
     it('should remove @fontface rule, because it is not used', function (done) {
         var fontFaceRemoveCssFilePath = path.join(__dirname, 'static-server', 'fontface--remove.css'),
-            fontFaceRemoveCss = read(fontFaceRemoveCssFilePath).toString(),
-            ffRemover = require('../lib/phantomjs/unused-fontface-remover.js');
+            fontFaceRemoveCss = read(fontFaceRemoveCssFilePath).toString();
 
         var result = ffRemover(fontFaceRemoveCss);
 
