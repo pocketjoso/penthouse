@@ -43,7 +43,9 @@ penthouse({
       '.keepMeEvenIfNotSeenInDom',
       /^\.regexWorksToo/
     ],
-    timeout: 30000 // ms; abort critical css generation after this timeout
+    timeout: 30000, // ms; abort critical css generation after this timeout
+    strict: false, // set to true to throw on css errors (will run faster if no errors)
+    maxEmbeddedBase64Length: 1000 // charaters; strip out inline base64 encoded resources larger than this
 }, function(err, criticalCss) {
     if (err) { // handle error }
     fs.writeFileSync('outfile.css', criticalCss);
