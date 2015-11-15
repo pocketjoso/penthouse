@@ -8,6 +8,7 @@ chai.should() // binds globally on Object
 
 import ffRemover from '../lib/phantomjs/unused-fontface-remover'
 import embeddedbase64Remover from '../lib/phantomjs/embedded-base64-remover'
+import nonMatchingMediaQueryRemover from '../lib/phantomjs/non-matching-media-query-remover'
 
 process.setMaxListeners(0)
 
@@ -277,5 +278,15 @@ describe('penthouse core tests', function () {
     } catch (ex) {
       done(ex)
     }
+  })
+
+  it('should remove non matching media queries', function (done) {
+    const originalCss = read(path.join(__dirname, 'static-server', 'non-matching-mq--remove.css'), 'utf8')
+    const defaultViewportRules = nonMatchingMediaQueryRemover(css.parse(originalCss).stylesheet.rules, 1300, 900)
+    defaultViewportRules.should.have.length(1)
+
+    const smallViewportRules = nonMatchingMediaQueryRemover(css.parse(originalCss).stylesheet.rules, 600, 600)
+    smallViewportRules.should.have.length(0)
+    done()
   })
 })

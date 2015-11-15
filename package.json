@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "css": "2.0.0",
+    "css-mediaquery": "^0.1.2",
     "phantomjs": "~1.9.7"
   },
   "devDependencies": {
