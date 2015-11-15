@@ -1,0 +1,20 @@
+@media print {
+  body { color: red }
+}
+
+@media (min-width: 800px) { 
+  body { color: red }
+}
+@media (min-width: 1500px) {
+  body { color: red }
+}
+@media (min-height: 1000px) {
+  body { color: red }
+}
+
+@media screen and (min-width: 93.75em) {
+  body { color: red }
+}
+@media screen and (min-width: 93.75rem) {
+  body { color: red }
+}
