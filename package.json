@@ -29,13 +29,11 @@
     "phantomjs": "~1.9.7"
   },
   "devDependencies": {
-    "async": "^0.9.0",
     "babel-core": "^6.1.2",
     "babel-preset-es2015": "^6.1.2",
     "chai": "^1.9.1",
     "css-compare-screenshots": "0.0.7",
     "express": "^4.4.2",
-    "glob": "^4.0.2",
     "global-mocha": "^1.0.1",
     "gm": "^1.21.1",
     "grunt": "~0.4.2",

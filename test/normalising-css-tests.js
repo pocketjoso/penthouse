@@ -42,7 +42,7 @@ describe('penthouse fault tolerant normalising css tests', function () {
           `${SCREENSHOT_DIST + screenshotFilename}-after.jpg`
         )
       }).then(done)
-      .catch(done)
+        .catch(done)
     })
   })
 })
