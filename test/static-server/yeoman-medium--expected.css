@@ -254,3 +254,6 @@ ul{
 .pull-right {
   float: right !important;
 }
+@-ms-viewport {
+  width: device-width;
+}
