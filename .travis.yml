@@ -6,4 +6,5 @@ install:
   - "nvm use 0.12.7"
   - "npm install"
   - "sudo apt-get install graphicsmagick"
+script:
   - "npm run test-all"
