@@ -96,6 +96,21 @@ describe('basic tests of penthouse functionality', function () {
     })
   })
 
+  it('should not crash on invalid media query', function (done) {
+    penthouse({
+      url: page1,
+      css: path.join(__dirname, 'static-server', 'invalid-media.css')
+    }, function (err, result) {
+      if (err) { done(err) }
+      try {
+        css.parse(result)
+        done()
+      } catch (ex) {
+        done(ex)
+      }
+    })
+  })
+
   it('should crash with errors in strict mode on invalid css', function (done) {
     penthouse({
       url: page1,
