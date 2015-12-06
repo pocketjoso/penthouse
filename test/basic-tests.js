@@ -86,7 +86,14 @@ describe('basic tests of penthouse functionality', function () {
       url: page1,
       css: path.join(__dirname, 'static-server', 'invalid.css')
     }, function (err, result) {
-      if (err) { done(err) }
+      if (err) {
+        done(err)
+        return
+      }
+      if (result.length === 0) {
+        done(new Error('length should be > 0'))
+        return
+      }
       try {
         css.parse(result)
         done()
