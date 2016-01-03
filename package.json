@@ -25,6 +25,7 @@
     "test-all": "mocha --compilers js:babel-core/register"
   },
   "dependencies": {
+    "apartment": "^1.1.0",
     "css": "2.0.0",
     "css-mediaquery": "^0.1.2",
     "phantomjs": "~1.9.7"

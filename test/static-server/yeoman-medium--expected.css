@@ -4,7 +4,7 @@ body {
 }
 
 
-::selection{color:#fff}ul{list-style:none}
+ul{list-style:none}
 
 .header{
     padding-left: 15px;
@@ -88,8 +88,6 @@ h1 {
 }
 html {
   font-size: 62.5%;
-
-  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
 }
 body {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -162,11 +160,6 @@ ul{
   text-align: center;
   white-space: nowrap;
   vertical-align: middle;
-  cursor: pointer;
-  -webkit-user-select: none;
-     -moz-user-select: none;
-      -ms-user-select: none;
-          user-select: none;
   background-image: none;
   border: 1px solid transparent;
   border-radius: 4px;
