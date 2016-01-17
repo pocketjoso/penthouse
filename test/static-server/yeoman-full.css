@@ -4,6 +4,7 @@ body {
 }
 
 /*planted to test for previous :: psuedo selector bug*/
+::-moz-selection{color:#fff}
 ::selection{color:#fff}ol,ul{list-style:none}
 
 .header,
