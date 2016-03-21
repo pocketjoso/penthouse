@@ -50,7 +50,10 @@ penthouse({
     userAgent: 'Penthouse Critical Path CSS Generator', // specify which user agent string when loading the page
     generateCssAfter: {  // once the page is loaded, wait for one of the following conditions before processing the css:
        delay: 1000,  // delay in milliseconds, default: 100
-       elementIsPresent: '#some .css selector'  // an element matching the CSS selector is present in the page
+       elementIsPresent: '#some .css selector',  // an element matching the CSS selector is present in the page
+       condition: function () {  // an arbitrary predicate executed in the page context
+         if (document.xxx()) return true
+       }
     }
 }, function(err, criticalCss) {
     if (err) { // handle error }
