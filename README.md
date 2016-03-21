@@ -51,6 +51,10 @@ penthouse({
     phantomJsOptions: { // see `phantomjs --help` for the list of all available options
       'proxy': 'http://proxy.company.com:8080',
       'ssl-protocol': 'SSLv3'
+    },
+    generateCssAfter: {  // once the page is loaded, wait for one of the following conditions before processing the css:
+       delay: 1000,  // delay in milliseconds, default: 100
+       elementIsPresent: '#some .css selector'  // an element matching the CSS selector is present in the page
     }
 }, function(err, criticalCss) {
     if (err) { // handle error }
