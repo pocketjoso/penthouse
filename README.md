@@ -49,7 +49,8 @@ penthouse({
     maxEmbeddedBase64Length: 1000 // charaters; strip out inline base64 encoded resources larger than this
     userAgent: 'Penthouse Critical Path CSS Generator', // specify which user agent string when loading the page
     generateCssAfter: {  // once the page is loaded, wait for one of the following conditions before processing the css:
-       delay: 1000  // delay in milliseconds, default: 100
+       delay: 1000,  // delay in milliseconds, default: 100
+       elementIsPresent: '#some .css selector'  // an element matching the CSS selector is present in the page
     }
 }, function(err, criticalCss) {
     if (err) { // handle error }

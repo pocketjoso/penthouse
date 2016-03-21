@@ -309,4 +309,24 @@ describe('penthouse core tests', function () {
       }
     })
   })
+
+  it('should wait for some element to be present before generating critical css', function (done) {
+    penthouse({
+      url: path.join(__dirname, 'static-server', 'page-taking-too-long-to-display.html'),
+      css: page1cssPath,
+      generateCssAfter: {
+        elementIsPresent: '#box22'
+      }
+    }, function (err, result) {
+      if (err) {
+        done(err);
+      }
+      try {
+        result.should.contain('#box22')
+        done()
+      } catch (ex) {
+        done(ex)
+      }
+    })
+  })
 })
