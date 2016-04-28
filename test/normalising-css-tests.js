@@ -17,6 +17,7 @@ describe('penthouse fault tolerant normalising css tests', function () {
 
   it('should generate same layout for yemoan with css errors', function (done) {
     const screenshotFilename = 'yeoman'
+    penthouse.DEBUG = false
     console.log('get critical css..')
     penthouse({
       url: path.join(STATIC_SERVER_PATH, 'yeoman.html'),
