@@ -12,7 +12,7 @@ import nonMatchingMediaQueryRemover from '../lib/phantomjs/non-matching-media-qu
 
 process.setMaxListeners(0)
 
-// becasuse dont want to fail tests on white space differences
+// because dont want to fail tests on white space differences
 function normalisedCssAst (cssString) {
   return css.parse(css.stringify(css.parse(cssString), { compress: true }))
 }
