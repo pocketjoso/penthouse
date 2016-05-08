@@ -1,0 +1,19 @@
+body::before {
+  content: '\f091';
+}
+body::before {
+  content: '\e5';
+}
+body::after {
+  content: '\f09a';
+}
+body::after {
+  content: '•';
+}
+body::after {
+  content: "•";
+}
+body::after {
+  content: '\2022';
+}
+{ invalid }
