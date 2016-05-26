@@ -32,7 +32,9 @@ Require as normal and execute with a callback:
 
 ```
 var penthouse = require('penthouse'),
-    path = require('path');
+    path = require('path'),
+    fs = require('fs'),
+    __basedir = './';
 
 penthouse({
     url : 'http://google.com',
@@ -53,7 +55,11 @@ penthouse({
       'ssl-protocol': 'SSLv3'
     }
 }, function(err, criticalCss) {
-    if (err) { // handle error }
+    if (err) { 
+        // handle error
+        throw err;
+    }
+    
     fs.writeFileSync('outfile.css', criticalCss);
 });
 ```
