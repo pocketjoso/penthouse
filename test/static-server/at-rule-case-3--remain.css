@@ -1,3 +1,7 @@
+@media all {
+  body { color: red; }
+}
+
 @media (min-width:40em) {
 	body {
 		font-size: 120%;
