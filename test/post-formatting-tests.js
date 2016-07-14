@@ -1,38 +1,19 @@
 import css from 'css'
 import { describe, it } from 'global-mocha'
 import path from 'path'
-import penthouse from '../lib/'
 import { readFileSync as read } from 'fs'
 import normaliseCssAst from './util/normaliseCssAst'
 import chai from 'chai'
 chai.should() // binds globally on Object
 
 import ffRemover from '../lib/phantomjs/unused-fontface-remover'
+import unusedKeyframeRemover from '../lib/phantomjs/unused-keyframe-remover'
 import embeddedbase64Remover from '../lib/phantomjs/embedded-base64-remover'
 import nonMatchingMediaQueryRemover from '../lib/phantomjs/non-matching-media-query-remover'
 
 process.setMaxListeners(0)
 
 describe('penthouse post formatting tests', function () {
-  // phantomjs takes a while to start up
-  this.timeout(5000)
-
-  it('should remove empty rules', function (done) {
-    var page1 = path.join(__dirname, 'static-server', 'page1.html')
-    var emptyRemoveCssFilePath = path.join(__dirname, 'static-server', 'empty-rules--remove.css')
-
-    penthouse({
-      url: page1,
-      css: emptyRemoveCssFilePath
-    }, function (err, result) {
-      try {
-        result.trim().should.equal('')
-        done()
-      } catch (ex) {
-        done(ex)
-      }
-    })
-  })
 
   it('should remove embedded base64', function (done) {
     const originalCss = read(path.join(__dirname, 'static-server', 'embedded-base64--remove.css')).toString()

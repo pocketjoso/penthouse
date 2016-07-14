@@ -225,4 +225,22 @@ describe('penthouse core tests', function () {
       }
     })
   })
+
+  // non essential
+  it('should remove empty rules', function (done) {
+    var page1 = path.join(__dirname, 'static-server', 'page1.html')
+    var emptyRemoveCssFilePath = path.join(__dirname, 'static-server', 'empty-rules--remove.css')
+
+    penthouse({
+      url: page1,
+      css: emptyRemoveCssFilePath
+    }, function (err, result) {
+      try {
+        result.trim().should.equal('')
+        done()
+      } catch (ex) {
+        done(ex)
+      }
+    })
+  })
 })
