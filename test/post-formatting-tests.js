@@ -71,4 +71,23 @@ describe('penthouse post formatting tests', function () {
     smallViewportRules.should.have.length(0)
     done()
   })
+
+  it('should only keep @keyframe rules used in critical css', function (done) {
+    const originalCss = read(path.join(__dirname, 'static-server', 'unused-keyframes.css'), 'utf8')
+    const expextedCss = read(path.join(__dirname, 'static-server', 'unused-keyframes--expected.css'), 'utf8')
+
+    try {
+      var resultRules = unusedKeyframeRemover(css.parse(originalCss).stylesheet.rules)
+      var resultAst = normaliseCssAst(css.stringify({
+        stylesheet: {
+          rules: resultRules
+        }
+      }))
+      var expectedAst = normaliseCssAst(expextedCss)
+      resultAst.should.eql(expectedAst)
+      done()
+    } catch (ex) {
+      done(ex)
+    }
+  })
 })

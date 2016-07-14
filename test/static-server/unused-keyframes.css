@@ -1,0 +1,30 @@
+@keyframes willBeRemoved {
+    51%, 51.001% {
+      animation-duration: 0; }
+}
+@-webkit-keyframes willBeRemoved {
+    51%, 51.001% {
+      animation-duration: 0; }
+}
+html {
+  animation: willStay 0.5s cubic-bezier(0.25, 0.15, 0.3, 1.1) backwards;
+}
+@keyframes willStay {
+  0% {
+    opacity: 0;
+  }
+}
+@media all {
+  body {
+    animation-name: alsoStay;
+  }
+  @keyframes alsoBeRemoved {
+    0% { transform: translateX(1em); }
+  }
+}
+@keyframes alsoStay {
+  0% {
+    opacity: 0;
+    transform: perspective(500px) rotateX(-80deg) translateY(400px);
+  }
+}
