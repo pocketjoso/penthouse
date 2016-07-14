@@ -4,6 +4,12 @@
     font-weight: 400;
     src: url('fonts/Lato-Regular.eot');
 }
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+}
 html {
 	font-family: 'Lato web';
+  animation: fade-in;
 }
