@@ -30,13 +30,16 @@ describe('extra tests for penthouse node module', function () {
     })
   })
 
-  it('error should contain debug in debug mode', function (done) {
+  it('error should contain debug info in debug mode', function (done) {
     penthouse.DEBUG = true
     penthouse({
       url: 'http://localhost.does.not.exist',
       css: page1cssPath
     }, function (err, result) {
       if (err) {
+        // err should have format like:
+        // time: 0 | opened css
+        // time: 2 | parsed ast (without errors)
         if (/^Error: time: /.test(err)) {
           done()
         } else {
@@ -44,7 +47,7 @@ describe('extra tests for penthouse node module', function () {
         }
         return
       }
-      done(new Error('did not have expected error'))
+      done(new Error('did not throw any error, which was expected'))
     })
   })
 })
