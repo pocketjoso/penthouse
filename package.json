@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "apartment": "^1.1.1",
-    "css": "2.0.0",
+    "css": "git://github.com/pocketjoso/css.git",
     "css-mediaquery": "^0.1.2",
     "jsesc": "^1.0.0",
     "phantomjs-prebuilt": "^2.1.3",

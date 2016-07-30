@@ -38,7 +38,7 @@ describe('extra tests for penthouse node module', function () {
     }, function (err, result) {
       if (err) {
         // err should have format like:
-        // time: 0 | opened css
+        // time: 0 | opened css file
         // time: 2 | parsed ast (without errors)
         if (/^Error: time: /.test(err)) {
           done()
