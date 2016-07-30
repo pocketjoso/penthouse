@@ -2,6 +2,7 @@ import generateScreenshots from 'css-compare-screenshots'
 import { after, describe, it } from 'global-mocha'
 import path from 'path'
 import penthouse from '../lib'
+import normalizeCss from '../lib/normalize-css'
 import rimraf from 'rimraf'
 
 import compareScreenshots from './util/compareScreenshots'
@@ -31,11 +32,15 @@ describe('penthouse fault tolerant normalising css tests', function () {
     // This test will fail if the css uses double quotes (although false negative: still works)
     const cssPath = path.join(STATIC_SERVER_PATH, 'escaped-hex-reference-in-invalid.css')
     const expected = fs.readFileSync(cssPath, 'utf8').replace('{ invalid }', '')
-    penthouse.DEBUG = false
-    penthouse({
-      url: path.join(STATIC_SERVER_PATH, 'page1.html'),
-      css: cssPath
-    }, function (err, result) {
+
+    var scriptArgs = [
+      path.join(STATIC_SERVER_PATH, 'page1.html'),
+      cssPath,
+      ''
+    ]
+
+    normalizeCss(scriptArgs,
+    function (err, result) {
       if (err) {
         done(err)
       }
