@@ -149,7 +149,7 @@ describe('basic tests of penthouse functionality', function () {
 
   it('should surface parsing errors to the end user', function (done) {
     penthouse({
-      css: 'some.css'
+      css: 'missing.css'
     }, function (err) {
       if (err) {
         done()

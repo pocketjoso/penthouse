@@ -2,6 +2,7 @@ import generateScreenshots from 'css-compare-screenshots'
 import { after, describe, it } from 'global-mocha'
 import path from 'path'
 import penthouse from '../lib'
+import normalizeCss from '../lib/normalize-css'
 import rimraf from 'rimraf'
 
 import compareScreenshots from './util/compareScreenshots'
@@ -16,7 +17,10 @@ const STATIC_SERVER_PATH = path.join(__dirname, 'static-server')
 
 // because dont want to fail tests on white space differences
 function normalisedCssAst (cssString) {
-  return css.parse(css.stringify(css.parse(cssString), { compress: true }))
+  // use silent parsing mode here,
+  // as Penthouse does, to see that the parsed css is correct despite error
+  // this is relevant for the extra closing brace test(s)
+  return css.parse(css.stringify(css.parse(cssString, { silent: true }), { compress: true }))
 }
 
 describe('penthouse fault tolerant normalising css tests', function () {
@@ -31,11 +35,15 @@ describe('penthouse fault tolerant normalising css tests', function () {
     // This test will fail if the css uses double quotes (although false negative: still works)
     const cssPath = path.join(STATIC_SERVER_PATH, 'escaped-hex-reference-in-invalid.css')
     const expected = fs.readFileSync(cssPath, 'utf8').replace('{ invalid }', '')
-    penthouse.DEBUG = false
-    penthouse({
-      url: path.join(STATIC_SERVER_PATH, 'page1.html'),
-      css: cssPath
-    }, function (err, result) {
+
+    var scriptArgs = [
+      path.join(STATIC_SERVER_PATH, 'page1.html'),
+      cssPath,
+      ''
+    ]
+
+    normalizeCss(scriptArgs,
+    function (err, result) {
       if (err) {
         done(err)
       }
@@ -52,7 +60,7 @@ describe('penthouse fault tolerant normalising css tests', function () {
     })
   })
 
-  it('should generate same layout for yemoan with css errors', function (done) {
+  it('should generate same layout for yeoman with css errors', function (done) {
     const screenshotFilename = 'yeoman'
     penthouse.DEBUG = false
     console.log('get critical css..')
@@ -82,5 +90,42 @@ describe('penthouse fault tolerant normalising css tests', function () {
       }).then(done)
         .catch(done)
     })
+  })
+
+  // NOTE: the functionality for handling extra closing brace errors is in
+  // (the forked version of) the css package, in the parse function.
+  // Still adding tests here since this used to be broken.
+  it('should remove extra closing braces in css', function (done) {
+    const originalCss = `@media all {
+      body {
+        color: red;
+        content: '{';
+      }}
+    }
+    div {
+      display: block;
+    }}`
+    const expectedCss = `@media all {
+      body {
+        color: red;
+        content: '{';
+      }
+    }
+    div {
+      display: block;
+    }`
+    normalisedCssAst(expectedCss).should.eql(normalisedCssAst(originalCss))
+    done()
+  })
+
+  it('should correctly AST parse css with extra closing braces w/o dropping rules', function (done) {
+    const cssWithUnclosedBraces = fs.readFileSync(path.join(__dirname, 'static-server', 'css-with-unclosed-braces.css'), 'utf8')
+
+    const originalAst = normalisedCssAst(cssWithUnclosedBraces)
+    // 0.9 is magic number here - just to show that we haven't dropped most of the css,
+    // which happens with original css' parser
+    // (what have we dropped? some whitespace, maybe some comments? invalid rules?)
+    cssWithUnclosedBraces.should.have.length.greaterThan(css.stringify(originalAst).length * 0.9)
+    done()
   })
 })
