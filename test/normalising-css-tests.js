@@ -100,7 +100,7 @@ describe('penthouse fault tolerant normalising css tests', function () {
       body {
         color: red;
         content: '{';
-      }}
+      }}}
     }
     div {
       display: block;
