@@ -4,6 +4,7 @@
 
 [![NPM version](https://badge.fury.io/js/penthouse.svg)](http://badge.fury.io/js/penthouse)
 [![Build Status](https://travis-ci.org/pocketjoso/penthouse.svg?branch=master)](https://travis-ci.org/pocketjoso/penthouse)
+[![Windows Build status](https://ci.appveyor.com/api/projects/status/aj9cl48433j7m8ll/branch/master?svg=true)](https://ci.appveyor.com/project/XhmikosR/penthouse)
 [![Downloads](https://img.shields.io/npm/dm/penthouse.svg?style=flat)](https://www.npmjs.com/package/penthouse)
 
 ## About
