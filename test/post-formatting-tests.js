@@ -1,3 +1,5 @@
+'use strict'
+
 import css from 'css'
 import { describe, it } from 'global-mocha'
 import path from 'path'

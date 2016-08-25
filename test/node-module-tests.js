@@ -1,14 +1,13 @@
-import css from 'css'
+'use strict'
+
 import { describe, it } from 'global-mocha'
 import path from 'path'
 import penthouse from '../lib/'
-import { readFileSync as read } from 'fs'
 import chai from 'chai'
 chai.should() // binds globally on Object
 
 describe('extra tests for penthouse node module', function () {
-  var page1cssPath = path.join(__dirname, 'static-server', 'page1.css'),
-    page1 = path.join(__dirname, 'static-server', 'page1.html')
+  var page1cssPath = path.join(__dirname, 'static-server', 'page1.css')
 
   // phantomjs takes a while to start up
   this.timeout(5000)
@@ -17,7 +16,7 @@ describe('extra tests for penthouse node module', function () {
     penthouse({
       url: 'http://localhost.does.not.exist',
       css: page1cssPath
-    }, function (err, result) {
+    }, function (err) {
       if (err) {
         if (/^Error: time: 0/.test(err)) {
           done(err)
@@ -35,7 +34,7 @@ describe('extra tests for penthouse node module', function () {
     penthouse({
       url: 'http://localhost.does.not.exist',
       css: page1cssPath
-    }, function (err, result) {
+    }, function (err) {
       if (err) {
         // err should have format like:
         // time: 0 | opened css file

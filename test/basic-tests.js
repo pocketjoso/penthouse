@@ -1,3 +1,5 @@
+'use strict'
+
 import css from 'css'
 import { describe, it } from 'global-mocha'
 import path from 'path'
@@ -13,7 +15,6 @@ function normalisedCssAst (cssString) {
 
 describe('basic tests of penthouse functionality', function () {
   var page1cssPath = path.join(__dirname, 'static-server', 'page1.css'),
-    sharedCssFilePath = path.join(__dirname, 'static-server', 'shared.css'),
     page1 = path.join(__dirname, 'static-server', 'page1.html'),
     originalCss = read(page1cssPath).toString()
 
@@ -35,7 +36,7 @@ describe('basic tests of penthouse functionality', function () {
     })
   })
 
-  it("should return a css file whose parsed AST is equal to the the original's AST when the viewport is large", function (done) {
+  it('should return a css file whose parsed AST is equal to the the original\'s AST when the viewport is large', function (done) {
     var widthLargerThanTotalTestCSS = 1000,
       heightLargerThanTotalTestCSS = 1000
     penthouse({
