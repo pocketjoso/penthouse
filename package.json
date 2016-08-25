@@ -15,14 +15,12 @@
   "bugs": {
     "url": "https://github.com/pocketjoso/penthouse/issues"
   },
-  "license": {
-    "type": "MIT",
-    "url": "github.com/pocketjoso/penthouse/blob/master/LICENSE-MIT"
-  },
+  "license": "MIT",
   "main": "./lib/index.js",
   "scripts": {
-    "test": "mocha --compilers js:babel-core/register test/core-tests.js",
-    "test-all": "mocha --compilers js:babel-core/register"
+    "lint": "jshint .",
+    "test": "npm run lint && mocha --compilers js:babel-core/register test/core-tests.js",
+    "test-all": "npm run lint && mocha --compilers js:babel-core/register"
   },
   "dependencies": {
     "apartment": "^1.1.1",
@@ -42,6 +40,7 @@
     "global-mocha": "^1.0.1",
     "gm": "^1.21.1",
     "grunt": "~0.4.2",
+    "jshint": "^2.9.3",
     "mocha": "^1.20.1",
     "morgan": "^1.1.1",
     "portfinder": "^0.2.1",
