@@ -1,4 +1,5 @@
 'use strict'
+
 import gm from 'gm'
 
 // intention: identical
@@ -7,7 +8,7 @@ const TOLERANCE_THRESHOLD_GOOD = 0.0001
 export default function (beforeImage, afterImage) {
   return new Promise(function (resolve, reject) {
     gm.compare(beforeImage, afterImage, TOLERANCE_THRESHOLD_GOOD,
-      function (error, isEqual, equality, raw, beforeImage, afterImage) {
+      function (error, isEqual, equality) {
         if (error) {
           reject(error)
           return

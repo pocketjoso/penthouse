@@ -1,3 +1,5 @@
+'use strict'
+
 import generateScreenshots from 'css-compare-screenshots'
 import { after, describe, it } from 'global-mocha'
 import path from 'path'

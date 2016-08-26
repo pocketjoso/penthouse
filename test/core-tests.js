@@ -1,3 +1,5 @@
+'use strict'
+
 import { describe, it } from 'global-mocha'
 import path from 'path'
 import penthouse from '../lib/'
@@ -9,8 +11,7 @@ chai.should() // binds globally on Object
 process.setMaxListeners(0)
 
 describe('penthouse core tests', function () {
-  var page1cssPath = path.join(__dirname, 'static-server', 'page1.css'),
-    page1 = path.join(__dirname, 'static-server', 'page1.html')
+  var page1 = path.join(__dirname, 'static-server', 'page1.html')
 
   // phantomjs takes a while to start up
   this.timeout(5000)
