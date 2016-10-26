@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "apartment": "^1.1.1",
-    "css": "git://github.com/pocketjoso/css.git",
+    "css": "https://github.com/pocketjoso/css.git",
     "css-mediaquery": "^0.1.2",
     "jsesc": "^1.0.0",
     "os-tmpdir": "^1.0.1",
