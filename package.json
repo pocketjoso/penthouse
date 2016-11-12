@@ -54,6 +54,7 @@
     "tool"
   ],
   "files": [
-    "lib/**/*.js"
+    "lib/**/*.js",
+    "lib/phantomjs/config.json"
   ]
 }
