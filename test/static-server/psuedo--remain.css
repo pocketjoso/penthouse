@@ -8,3 +8,6 @@ div::before, div::after {
 div ::-moz-focus-inner{
 	padding: 0;
 }
+div:visited{
+	color: blue;
+}

@@ -41,7 +41,7 @@ describe('penthouse core tests', function () {
     })
   })
 
-  it('should keep :before, :after rules (because el above fold)', function (done) {
+  it('should keep :before, :after, :visited rules (because el above fold)', function (done) {
     var pusedoRemainCssFilePath = path.join(__dirname, 'static-server', 'psuedo--remain.css'),
       pusedoRemainCss = read(pusedoRemainCssFilePath).toString()
 
