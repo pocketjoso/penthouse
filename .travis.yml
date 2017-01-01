@@ -1,7 +1,7 @@
 sudo: true
 language: node_js
 node_js:
-    - "0.12"
+    - "6"
 install:
   - "npm install"
   - "sudo apt-get update"
