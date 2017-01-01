@@ -83,7 +83,7 @@ supported command line version and follow the instructions in the README there: 
 
 ### Invalid CSS
 
-Before going further, make sure that you fix any errors in CSS as detected by [this CSS parser](http://iamdustan.com/reworkcss_ast_explorer/), as they can cause problem with critical CSS generation.
+Before going further, make sure that you fix any errors in CSS as detected by [this CSS parser](http://iamdustan.com/reworkcss_ast_explorer/), as they can cause problems with critical CSS generation.
 
 ### Background images or Fonts missing
 
