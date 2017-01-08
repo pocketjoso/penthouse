@@ -11,3 +11,9 @@ div ::-moz-focus-inner{
 div:visited{
 	color: blue;
 }
+div:first-letter{
+  font-size: 4em;
+}
+div:first-line {
+  font-style: italic;
+}
