@@ -57,6 +57,9 @@ penthouse({
     phantomJsOptions: {             // see `phantomjs --help` for the list of all available options
       'proxy': 'http://proxy.company.com:8080',
       'ssl-protocol': 'SSLv3'
+    },
+    customPageHeaders: {
+      'Accept-Encoding': 'identity' // add if getting compression errors like 'Data corrupted'
     }
 }, function(err, criticalCss) {
     if (err) {
