@@ -55,8 +55,8 @@ penthouse({
     renderWaitTime: 100,            // ms; render wait timeout before CSS processing starts (default: 100)
     blockJSRequests: true,          // set to false to load (external) JS (default: true)
     phantomJsOptions: {             // see `phantomjs --help` for the list of all available options
-      'proxy': 'http://proxy.company.com:8080',
-      'ssl-protocol': 'SSLv3'
+      // 'proxy': 'http://proxy.company.com:8080',
+      // 'ssl-protocol': 'SSLv3'
     },
     customPageHeaders: {
       'Accept-Encoding': 'identity' // add if getting compression errors like 'Data corrupted'
