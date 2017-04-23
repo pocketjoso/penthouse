@@ -4,7 +4,7 @@ import generateScreenshots from 'css-compare-screenshots'
 import { after, describe, it } from 'global-mocha'
 import path from 'path'
 import penthouse from '../lib'
-import normalizeCss from '../lib/normalize-css'
+import normalizeCss from '../lib/normalize-css-module'
 import rimraf from 'rimraf'
 
 import compareScreenshots from './util/compareScreenshots'
@@ -38,13 +38,12 @@ describe('penthouse fault tolerant normalising css tests', function () {
     const cssPath = path.join(STATIC_SERVER_PATH, 'escaped-hex-reference-in-invalid.css')
     const expected = fs.readFileSync(cssPath, 'utf8').replace('{ invalid }', '')
 
-    var scriptArgs = [
-      path.join(STATIC_SERVER_PATH, 'page1.html'),
-      cssPath,
-      ''
-    ]
+    var options = {
+      url: path.join(STATIC_SERVER_PATH, 'page1.html'),
+      css: cssPath
+    }
 
-    normalizeCss(scriptArgs,
+    normalizeCss(options,
     function (err, result) {
       if (err) {
         done(err)
