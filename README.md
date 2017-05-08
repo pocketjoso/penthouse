@@ -82,24 +82,31 @@ The Penthouse Node module can also be used in Gulp.
 The command line version is no longer supported. Either use the [Node module](#as-a-node-module), or download the last
 supported command line version and follow the instructions in the README there: [v.0.3.6](https://github.com/pocketjoso/penthouse/releases/tag/v0.3.6).
 
-## Problems with generated CSS
+## Troubleshooting
 
-### Invalid CSS
+### Problems with generated CSS
 
-Before going further, make sure that you fix any errors in CSS as detected by [this CSS parser](http://iamdustan.com/reworkcss_ast_explorer/), as they can cause problems with critical CSS generation.
+Before going further, make sure that you fix any errors in your own CSS, as detected by [this AST explorer](http://astexplorer.net/), as they can cause problems with critical CSS generation.
 
-### Background images or Fonts missing
+Also test your url + css in the hosted critical path css generator, to determine whether the problem
+is with the input your passing (css + url), or with your local setup:
+https://jonassebastianohlsson.com/criticalpathcssgenerator
 
-Change any relative paths (f.e. `background-image: url("../images/x.gif");`) to absolute (starting with a `/`): `background-image: url("/images/x.gif");`, and then try again.
+#### Unstyled content showing when using the critical css
 
-### Unstyled content showing
+The two most common reasons for this:
 
-If you for some reason have an element appearing early in the DOM, but that you apply styles to move outside of the above the fold content (using absolute position or transforms), consider whether it really should appear so early in the DOM.
+1. You have an element appearing early in the DOM, but with styles applied to move outside of the critical viewport (using absolute position or transforms). Penthouse will does not look at the absolute position and transform values and will just see the element as not being part of the critical viewport, and hence Penthouse will not consider its styles critical.
+Solution: Consider whether it really should appear so early in the DOM, or use the `forceInclude` property.
 
-### Special glyphs not showing/showing incorrectly
+2. During render with critical css your page contains some content that Penthouse never saw in the HTML during critical css generation. Perhaps you're a logged in user with the page showing extra content, that were never part of it when Penthouse saw it, or perhaps JS injected some extra content to the page before the full CSS (which contains the styles for that content) loaded.
+Solution: Ensure all elements you want styled in the critical css appears in the HTML of the url (or html file) you send Penthouse. You can also use the `forceInclude` parameter to force styles to remain in the critical css.
+
+#### Special glyphs not showing/showing incorrectly
 
 Problems with special characters like &#8594; after converting? Make sure you use the correct hexadecimal format in your CSS. You can always get this format from your browser console, by entering '&#8594;'`.charCodeAt(0).toString(16)` (answer for this arrow glyph is `2192`). When using hexadecimal format in CSS it needs to be prepended with a backslash, like so: `\2192` (f.e. `content: '\2192';`)
 
 ### Other problems
 
-Please report your issue (check that it's not already there first though!), and I will try to fix it as soon as possible.
+#### Penthouse errors
+Check that the filepath to the repo you are running Penthouse from does not contain any unusual characters - they are [known to cause problems](https://github.com/pocketjoso/penthouse/issues/156#issuecomment-299729664).
