@@ -1,19 +1,19 @@
 'use strict'
 
-var cssAstFormatter = require('css')
+const cssAstFormatter = require('css')
 
-var BASE64_ENCODE_PATTERN = /data:[^,]*base64,/
+const BASE64_ENCODE_PATTERN = /data:[^,]*base64,/
 
-var _isTooLongBase64Encoded = function (declaration, maxEmbeddedBase64Length) {
+const _isTooLongBase64Encoded = function (declaration, maxEmbeddedBase64Length) {
   return (
     BASE64_ENCODE_PATTERN.test(declaration.value) &&
     declaration.value.length > maxEmbeddedBase64Length
   )
 }
 
-var _removeDataUrisFromRule = function (rule, maxEmbeddedBase64Length) {
+const _removeDataUrisFromRule = function (rule, maxEmbeddedBase64Length) {
   if (rule.type === 'font-face') {
-    var hasSrc = false
+    let hasSrc = false
     rule.declarations = rule.declarations.filter(function (declaration) {
       if (_isTooLongBase64Encoded(declaration, maxEmbeddedBase64Length)) {
         return false
@@ -33,7 +33,7 @@ var _removeDataUrisFromRule = function (rule, maxEmbeddedBase64Length) {
       return true
     })
   } else if (rule.type === 'media') {
-    var rules = rule.rules.map(function (rule) {
+    const rules = rule.rules.map(function (rule) {
       return _removeDataUrisFromRule(rule, maxEmbeddedBase64Length)
     })
     rule.rules = rules.filter(function (rule) {
@@ -44,9 +44,9 @@ var _removeDataUrisFromRule = function (rule, maxEmbeddedBase64Length) {
   return rule
 }
 
-var embeddedbase64Remover = function (css, maxEmbeddedBase64Length) {
-  var ast = cssAstFormatter.parse(css)
-  var rules = ast.stylesheet.rules.map(function (rule) {
+const embeddedbase64Remover = function (css, maxEmbeddedBase64Length) {
+  const ast = cssAstFormatter.parse(css)
+  let rules = ast.stylesheet.rules.map(function (rule) {
     return _removeDataUrisFromRule(rule, maxEmbeddedBase64Length)
   })
   rules = rules.filter(function (rule) {

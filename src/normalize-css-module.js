@@ -5,18 +5,18 @@
 
 'use strict'
 
-var path = require('path')
-var spawn = require('child_process').spawn
-var phantomjs = require('phantomjs-prebuilt')
-var phantomJsBinPath = phantomjs.path
-var script = path.join(__dirname, 'phantomjs', 'normalize-css.js')
-var configString =
+const path = require('path')
+const spawn = require('child_process').spawn
+const phantomjs = require('phantomjs-prebuilt')
+const phantomJsBinPath = phantomjs.path
+const script = path.join(__dirname, 'phantomjs', 'normalize-css.js')
+const configString =
   '--config=' + path.join(__dirname, 'phantomjs', 'config.json')
-var DEFAULT_TIMEOUT = 30000
-var START_TIME = new Date().getTime()
+const DEFAULT_TIMEOUT = 30000
+const START_TIME = new Date().getTime()
 
 // TODO: export from postformatting
-var removePhantomJSSecurityErrors = function (stdOut) {
+const removePhantomJSSecurityErrors = function (stdOut) {
   stdOut = stdOut.replace(
     'Unsafe JavaScript attempt to access frame with URL about:blank from frame with URL ',
     ''
@@ -26,16 +26,15 @@ var removePhantomJSSecurityErrors = function (stdOut) {
   return stdOut
 }
 
-var m = (module.exports = function (options, callback) {
-  var stdOut = ''
-  var stdErr = ''
-  var debuggingHelp = ''
-  var cp
-  var timeoutWait = options.timeout || DEFAULT_TIMEOUT
+const m = (module.exports = function (options, callback) {
+  let stdOut = ''
+  let stdErr = ''
+  let debuggingHelp = ''
+  const timeoutWait = options.timeout || DEFAULT_TIMEOUT
 
-  var debuglog = function (msg, isError) {
+  const debuglog = function (msg, isError) {
     if (m.DEBUG) {
-      var errMsg =
+      const errMsg =
         'time: ' +
         (Date.now() - START_TIME) +
         ' | ' +
@@ -45,13 +44,13 @@ var m = (module.exports = function (options, callback) {
       console.error(errMsg)
     }
   }
-  var scriptArgs = [options.url, options.css, options.userAgent, m.DEBUG]
+  const scriptArgs = [options.url, options.css, options.userAgent, m.DEBUG]
 
-  var phantomJsArgs = [configString, script]
+  const phantomJsArgs = [configString, script]
     .concat(scriptArgs)
     .concat([m.DEBUG])
 
-  cp = spawn(phantomJsBinPath, phantomJsArgs)
+  const cp = spawn(phantomJsBinPath, phantomJsArgs)
 
   // Errors arise before the process starts
   cp.on('error', function (err) {
@@ -77,8 +76,8 @@ var m = (module.exports = function (options, callback) {
   })
 
   // kill after timeout
-  var killTimeout = setTimeout(function () {
-    var msg =
+  const killTimeout = setTimeout(function () {
+    const msg =
       'Penthouse normalization step timed out after ' +
       timeoutWait / 1000 +
       's. '
@@ -94,11 +93,11 @@ var m = (module.exports = function (options, callback) {
 
   cp.on('exit', function (code) {
     if (code === 0) {
-      var finalCss = removePhantomJSSecurityErrors(stdOut)
+      const finalCss = removePhantomJSSecurityErrors(stdOut)
       callback(null, finalCss)
     } else {
       debuggingHelp += 'PhantomJS process exited with code ' + code
-      var err = new Error(stdErr + stdOut)
+      const err = new Error(stdErr + stdOut)
       err.code = code
       err.debug = debuggingHelp
       err.stdout = stdOut

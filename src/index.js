@@ -4,33 +4,33 @@
 
 'use strict'
 
-var fs = require('fs')
-var tmp = require('tmp')
-var path = require('path')
-var spawn = require('child_process').spawn
-var phantomjs = require('phantomjs-prebuilt')
-var phantomJsBinPath = phantomjs.path
-var apartment = require('apartment')
-var cssAstFormatter = require('css')
-var osTmpdir = require('os-tmpdir')
-var postformatting = require('./postformatting/')
-var normalizeCss = require('./normalize-css-module')
+const fs = require('fs')
+const tmp = require('tmp')
+const path = require('path')
+const spawn = require('child_process').spawn
+const phantomjs = require('phantomjs-prebuilt')
+const phantomJsBinPath = phantomjs.path
+const apartment = require('apartment')
+const cssAstFormatter = require('css')
+const osTmpdir = require('os-tmpdir')
+const postformatting = require('./postformatting/')
+const normalizeCss = require('./normalize-css-module')
 
 // for phantomjs
-var configString =
+const configString =
   '--config=' + path.join(__dirname, 'phantomjs', 'config.json')
-var script = path.join(__dirname, 'phantomjs', 'core.js')
+const script = path.join(__dirname, 'phantomjs', 'core.js')
 
-var DEFAULT_VIEWPORT_WIDTH = 1300 // px
-var DEFAULT_VIEWPORT_HEIGHT = 900 // px
-var DEFAULT_TIMEOUT = 30000 // ms
-var DEFAULT_MAX_EMBEDDED_BASE64_LENGTH = 1000 // chars
-var DEFAULT_USER_AGENT = 'Penthouse Critical Path CSS Generator'
-var TMP_DIR = osTmpdir()
-var DEFAULT_RENDER_WAIT_TIMEOUT = 100
-var DEFAULT_BLOCK_JS_REQUESTS = true
+const DEFAULT_VIEWPORT_WIDTH = 1300 // px
+const DEFAULT_VIEWPORT_HEIGHT = 900 // px
+const DEFAULT_TIMEOUT = 30000 // ms
+const DEFAULT_MAX_EMBEDDED_BASE64_LENGTH = 1000 // chars
+const DEFAULT_USER_AGENT = 'Penthouse Critical Path CSS Generator'
+const TMP_DIR = osTmpdir()
+const DEFAULT_RENDER_WAIT_TIMEOUT = 100
+const DEFAULT_BLOCK_JS_REQUESTS = true
 
-var toPhantomJsOptions = function (maybeOptionsHash) {
+const toPhantomJsOptions = function (maybeOptionsHash) {
   if (typeof maybeOptionsHash !== 'object') {
     return []
   }
@@ -41,7 +41,7 @@ var toPhantomJsOptions = function (maybeOptionsHash) {
 
 function penthouseScriptArgs (options, astFilename) {
   // need to annotate forceInclude values to allow RegExp to pass through JSON serialization
-  var forceInclude = (options.forceInclude || [])
+  const forceInclude = (options.forceInclude || [])
     .map(function (forceIncludeValue) {
       if (
         typeof forceIncludeValue === 'object' &&
@@ -72,20 +72,20 @@ function penthouseScriptArgs (options, astFilename) {
 
 function writeAstToFile (ast) {
   // save ast to file
-  var tmpobj = tmp.fileSync({ dir: TMP_DIR })
+  const tmpobj = tmp.fileSync({ dir: TMP_DIR })
   fs.writeFileSync(tmpobj.name, JSON.stringify(ast))
   return tmpobj
 }
 
-var m = (module.exports = function (options, callback) {
+const m = (module.exports = function (options, callback) {
   // jshint ignore: line
-  var stdOut = ''
-  var stdErr = ''
+  let stdOut = ''
+  let stdErr = ''
   // debugging
-  var START_TIME = Date.now()
-  var debuglog = function (msg, isError) {
+  const START_TIME = Date.now()
+  const debuglog = function (msg, isError) {
     if (m.DEBUG) {
-      var errMsg =
+      const errMsg =
         'time: ' +
         (Date.now() - START_TIME) +
         ' | ' +
@@ -98,23 +98,21 @@ var m = (module.exports = function (options, callback) {
   normalizeCss.DEBUG = m.DEBUG
 
   function generateCriticalCss (ast) {
-    var debuggingHelp = ''
-    var cp
-    var killTimeout
+    let debuggingHelp = ''
 
-    var timeoutWait = options.timeout || DEFAULT_TIMEOUT
+    const timeoutWait = options.timeout || DEFAULT_TIMEOUT
 
-    var astTmpobj = writeAstToFile(ast)
+    const astTmpobj = writeAstToFile(ast)
 
-    var scriptArgs = penthouseScriptArgs(options, astTmpobj.name)
+    const scriptArgs = penthouseScriptArgs(options, astTmpobj.name)
 
-    var phantomJsArgs = [configString].concat(
+    let phantomJsArgs = [configString].concat(
       toPhantomJsOptions(options.phantomJsOptions)
     )
     phantomJsArgs.push(script)
     phantomJsArgs = phantomJsArgs.concat(scriptArgs)
 
-    cp = spawn(phantomJsBinPath, phantomJsArgs)
+    const cp = spawn(phantomJsBinPath, phantomJsArgs)
 
     // Errors arise before the process starts
     cp.on('error', function (err) {
@@ -143,8 +141,8 @@ var m = (module.exports = function (options, callback) {
     })
 
     // kill after timeout
-    killTimeout = setTimeout(function () {
-      var msg = 'Penthouse timed out after ' + timeoutWait / 1000 + 's. '
+    const killTimeout = setTimeout(function () {
+      const msg = 'Penthouse timed out after ' + timeoutWait / 1000 + 's. '
       debuggingHelp += msg
       stdErr += msg
       cp.kill('SIGTERM')
@@ -155,7 +153,7 @@ var m = (module.exports = function (options, callback) {
         // promise purely for catching errors,
         // that otherwise exit node
         new Promise(function (resolve) {
-          var finalCss = postformatting(
+          let finalCss = postformatting(
             stdOut,
             {
               maxEmbeddedBase64Length: typeof options.maxEmbeddedBase64Length ===
@@ -193,7 +191,7 @@ var m = (module.exports = function (options, callback) {
         })
       } else {
         debuggingHelp += 'PhantomJS process exited with code ' + code
-        var err = new Error(stdErr + stdOut)
+        const err = new Error(stdErr + stdOut)
         err.code = code
         err.debug = debuggingHelp
         err.stdout = stdOut
@@ -228,7 +226,7 @@ var m = (module.exports = function (options, callback) {
     // if errors, normalize css and try again
     // only then pass css to penthouse
     return new Promise(function (resolve, reject) {
-      var css
+      let css
       try {
         css = fs.readFileSync(cssfilepath, 'utf8')
       } catch (e) {
@@ -237,8 +235,8 @@ var m = (module.exports = function (options, callback) {
       }
       debuglog('opened css file')
 
-      var ast = cssAstFormatter.parse(css, { silent: true })
-      var parsingErrors = ast.stylesheet.parsingErrors.filter(function (err) {
+      let ast = cssAstFormatter.parse(css, { silent: true })
+      const parsingErrors = ast.stylesheet.parsingErrors.filter(function (err) {
         // the forked version of the astParser used fixes these errors itself
         return err.reason !== 'Extra closing brace'
       })
@@ -250,7 +248,7 @@ var m = (module.exports = function (options, callback) {
 
       // had breaking parsing errors
       // NOTE: only informing about first error, even if there were more than one.
-      var parsingErrorMessage = parsingErrors[0].message
+      const parsingErrorMessage = parsingErrors[0].message
       if (options.strict === true) {
         reject(parsingErrorMessage)
         return
@@ -284,7 +282,7 @@ var m = (module.exports = function (options, callback) {
           }
           ast = cssAstFormatter.parse(normalizedCss, { silent: true })
           debuglog('parsed normalised css into ast')
-          var parsingErrors = ast.stylesheet.parsingErrors.filter(function (
+          const parsingErrors = ast.stylesheet.parsingErrors.filter(function (
             err
           ) {
             // the forked version of the astParser used fixes these errors itself

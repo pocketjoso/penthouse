@@ -1,14 +1,14 @@
 'use strict'
 
-var cssAstFormatter = require('css')
-var embeddedbase64Remover = require('./embedded-base64-remover')
-var ffRemover = require('./unused-fontface-remover')
-var unusedKeyframeRemover = require('./unused-keyframe-remover')
+const cssAstFormatter = require('css')
+const embeddedbase64Remover = require('./embedded-base64-remover')
+const ffRemover = require('./unused-fontface-remover')
+const unusedKeyframeRemover = require('./unused-keyframe-remover')
 
 // PhantomJS spits out these messages straight into stdOut,
 // causing it to mix with our critical css.
 // AFAIK no better way to handle this than to hard code and filter them out here
-var removePhantomJSSecurityErrors = function (stdOut) {
+const removePhantomJSSecurityErrors = function (stdOut) {
   stdOut = stdOut.replace(
     'Unsafe JavaScript attempt to access frame with URL about:blank from frame with URL ',
     ''
@@ -24,7 +24,7 @@ module.exports = function postformatting (
   debugMode,
   START_TIME
 ) {
-  var debuglog = function (msg, isError) {
+  const debuglog = function (msg, isError) {
     if (debugMode) {
       console.error(
         'time: ' +
@@ -37,16 +37,16 @@ module.exports = function postformatting (
     }
   }
 
-  var cssAstRulesJsonString = removePhantomJSSecurityErrors(stdOutString)
+  const cssAstRulesJsonString = removePhantomJSSecurityErrors(stdOutString)
   debuglog('remove phantom js security errors')
 
-  var criticalRules = JSON.parse(cssAstRulesJsonString)
+  let criticalRules = JSON.parse(cssAstRulesJsonString)
   debuglog('JSON parse')
 
   criticalRules = unusedKeyframeRemover(criticalRules)
   debuglog('unusedKeyframeRemover')
 
-  var finalCss = cssAstFormatter.stringify({
+  let finalCss = cssAstFormatter.stringify({
     stylesheet: {
       rules: criticalRules
     }
