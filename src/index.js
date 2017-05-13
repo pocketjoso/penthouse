@@ -17,7 +17,8 @@ var postformatting = require('./postformatting/')
 var normalizeCss = require('./normalize-css-module')
 
 // for phantomjs
-var configString = '--config=' + path.join(__dirname, 'phantomjs', 'config.json')
+var configString =
+  '--config=' + path.join(__dirname, 'phantomjs', 'config.json')
 var script = path.join(__dirname, 'phantomjs', 'core.js')
 
 var DEFAULT_VIEWPORT_WIDTH = 1300 // px
@@ -31,21 +32,25 @@ var DEFAULT_BLOCK_JS_REQUESTS = true
 
 var toPhantomJsOptions = function (maybeOptionsHash) {
   if (typeof maybeOptionsHash !== 'object') {
-    return [];
+    return []
   }
   return Object.keys(maybeOptionsHash).map(function (optName) {
-    return '--' + optName + '=' + maybeOptionsHash[optName];
+    return '--' + optName + '=' + maybeOptionsHash[optName]
   })
 }
 
 function penthouseScriptArgs (options, astFilename) {
   // need to annotate forceInclude values to allow RegExp to pass through JSON serialization
-  var forceInclude = (options.forceInclude || []).map(function (forceIncludeValue) {
-    if (typeof forceIncludeValue === 'object' && forceIncludeValue.constructor.name === 'RegExp') {
-      return { type: 'RegExp', value: forceIncludeValue.source }
-    }
-    return { value: forceIncludeValue }
-  })
+  var forceInclude = (options.forceInclude || [])
+    .map(function (forceIncludeValue) {
+      if (
+        typeof forceIncludeValue === 'object' &&
+        forceIncludeValue.constructor.name === 'RegExp'
+      ) {
+        return { type: 'RegExp', value: forceIncludeValue.source }
+      }
+      return { value: forceIncludeValue }
+    })
   // TODO: should just stringify the whole thing and parse inside, rather than doing like this,
   // since the command line util no longer used
   return [
@@ -56,7 +61,9 @@ function penthouseScriptArgs (options, astFilename) {
     JSON.stringify(forceInclude), // stringify to maintain array
     options.userAgent || DEFAULT_USER_AGENT,
     options.renderWaitTime || DEFAULT_RENDER_WAIT_TIMEOUT,
-    (typeof options.blockJSRequests !== 'undefined' ? options.blockJSRequests : DEFAULT_BLOCK_JS_REQUESTS),
+    typeof options.blockJSRequests !== 'undefined'
+      ? options.blockJSRequests
+      : DEFAULT_BLOCK_JS_REQUESTS,
     // object, needs to be stringified
     JSON.stringify(options.customPageHeaders || {}),
     m.DEBUG
@@ -65,19 +72,25 @@ function penthouseScriptArgs (options, astFilename) {
 
 function writeAstToFile (ast) {
   // save ast to file
-  var tmpobj = tmp.fileSync({dir: TMP_DIR})
+  var tmpobj = tmp.fileSync({ dir: TMP_DIR })
   fs.writeFileSync(tmpobj.name, JSON.stringify(ast))
   return tmpobj
 }
 
-var m = module.exports = function (options, callback) { // jshint ignore: line
+var m = (module.exports = function (options, callback) {
+  // jshint ignore: line
   var stdOut = ''
   var stdErr = ''
   // debugging
   var START_TIME = Date.now()
   var debuglog = function (msg, isError) {
     if (m.DEBUG) {
-      var errMsg = 'time: ' + (Date.now() - START_TIME) + ' | ' + (isError ? 'ERR: ' : '') + msg
+      var errMsg =
+        'time: ' +
+        (Date.now() - START_TIME) +
+        ' | ' +
+        (isError ? 'ERR: ' : '') +
+        msg
       stdErr += errMsg
       console.error(errMsg)
     }
@@ -85,9 +98,9 @@ var m = module.exports = function (options, callback) { // jshint ignore: line
   normalizeCss.DEBUG = m.DEBUG
 
   function generateCriticalCss (ast) {
-    var debuggingHelp = '',
-        cp,
-        killTimeout
+    var debuggingHelp = ''
+    var cp
+    var killTimeout
 
     var timeoutWait = options.timeout || DEFAULT_TIMEOUT
 
@@ -95,7 +108,9 @@ var m = module.exports = function (options, callback) { // jshint ignore: line
 
     var scriptArgs = penthouseScriptArgs(options, astTmpobj.name)
 
-    var phantomJsArgs = [configString].concat(toPhantomJsOptions(options.phantomJsOptions))
+    var phantomJsArgs = [configString].concat(
+      toPhantomJsOptions(options.phantomJsOptions)
+    )
     phantomJsArgs.push(script)
     phantomJsArgs = phantomJsArgs.concat(scriptArgs)
 
@@ -140,13 +155,23 @@ var m = module.exports = function (options, callback) { // jshint ignore: line
         // promise purely for catching errors,
         // that otherwise exit node
         new Promise(function (resolve) {
-          var finalCss = postformatting(stdOut, {
-            maxEmbeddedBase64Length: typeof options.maxEmbeddedBase64Length === 'number' ? options.maxEmbeddedBase64Length : DEFAULT_MAX_EMBEDDED_BASE64_LENGTH
-          }, m.DEBUG, START_TIME)
+          var finalCss = postformatting(
+            stdOut,
+            {
+              maxEmbeddedBase64Length: typeof options.maxEmbeddedBase64Length ===
+                'number'
+                ? options.maxEmbeddedBase64Length
+                : DEFAULT_MAX_EMBEDDED_BASE64_LENGTH
+            },
+            m.DEBUG,
+            START_TIME
+          )
 
           if (finalCss.trim().length === 0) {
             // TODO: this error should surface to user
-            debuglog('Note: Generated critical css was empty for URL: ' + options.url)
+            debuglog(
+              'Note: Generated critical css was empty for URL: ' + options.url
+            )
           } else {
             // remove irrelevant css properties
             finalCss = apartment(finalCss, {
@@ -158,16 +183,12 @@ var m = module.exports = function (options, callback) { // jshint ignore: line
                 '(.*)user-select'
               ],
               // TODO: move into core phantomjs script
-              selectors: [
-                '::(-moz-)?selection'
-              ]
+              selectors: ['::(-moz-)?selection']
             })
           }
           callback(null, finalCss)
           resolve()
-          return
-        })
-        .catch(function (err) {
+        }).catch(function (err) {
           callback(err)
         })
       } else {
@@ -202,7 +223,7 @@ var m = module.exports = function (options, callback) { // jshint ignore: line
     process.on('SIGTERM', sigtermHandler)
   }
 
-  function generateAstFromCssFile(cssfilepath) {
+  function generateAstFromCssFile (cssfilepath) {
     // read the css and parse the ast
     // if errors, normalize css and try again
     // only then pass css to penthouse
@@ -235,7 +256,7 @@ var m = module.exports = function (options, callback) { // jshint ignore: line
         return
       }
 
-      debuglog('Failed ast formatting css \'' + parsingErrorMessage + '\': ')
+      debuglog("Failed ast formatting css '" + parsingErrorMessage + "': ")
       normalizeCss(
         {
           url: options.url || '',
@@ -245,14 +266,27 @@ var m = module.exports = function (options, callback) { // jshint ignore: line
           debug: m.DEBUG
         },
         function (err, normalizedCss) {
-          debuglog('normalized css: ' + (normalizedCss ? normalizedCss.length : typeof normalizedCss))
+          if (err) {
+            reject(err)
+            return
+          }
+          debuglog(
+            'normalized css: ' +
+              (normalizedCss ? normalizedCss.length : typeof normalizedCss)
+          )
           if (!normalizedCss) {
-            reject('Failed to normalize CSS errors. Run Penthouse with \'strict: true\' option to see these css errors.')
+            reject(
+              new Error(
+                "Failed to normalize CSS errors. Run Penthouse with 'strict: true' option to see these css errors."
+              )
+            )
             return
           }
           ast = cssAstFormatter.parse(normalizedCss, { silent: true })
           debuglog('parsed normalised css into ast')
-          var parsingErrors = ast.stylesheet.parsingErrors.filter(function (err) {
+          var parsingErrors = ast.stylesheet.parsingErrors.filter(function (
+            err
+          ) {
             // the forked version of the astParser used fixes these errors itself
             return err.reason !== 'Extra closing brace'
           })
@@ -260,13 +294,10 @@ var m = module.exports = function (options, callback) { // jshint ignore: line
             debuglog('..with parsingErrors: ' + parsingErrors[0].reason)
           }
           resolve(ast)
-          return
         }
       )
     })
   }
 
-  generateAstFromCssFile(options.css)
-  .then(generateCriticalCss)
-  .catch(callback)
-}
+  generateAstFromCssFile(options.css).then(generateCriticalCss).catch(callback)
+})

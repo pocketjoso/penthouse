@@ -10,41 +10,46 @@ var spawn = require('child_process').spawn
 var phantomjs = require('phantomjs-prebuilt')
 var phantomJsBinPath = phantomjs.path
 var script = path.join(__dirname, 'phantomjs', 'normalize-css.js')
-var configString = '--config=' + path.join(__dirname, 'phantomjs', 'config.json')
+var configString =
+  '--config=' + path.join(__dirname, 'phantomjs', 'config.json')
 var DEFAULT_TIMEOUT = 30000
 var START_TIME = new Date().getTime()
 
 // TODO: export from postformatting
 var removePhantomJSSecurityErrors = function (stdOut) {
-  stdOut = stdOut.replace('Unsafe JavaScript attempt to access frame with URL about:blank from frame with URL ', '')
+  stdOut = stdOut.replace(
+    'Unsafe JavaScript attempt to access frame with URL about:blank from frame with URL ',
+    ''
+  )
   stdOut = stdOut.replace(/file:\/\/.*core.js\./, '')
   stdOut = stdOut.replace(' Domains, protocols and ports must match.', '')
   return stdOut
 }
 
-var m = module.exports = function (options, callback) {
-  var stdOut = '',
-      stdErr = '',
-      debuggingHelp = '',
-      cp,
-      killTimeout
+var m = (module.exports = function (options, callback) {
+  var stdOut = ''
+  var stdErr = ''
+  var debuggingHelp = ''
+  var cp
   var timeoutWait = options.timeout || DEFAULT_TIMEOUT
 
   var debuglog = function (msg, isError) {
     if (m.DEBUG) {
-      var errMsg = 'time: ' + (Date.now() - START_TIME) + ' | ' + (isError ? 'ERR: ' : '') + msg
+      var errMsg =
+        'time: ' +
+        (Date.now() - START_TIME) +
+        ' | ' +
+        (isError ? 'ERR: ' : '') +
+        msg
       stdErr += errMsg
       console.error(errMsg)
     }
   }
-  var scriptArgs = [
-    options.url,
-    options.css,
-    options.userAgent,
-    m.DEBUG
-  ]
+  var scriptArgs = [options.url, options.css, options.userAgent, m.DEBUG]
 
-  var phantomJsArgs = [configString, script].concat(scriptArgs).concat([m.DEBUG])
+  var phantomJsArgs = [configString, script]
+    .concat(scriptArgs)
+    .concat([m.DEBUG])
 
   cp = spawn(phantomJsBinPath, phantomJsArgs)
 
@@ -72,9 +77,16 @@ var m = module.exports = function (options, callback) {
   })
 
   // kill after timeout
-  killTimeout = setTimeout(function () {
-    var msg = 'Penthouse normalization step timed out after ' + timeoutWait / 1000 + 's. '
-    debuglog('Penthouse normalization step timed out after ' + timeoutWait / 1000 + 's. ')
+  var killTimeout = setTimeout(function () {
+    var msg =
+      'Penthouse normalization step timed out after ' +
+      timeoutWait / 1000 +
+      's. '
+    debuglog(
+      'Penthouse normalization step timed out after ' +
+        timeoutWait / 1000 +
+        's. '
+    )
     debuggingHelp += msg
     stdErr += msg
     cp.kill('SIGTERM')
@@ -111,4 +123,4 @@ var m = module.exports = function (options, callback) {
   }
   process.on('exit', exitHandler)
   process.on('SIGTERM', sigtermHandler)
-}
+})

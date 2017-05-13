@@ -1,11 +1,14 @@
 'use strict'
 
-function getAllKeyframes(rules) {
+function getAllKeyframes (rules) {
   var matches = []
   function handleRule (rule) {
     if (rule.type === 'rule') {
       ;(rule.declarations || []).forEach(function (props) {
-        if (props.property === 'animation' || props.property === 'animation-name') {
+        if (
+          props.property === 'animation' ||
+          props.property === 'animation-name'
+        ) {
           matches.push(props.value.split(' ')[0])
         }
       })

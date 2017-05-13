@@ -8,8 +8,8 @@ function unusedFontfaceRemover (css) {
   var toDeleteSections = []
 
   // extract full @font-face rules
-  var fontFaceRegex = /(@font-face[ \s\S]*?\{([\s\S]*?)\})/gm,
-      ff
+  var fontFaceRegex = /(@font-face[ \s\S]*?\{([\s\S]*?)\})/gm
+  var ff
 
   while ((ff = fontFaceRegex.exec(css)) !== null) {
     // grab the font name declared in the @font-face rule
@@ -23,10 +23,13 @@ function unusedFontfaceRemover (css) {
     var fontName = t[1].replace(/['"]/gm, '')
 
     // does this fontname appear as a font-family or font (shorthand) value?
-    var fontNameRegex = new RegExp('([^{}]*?){[^}]*?font(-family)?[^:]*?:[^;]*' + fontName + '[^,;]*[,;]', 'gmi')
+    var fontNameRegex = new RegExp(
+      '([^{}]*?){[^}]*?font(-family)?[^:]*?:[^;]*' + fontName + '[^,;]*[,;]',
+      'gmi'
+    )
 
-    var fontFound = false,
-        m
+    var fontFound = false
+    var m
 
     while ((m = fontNameRegex.exec(css)) !== null) {
       if (m[1].indexOf('@font-face') === -1) {
@@ -51,8 +54,8 @@ function unusedFontfaceRemover (css) {
   }
   // now delete the @fontface rules we registed as having no matches in the css
   for (var i = 0; i < toDeleteSections.length; i++) {
-    var start = toDeleteSections[i].start,
-        end = toDeleteSections[i].end
+    var start = toDeleteSections[i].start
+    var end = toDeleteSections[i].end
     css = css.substring(0, start) + css.substring(end)
   }
 

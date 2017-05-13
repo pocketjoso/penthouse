@@ -1,3 +1,4 @@
+/* eslint-env phantomjs */
 'use strict'
 
 var fs = require('fs')
@@ -26,7 +27,13 @@ var options = {
 
 function debuglog (msg, isError) {
   if (options.debugMode) {
-    system.stderr.write('time: ' + (new Date().getTime() - START_TIME) + ' | ' + (isError ? 'ERR: ' : '') + msg)
+    system.stderr.write(
+      'time: ' +
+        (new Date().getTime() - START_TIME) +
+        ' | ' +
+        (isError ? 'ERR: ' : '') +
+        msg
+    )
   }
 }
 
@@ -49,7 +56,6 @@ function phantomExit (code) {
     phantom.exit(code)
   }, 0)
 }
-
 
 function prepareNewPage () {
   debuglog('prepareNewPage')
@@ -92,7 +98,7 @@ function extractFullCssFromPage (originalCss) {
     if (!rule.selectorText) {
       if (!rule.media) {
         if (rule.cssText.indexOf('@font-face') !== -1) {
-          return rule.cssText.replace(/format\(([^'")]*)\)/g, 'format(\'$1\')')
+          return rule.cssText.replace(/format\(([^'")]*)\)/g, "format('$1')")
         }
         return rule.cssText
       }
@@ -106,14 +112,16 @@ function extractFullCssFromPage (originalCss) {
   }
 
   originalCss = decodeURIComponent(originalCss)
-  var css = Array.prototype.map.call(document.styleSheets, function (stylesheet) {
-    return handleCssRules(stylesheet.cssRules)
-  }).join(' ')
+  var css = Array.prototype.map
+    .call(document.styleSheets, function (stylesheet) {
+      return handleCssRules(stylesheet.cssRules)
+    })
+    .join(' ')
 
   console.log('extractFullCssFromPage, css extracted: ' + css.length)
 
   // Chrome returns all strings as single quotes, so don't need to look for double quotes
-  css = css.replace(/'\\\\/g, '\'\\')
+  css = css.replace(/'\\\\/g, "'\\")
 
   // these (case 0) @-rules are not part of document.styleSheets, so need to be preserved manually
   var metaMatches = originalCss.match(/(@(import|namespace)[^;]*;)/g)
@@ -139,30 +147,42 @@ function normalizeCss (css) {
   // check length of matched innerContent,
   // if 1, just take charcodeAt(0).toString(16) and prepend '\'
   // otherwise if starts with `\`, add another one
-  css = css.replace(/(content\s*:\s*)(['"])([^'"]*)(['"])/g, function (match, pre, quote, innerContent, quote2) {
-    if (quote !== quote2) {
-      return
-    }
-    return pre + quote + jsesc(innerContent) + quote
-  })
-  // .. however it's not perfect for our needs,
-  // as we need to be able to convert back to CSS acceptable format.
-  // i.e. need to go from `\f` to `\\f` (and then back afterwards),
-  // and need to use `\2022` rather than `u2022`...
-  // this is not rigourously tested and not following any spec, needs to be improved.
-  .replace(/(['"])(\\)([^\\])/g, function (match, quote, slash, firstInnerContentChar) {
-    if (firstInnerContentChar === 'u') {
-      return quote + slash + slash
-    }
-    return quote + slash + slash + firstInnerContentChar
-  })
+  css = css
+    .replace(/(content\s*:\s*)(['"])([^'"]*)(['"])/g, function (
+      match,
+      pre,
+      quote,
+      innerContent,
+      quote2
+    ) {
+      if (quote !== quote2) {
+        return
+      }
+      return pre + quote + jsesc(innerContent) + quote
+    })
+    // .. however it's not perfect for our needs,
+    // as we need to be able to convert back to CSS acceptable format.
+    // i.e. need to go from `\f` to `\\f` (and then back afterwards),
+    // and need to use `\2022` rather than `u2022`...
+    // this is not rigourously tested and not following any spec, needs to be improved.
+    .replace(/(['"])(\\)([^\\])/g, function (
+      match,
+      quote,
+      slash,
+      firstInnerContentChar
+    ) {
+      if (firstInnerContentChar === 'u') {
+        return quote + slash + slash
+      }
+      return quote + slash + slash + firstInnerContentChar
+    })
 
   debuglog('escaped hex in normalizeCss')
   prepareNewPage()
-  page.content = '<html><head><style>' + css + '</style></head><body></body></html>'
+  page.content =
+    '<html><head><style>' + css + '</style></head><body></body></html>'
   page.evaluate(extractFullCssFromPage, encodeURIComponent(css))
 }
-
 
 // main
 // NOTE: not using debuglog since in order to get a non time-prefixed log line

@@ -1,3 +1,4 @@
+/* eslint-env phantomjs */
 'use strict'
 
 var fs = require('fs')
@@ -69,7 +70,10 @@ function prepareNewPage () {
   }
 
   page.onResourceRequested = function (requestData, request) {
-    if (criticalCssOptions.blockJSRequests !== 'false' && /\.js(\?.*)?$/.test(requestData.url)) {
+    if (
+      criticalCssOptions.blockJSRequests !== 'false' &&
+      /\.js(\?.*)?$/.test(requestData.url)
+    ) {
       request.abort()
     }
   }
@@ -118,7 +122,12 @@ function phantomExit (code) {
 // called inside a sandboxed environment inside phantomjs - no outside references
 // arguments and return value must be primitives
 // @see http://phantomjs.org/api/webpage/method/evaluate.html
-function pruneNonCriticalCss (astRules, forceInclude, renderWaitTime, doneStatus) {
+function pruneNonCriticalCss (
+  astRules,
+  forceInclude,
+  renderWaitTime,
+  doneStatus
+) {
   console.log('debug: pruneNonCriticalCss')
   var h = window.innerHeight
 
@@ -130,9 +139,11 @@ function pruneNonCriticalCss (astRules, forceInclude, renderWaitTime, doneStatus
     ':first-line'
   ]
   // detect these selectors regardless of whether one or two semi-colons are used
-  var psuedoSelectorsToKeepRegex = psuedoSelectorsToKeep.map(function (s) {
-    return ':?' + s
-  }).join('|') // separate in regular expression
+  var psuedoSelectorsToKeepRegex = psuedoSelectorsToKeep
+    .map(function (s) {
+      return ':?' + s
+    })
+    .join('|') // separate in regular expression
   // we will replace all instances of these psuedo selectors; hence global flag
   var PSUEDO_SELECTOR_REGEXP = new RegExp(psuedoSelectorsToKeepRegex, 'g')
 
@@ -194,7 +205,10 @@ function pruneNonCriticalCss (astRules, forceInclude, renderWaitTime, doneStatus
 
       // if selector is purely psuedo (f.e. ::-moz-placeholder), just keep as is.
       // we can't match it to anything on page, but it can impact above the fold styles
-      if (modifiedSelector.replace(/:[:]?([a-zA-Z0-9\-_])*/g, '').trim().length === 0) {
+      if (
+        modifiedSelector.replace(/:[:]?([a-zA-Z0-9\-_])*/g, '').trim()
+          .length === 0
+      ) {
         return true
       }
 
@@ -230,7 +244,7 @@ function pruneNonCriticalCss (astRules, forceInclude, renderWaitTime, doneStatus
       rule.selectors = rule.selectors.filter(isSelectorCritical)
       return rule.selectors.length > 0
     }
-    /* ==@-rule handling==*/
+    /* ==@-rule handling== */
     /* - Case 0 : Non nested @-rule [REMAIN]
      (@charset, @import, @namespace)
      */
@@ -245,10 +259,7 @@ function pruneNonCriticalCss (astRules, forceInclude, renderWaitTime, doneStatus
     /* Case 1: @-rule with CSS properties inside [REMAIN]
       @font-face, @keyframes - keep here, but remove later in code, unless it is used.
     */
-    if (
-        rule.type === 'font-face' ||
-        rule.type === 'keyframes'
-    ) {
+    if (rule.type === 'font-face' || rule.type === 'keyframes') {
       return true
     }
 
@@ -282,7 +293,7 @@ function pruneNonCriticalCss (astRules, forceInclude, renderWaitTime, doneStatus
   // give some time (renderWaitTime) for sites like facebook that build their page dynamically,
   // otherwise we can miss some selectors (and therefor rules)
   // --tradeoff here: if site is too slow with dynamic content,
-  //	it doesn't deserve to be in critical path.
+  // it doesn't deserve to be in critical path.
   setTimeout(processCssRules, renderWaitTime)
 }
 
@@ -295,7 +306,7 @@ function pruneNonCriticalCss (astRules, forceInclude, renderWaitTime, doneStatus
  * @param options.ast the css as an AST object
  * @param options.width the width of viewport
  * @param options.height the height of viewport
- ---------------------------------------------------------*/
+ --------------------------------------------------------- */
 function getCriticalPathCss (options) {
   debuglog('getCriticalPathCss')
   prepareNewPage()
@@ -304,15 +315,25 @@ function getCriticalPathCss (options) {
     height: options.height
   }
   // first strip out non matching media queries
-  var astRules = nonMatchingMediaQueryRemover(options.ast.stylesheet.rules, options.width, options.height)
+  var astRules = nonMatchingMediaQueryRemover(
+    options.ast.stylesheet.rules,
+    options.width,
+    options.height
+  )
   debuglog('stripped out non matching media queries')
 
   page.open(options.url, function (status) {
     if (status === 'success') {
       debuglog('page opened')
-      page.evaluate(pruneNonCriticalCss, astRules, options.forceInclude, options.renderWaitTime, GENERATION_DONE)
+      page.evaluate(
+        pruneNonCriticalCss,
+        astRules,
+        options.forceInclude,
+        options.renderWaitTime,
+        GENERATION_DONE
+      )
     } else {
-      errorlog('Error opening url \'' + page.reason_url + '\': ' + page.reason) // jshint ignore: line
+      errorlog("Error opening url '" + page.reason_url + "': " + page.reason) // jshint ignore: line
       phantomExit(1)
     }
   })

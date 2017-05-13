@@ -28,7 +28,10 @@ function _isMatchingMediaQuery (rule, matchConfig) {
     }
     return mq.expressions.some(function (expression) {
       if (expression.modifier === 'min') {
-        return cssMediaQuery.match('(min-' + expression.feature + ':' + expression.value + ')', matchConfig)
+        return cssMediaQuery.match(
+          '(min-' + expression.feature + ':' + expression.value + ')',
+          matchConfig
+        )
       } else {
         return true
       }
@@ -38,7 +41,11 @@ function _isMatchingMediaQuery (rule, matchConfig) {
 }
 
 function nonMatchingMediaQueryRemover (rules, width, height) {
-  var matchConfig = { type: 'screen', width: width + 'px', height: height + 'px' }
+  var matchConfig = {
+    type: 'screen',
+    width: width + 'px',
+    height: height + 'px'
+  }
   return rules.filter(function (rule) {
     return _isMatchingMediaQuery(rule, matchConfig)
   })
