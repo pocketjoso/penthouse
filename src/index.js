@@ -167,9 +167,8 @@ async function generateCriticalCss (
   ast,
   { debuglog, stdOut, stdErr, START_TIME }
 ) {
-  let debuggingHelp = ''
-
   const timeoutWait = options.timeout || DEFAULT_TIMEOUT
+  let debuggingHelp = ''
 
   const {
     path: astFilePath,
@@ -177,12 +176,12 @@ async function generateCriticalCss (
   } = await writeAstToFile(ast)
 
   const scriptArgs = penthouseScriptArgs(options, astFilePath)
-
-  let phantomJsArgs = [configString].concat(
-    toPhantomJsOptions(options.phantomJsOptions)
-  )
-  phantomJsArgs.push(script)
-  phantomJsArgs = phantomJsArgs.concat(scriptArgs)
+  const phantomJsArgs = [
+    configString,
+    ...toPhantomJsOptions(options.phantomJsOptions),
+    script,
+    ...scriptArgs
+  ]
 
   const cp = spawn(phantomJsBinPath, phantomJsArgs)
 
