@@ -71,10 +71,16 @@ function penthouseScriptArgs (options, astFilename) {
 }
 
 function writeAstToFile (ast) {
-  // save ast to file
-  var tmpobj = tmp.fileSync({ dir: TMP_DIR })
-  fs.writeFileSync(tmpobj.name, JSON.stringify(ast))
-  return tmpobj
+  return new Promise((resolve, reject) => {
+    tmp.file({ dir: TMP_DIR }, (err, path, fd, cleanupCallback) => {
+      if (err) throw err
+
+      fs.writeFile(path, JSON.stringify(ast), err => {
+        if (err) throw err
+        resolve({ path, cleanupCallback })
+      })
+    })
+  })
 }
 
 function generateAstFromCssFile (
@@ -156,7 +162,7 @@ function generateAstFromCssFile (
   })
 }
 
-function generateCriticalCss (
+async function generateCriticalCss (
   options,
   ast,
   { debuglog, stdOut, stdErr, START_TIME }
@@ -165,9 +171,12 @@ function generateCriticalCss (
 
   const timeoutWait = options.timeout || DEFAULT_TIMEOUT
 
-  const astFileDescriptor = writeAstToFile(ast)
+  const {
+    path: astFilePath,
+    cleanupCallback: astFileCleanupCallback
+  } = await writeAstToFile(ast)
 
-  const scriptArgs = penthouseScriptArgs(options, astFileDescriptor.name)
+  const scriptArgs = penthouseScriptArgs(options, astFilePath)
 
   let phantomJsArgs = [configString].concat(
     toPhantomJsOptions(options.phantomJsOptions)
@@ -186,7 +195,7 @@ function generateCriticalCss (
       reject(err)
       // remove the tmp file we created
       // library would clean up after process ends, but this is better for long living proccesses
-      astFileDescriptor.removeCallback()
+      astFileCleanupCallback()
     })
 
     cp.stdout.on('data', function (data) {
@@ -263,7 +272,7 @@ function generateCriticalCss (
       process.removeListener('SIGTERM', sigtermHandler)
       // remove the tmp file we created
       // library would clean up after process ends, but this is better for long living proccesses
-      astFileDescriptor.removeCallback()
+      astFileCleanupCallback()
       cp.kill('SIGTERM')
     })
 
