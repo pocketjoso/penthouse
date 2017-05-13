@@ -83,10 +83,7 @@ function writeAstToFile (ast) {
   })
 }
 
-function generateAstFromCssFile (
-  options,
-  { debuglog, stdOut, stdErr, START_TIME }
-) {
+function generateAstFromCssFile (options, { debuglog, stdErr }) {
   // read the css and parse the ast
   // if errors, normalize css and try again
   // only then pass css to penthouse
@@ -98,7 +95,7 @@ function generateAstFromCssFile (
       reject(e.message)
       return
     }
-    debuglog('opened css file')
+    stdErr += debuglog('opened css file')
 
     let ast = cssAstFormatter.parse(css, { silent: true })
     const parsingErrors = ast.stylesheet.parsingErrors.filter(function (err) {
@@ -106,7 +103,7 @@ function generateAstFromCssFile (
       return err.reason !== 'Extra closing brace'
     })
     if (parsingErrors.length === 0) {
-      debuglog('parsed ast (without errors)')
+      stdErr += debuglog('parsed ast (without errors)')
       resolve(ast)
       return
     }
@@ -119,7 +116,9 @@ function generateAstFromCssFile (
       return
     }
 
-    debuglog("Failed ast formatting css '" + parsingErrorMessage + "': ")
+    stdErr += debuglog(
+      "Failed ast formatting css '" + parsingErrorMessage + "': "
+    )
     normalizeCss(
       {
         url: options.url || '',
@@ -133,7 +132,7 @@ function generateAstFromCssFile (
           reject(err)
           return
         }
-        debuglog(
+        stdErr += debuglog(
           'normalized css: ' +
             (normalizedCss ? normalizedCss.length : typeof normalizedCss)
         )
@@ -146,7 +145,7 @@ function generateAstFromCssFile (
           return
         }
         ast = cssAstFormatter.parse(normalizedCss, { silent: true })
-        debuglog('parsed normalised css into ast')
+        stdErr += debuglog('parsed normalised css into ast')
         const parsingErrors = ast.stylesheet.parsingErrors.filter(function (
           err
         ) {
@@ -154,7 +153,7 @@ function generateAstFromCssFile (
           return err.reason !== 'Extra closing brace'
         })
         if (parsingErrors.length > 0) {
-          debuglog('..with parsingErrors: ' + parsingErrors[0].reason)
+          stdErr += debuglog('..with parsingErrors: ' + parsingErrors[0].reason)
         }
         resolve(ast)
       }
@@ -165,10 +164,11 @@ function generateAstFromCssFile (
 async function generateCriticalCss (
   options,
   ast,
-  { debuglog, stdOut, stdErr, START_TIME }
+  { debuglog, stdErr, START_TIME }
 ) {
   const timeoutWait = options.timeout || DEFAULT_TIMEOUT
   let debuggingHelp = ''
+  let stdOut = ''
 
   const {
     path: astFilePath,
@@ -202,8 +202,7 @@ async function generateCriticalCss (
     })
 
     cp.stderr.on('data', function (data) {
-      stdErr += data
-      debuglog(String(data))
+      stdErr += debuglog(String(data)) || data
     })
 
     cp.on('close', function (code) {
@@ -236,7 +235,7 @@ async function generateCriticalCss (
 
         if (formattedCss.trim().length === 0) {
           // TODO: this error should surface to user
-          debuglog(
+          stdErr += debuglog(
             'Note: Generated critical css was empty for URL: ' + options.url
           )
           resolve(formattedCss)
@@ -292,8 +291,6 @@ async function generateCriticalCss (
 const m = (module.exports = function (options, callback) {
   // init logging and debug output
   normalizeCss.DEBUG = m.DEBUG
-  let stdOut = ''
-  let stdErr = ''
   const START_TIME = Date.now()
   const debuglog = function (msg, isError) {
     if (m.DEBUG) {
@@ -303,14 +300,14 @@ const m = (module.exports = function (options, callback) {
         ' | ' +
         (isError ? 'ERR: ' : '') +
         msg
-      stdErr += errMsg
       console.error(errMsg)
+      return errMsg
     }
+    return ''
   }
   const logging = {
     debuglog,
-    stdOut,
-    stdErr,
+    stdErr: '',
     START_TIME
   }
 
