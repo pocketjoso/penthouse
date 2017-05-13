@@ -30,6 +30,17 @@ const TMP_DIR = osTmpdir()
 const DEFAULT_RENDER_WAIT_TIMEOUT = 100
 const DEFAULT_BLOCK_JS_REQUESTS = true
 
+function readFilePromise (filepath, encoding) {
+  return new Promise((resolve, reject) => {
+    fs.readFile(filepath, encoding, (err, content) => {
+      if (err) {
+        return reject(err)
+      }
+      resolve(content)
+    })
+  })
+}
+
 const toPhantomJsOptions = function (maybeOptionsHash) {
   if (typeof maybeOptionsHash !== 'object') {
     return []
@@ -73,52 +84,53 @@ function penthouseScriptArgs (options, astFilename) {
 function writeAstToFile (ast) {
   return new Promise((resolve, reject) => {
     tmp.file({ dir: TMP_DIR }, (err, path, fd, cleanupCallback) => {
-      if (err) throw err
+      if (err) {
+        return reject(err)
+      }
 
       fs.writeFile(path, JSON.stringify(ast), err => {
-        if (err) throw err
+        if (err) {
+          return reject(err)
+        }
         resolve({ path, cleanupCallback })
       })
     })
   })
 }
 
-function generateAstFromCssFile (options, { debuglog, stdErr }) {
+async function generateAstFromCssFile (options, { debuglog, stdErr }) {
   // read the css and parse the ast
   // if errors, normalize css and try again
   // only then pass css to penthouse
-  return new Promise(function (resolve, reject) {
-    let css
-    try {
-      css = fs.readFileSync(options.css, 'utf8')
-    } catch (e) {
-      reject(e.message)
-      return
-    }
-    stdErr += debuglog('opened css file')
+  let css
+  try {
+    css = await readFilePromise(options.css, 'utf8')
+  } catch (e) {
+    throw e
+  }
+  stdErr += debuglog('opened css file')
 
-    let ast = cssAstFormatter.parse(css, { silent: true })
-    const parsingErrors = ast.stylesheet.parsingErrors.filter(function (err) {
-      // the forked version of the astParser used fixes these errors itself
-      return err.reason !== 'Extra closing brace'
-    })
-    if (parsingErrors.length === 0) {
-      stdErr += debuglog('parsed ast (without errors)')
-      resolve(ast)
-      return
-    }
+  let ast = cssAstFormatter.parse(css, { silent: true })
+  const parsingErrors = ast.stylesheet.parsingErrors.filter(function (err) {
+    // the forked version of the astParser used fixes these errors itself
+    return err.reason !== 'Extra closing brace'
+  })
+  if (parsingErrors.length === 0) {
+    stdErr += debuglog('parsed ast (without errors)')
+    return ast
+  }
 
-    // had breaking parsing errors
-    // NOTE: only informing about first error, even if there were more than one.
-    const parsingErrorMessage = parsingErrors[0].message
-    if (options.strict === true) {
-      reject(parsingErrorMessage)
-      return
-    }
+  // had breaking parsing errors
+  // NOTE: only informing about first error, even if there were more than one.
+  const parsingErrorMessage = parsingErrors[0].message
+  if (options.strict === true) {
+    throw parsingErrorMessage
+  }
 
-    stdErr += debuglog(
-      "Failed ast formatting css '" + parsingErrorMessage + "': "
-    )
+  stdErr += debuglog(
+    "Failed ast formatting css '" + parsingErrorMessage + "': "
+  )
+  return new Promise((resolve, reject) => {
     normalizeCss(
       {
         url: options.url || '',
