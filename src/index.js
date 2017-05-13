@@ -222,7 +222,7 @@ async function generateCriticalCss (
 
     cp.on('exit', function (code) {
       if (code === 0) {
-        let finalCss = postformatting(
+        const formattedCss = postformatting(
           stdOut,
           {
             maxEmbeddedBase64Length: typeof options.maxEmbeddedBase64Length ===
@@ -234,26 +234,28 @@ async function generateCriticalCss (
           START_TIME
         )
 
-        if (finalCss.trim().length === 0) {
+        if (formattedCss.trim().length === 0) {
           // TODO: this error should surface to user
           debuglog(
             'Note: Generated critical css was empty for URL: ' + options.url
           )
-        } else {
-          // remove irrelevant css properties
-          finalCss = apartment(finalCss, {
-            properties: [
-              '(.*)transition(.*)',
-              'cursor',
-              'pointer-events',
-              '(-webkit-)?tap-highlight-color',
-              '(.*)user-select'
-            ],
-            // TODO: move into core phantomjs script
-            selectors: ['::(-moz-)?selection']
-          })
+          resolve(formattedCss)
+          return
         }
-        resolve(finalCss)
+
+        // remove irrelevant css properties
+        const cleanedCss = apartment(formattedCss, {
+          properties: [
+            '(.*)transition(.*)',
+            'cursor',
+            'pointer-events',
+            '(-webkit-)?tap-highlight-color',
+            '(.*)user-select'
+          ],
+          // TODO: move into core phantomjs script
+          selectors: ['::(-moz-)?selection']
+        })
+        resolve(cleanedCss)
       } else {
         debuggingHelp += 'PhantomJS process exited with code ' + code
         const err = new Error(stdErr + stdOut)
