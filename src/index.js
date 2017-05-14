@@ -323,8 +323,19 @@ const m = (module.exports = function (options, callback) {
     START_TIME
   }
 
-  generateAstFromCssFile(options, logging)
+  return generateAstFromCssFile(options, logging)
     .then(ast => generateCriticalCss(options, ast, logging))
-    .then(criticalCss => callback(null, criticalCss))
-    .catch(callback)
+    .then(criticalCss => {
+      if (callback) {
+        callback(null, criticalCss)
+      }
+      return criticalCss
+    })
+    .catch(err => {
+      if (callback) {
+        callback(err)
+        return
+      }
+      throw err
+    })
 })
