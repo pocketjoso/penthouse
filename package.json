@@ -18,7 +18,7 @@
   "license": "MIT",
   "main": "./lib/index.js",
   "engines": {
-    "node": ">=0.12.0"
+    "node": ">=6.5.0"
   },
   "scripts": {
     "lint": "standard \"src/**/*.js\"",
