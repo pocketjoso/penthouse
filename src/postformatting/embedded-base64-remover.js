@@ -1,60 +1,63 @@
-'use strict';
+'use strict'
 
-const cssAstFormatter = require('css');
+const cssAstFormatter = require('css')
 
-const BASE64_ENCODE_PATTERN = /data:[^,]*base64,/;
+const BASE64_ENCODE_PATTERN = /data:[^,]*base64,/
 
 const _isTooLongBase64Encoded = function (declaration, maxEmbeddedBase64Length) {
-  return BASE64_ENCODE_PATTERN.test(declaration.value) && declaration.value.length > maxEmbeddedBase64Length;
-};
+  return (
+    BASE64_ENCODE_PATTERN.test(declaration.value) &&
+    declaration.value.length > maxEmbeddedBase64Length
+  )
+}
 
 const _removeDataUrisFromRule = function (rule, maxEmbeddedBase64Length) {
   if (rule.type === 'font-face') {
-    let hasSrc = false;
+    let hasSrc = false
     rule.declarations = rule.declarations.filter(function (declaration) {
       if (_isTooLongBase64Encoded(declaration, maxEmbeddedBase64Length)) {
-        return false;
+        return false
       } else if (declaration.property === 'src') {
-        hasSrc = true;
+        hasSrc = true
       }
-      return true;
-    });
+      return true
+    })
     if (!hasSrc) {
-      return null;
+      return null
     }
   } else if (rule.type === 'rule') {
     rule.declarations = rule.declarations.filter(function (declaration) {
       if (_isTooLongBase64Encoded(declaration, maxEmbeddedBase64Length)) {
-        return false;
+        return false
       }
-      return true;
-    });
+      return true
+    })
   } else if (rule.type === 'media') {
     const rules = rule.rules.map(function (rule) {
-      return _removeDataUrisFromRule(rule, maxEmbeddedBase64Length);
-    });
+      return _removeDataUrisFromRule(rule, maxEmbeddedBase64Length)
+    })
     rule.rules = rules.filter(function (rule) {
-      return Boolean(rule);
-    });
-    return rule;
+      return Boolean(rule)
+    })
+    return rule
   }
-  return rule;
-};
+  return rule
+}
 
 const embeddedbase64Remover = function (css, maxEmbeddedBase64Length) {
-  const ast = cssAstFormatter.parse(css);
+  const ast = cssAstFormatter.parse(css)
   let rules = ast.stylesheet.rules.map(function (rule) {
-    return _removeDataUrisFromRule(rule, maxEmbeddedBase64Length);
-  });
+    return _removeDataUrisFromRule(rule, maxEmbeddedBase64Length)
+  })
   rules = rules.filter(function (rule) {
-    return Boolean(rule);
-  });
+    return Boolean(rule)
+  })
 
   return cssAstFormatter.stringify({
     stylesheet: {
       rules: rules
     }
-  });
-};
+  })
+}
 
-module.exports = embeddedbase64Remover;
+module.exports = embeddedbase64Remover

@@ -1,0 +1,5 @@
+{
+	"ignoreSslErrors": true,
+	"sslProtocol": "tlsv1",
+	"resourceTimeout": 10000
+}
