@@ -233,6 +233,7 @@ async function generateCriticalCss (
 
     cp.on('exit', function (code) {
       if (code === 0) {
+        stdErr += debuglog('recevied (good) exit signal; process stdOut')
         const formattedCss = postformatting(
           stdOut,
           {
