@@ -18,7 +18,7 @@
   "license": "MIT",
   "main": "./lib/index.js",
   "engines": {
-    "node": ">=6.5.0"
+    "node": ">=4.2.0"
   },
   "scripts": {
     "lint": "standard \"src/**/*.js\"",
@@ -45,9 +45,10 @@
   },
   "devDependencies": {
     "babel-cli": "^6.24.1",
-    "babel-core": "^6.8.0",
-    "babel-plugin-transform-async-to-generator": "^6.24.1",
-    "babel-preset-es2015": "^6.6.0",
+    "babel-core": "^6.24.1",
+    "babel-polyfill": "^6.23.0",
+    "babel-preset-env": "^1.4.0",
+    "babel-preset-es2015": "^6.24.1",
     "chai": "^1.9.1",
     "css-compare-screenshots": "^0.1.10",
     "global-mocha": "^1.0.1",
@@ -73,8 +74,15 @@
     "lib/phantomjs/config.json"
   ],
   "babel": {
-    "plugins": [
-      "transform-async-to-generator"
+    "presets": [
+      [
+        "env",
+        {
+          "targets": {
+            "node": 4.2
+          }
+        }
+      ]
     ]
   }
 }

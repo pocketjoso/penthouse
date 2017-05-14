@@ -3,6 +3,7 @@
  */
 
 'use strict'
+require('babel-polyfill') // support Node 4
 
 const fs = require('fs')
 const tmp = require('tmp')
@@ -98,7 +99,11 @@ function writeToTmpFile (string) {
   })
 }
 
-async function generateAstFromCssFile (options, { debuglog, stdErr }) {
+// const so not hoisted, so can get regeneratorRuntime inlined above, needed for Node 4
+const generateAstFromCssFile = async function generateAstFromCssFile (
+  options,
+  { debuglog, stdErr }
+) {
   // read the css and parse the ast
   // if errors, normalize css and try again
   // only then pass css to penthouse
@@ -173,7 +178,8 @@ async function generateAstFromCssFile (options, { debuglog, stdErr }) {
   })
 }
 
-async function generateCriticalCss (
+// const so not hoisted, so can get regeneratorRuntime inlined above, needed for Node 4
+const generateCriticalCss = async function generateCriticalCss (
   options,
   ast,
   { debuglog, stdErr, START_TIME }
