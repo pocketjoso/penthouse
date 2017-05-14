@@ -25,15 +25,18 @@ Penthouse can be used:
 ### As a Node module
 
 ```
-npm install --save-dev penthouse
+yarn add --dev penthouse
 ```
+(or `npm install`, if not using [yarn](https://yarnpkg.com))
 
 This will add penthouse to the list of dependencies.
 
-Require as normal and execute with a callback:
+`Penthouse` returns a promise (since version `0.11`),
+but if you prefer you can also pass in a traditional node-style `callback`
+function as the second argument.
 
 ```js
-var penthouse = require('penthouse'),
+const penthouse = require('penthouse'),
     path = require('path'),
     fs = require('fs'),
     __basedir = './';
@@ -61,14 +64,14 @@ penthouse({
     customPageHeaders: {
       'Accept-Encoding': 'identity' // add if getting compression errors like 'Data corrupted'
     }
-}, function(err, criticalCss) {
-    if (err) {
-        // handle error
-        throw err;
-    }
-
+})
+.then(criticalCss => {
+    // use the critical css
     fs.writeFileSync('outfile.css', criticalCss);
-});
+})
+.catch(err => {
+    // handle the error
+})
 ```
 
 The Penthouse Node module can also be used in Gulp.
