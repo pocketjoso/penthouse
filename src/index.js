@@ -81,14 +81,14 @@ function penthouseScriptArgs (options, astFilename) {
   ]
 }
 
-function writeAstToFile (ast) {
+function writeToTmpFile (string) {
   return new Promise((resolve, reject) => {
     tmp.file({ dir: TMP_DIR }, (err, path, fd, cleanupCallback) => {
       if (err) {
         return reject(err)
       }
 
-      fs.writeFile(path, JSON.stringify(ast), err => {
+      fs.writeFile(path, string, err => {
         if (err) {
           return reject(err)
         }
@@ -185,7 +185,7 @@ async function generateCriticalCss (
   const {
     path: astFilePath,
     cleanupCallback: astFileCleanupCallback
-  } = await writeAstToFile(ast)
+  } = await writeToTmpFile(JSON.stringify(ast))
 
   const scriptArgs = penthouseScriptArgs(options, astFilePath)
   const phantomJsArgs = [
