@@ -240,14 +240,9 @@ const generateCriticalCss = async function generateCriticalCss (
     cp.on('exit', function (code) {
       if (code === 0) {
         stdErr += debuglog('recevied (good) exit signal; process stdOut')
-        // promise purely for catching errors
-        // that otherwise exit node
-        // TODO: catch the JSON parse instead,
-        // and log what the content of stdOut was (not JSON)
-        /*eslint-disable*/
-        new Promise(() => {
-          /*eslint-enable*/
-          const formattedCss = postformatting(
+        let formattedCss
+        try {
+          formattedCss = postformatting(
             stdOut,
             {
               maxEmbeddedBase64Length: typeof options.maxEmbeddedBase64Length ===
@@ -258,30 +253,33 @@ const generateCriticalCss = async function generateCriticalCss (
             m.DEBUG,
             START_TIME
           )
+        } catch (e) {
+          reject(e)
+          return
+        }
 
-          if (formattedCss.trim().length === 0) {
-            // TODO: this error should surface to user
-            stdErr += debuglog(
-              'Note: Generated critical css was empty for URL: ' + options.url
-            )
-            resolve(formattedCss)
-            return
-          }
+        if (formattedCss.trim().length === 0) {
+          // TODO: this error should surface to user
+          stdErr += debuglog(
+            'Note: Generated critical css was empty for URL: ' + options.url
+          )
+          resolve(formattedCss)
+          return
+        }
 
-          // remove irrelevant css properties
-          const cleanedCss = apartment(formattedCss, {
-            properties: [
-              '(.*)transition(.*)',
-              'cursor',
-              'pointer-events',
-              '(-webkit-)?tap-highlight-color',
-              '(.*)user-select'
-            ],
-            // TODO: move into core phantomjs script
-            selectors: ['::(-moz-)?selection']
-          })
-          resolve(cleanedCss)
+        // remove irrelevant css properties
+        const cleanedCss = apartment(formattedCss, {
+          properties: [
+            '(.*)transition(.*)',
+            'cursor',
+            'pointer-events',
+            '(-webkit-)?tap-highlight-color',
+            '(.*)user-select'
+          ],
+          // TODO: move into core phantomjs script
+          selectors: ['::(-moz-)?selection']
         })
+        resolve(cleanedCss)
       } else {
         debuggingHelp += 'PhantomJS process exited with code ' + code
         const err = new Error(stdErr + stdOut)
