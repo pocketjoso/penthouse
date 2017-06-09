@@ -3,7 +3,7 @@
  */
 
 'use strict'
-require('regenerator-runtime/runtime') // support Node 4
+const regeneratorRuntime = require('regenerator-runtime/runtime') // eslint-disable-line no-unused-vars
 
 const fs = require('fs')
 const tmp = require('tmp')
