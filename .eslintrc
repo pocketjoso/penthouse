@@ -1,0 +1,9 @@
+{
+    "env": {
+        "node": true,
+        "es6": true
+    },
+    "rules": {
+        "semi": "never"
+    }
+}
