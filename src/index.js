@@ -3,7 +3,7 @@
  */
 
 'use strict'
-require('babel-polyfill') // support Node 4
+require('regenerator-runtime/runtime') // support Node 4
 
 const fs = require('fs')
 const tmp = require('tmp')
