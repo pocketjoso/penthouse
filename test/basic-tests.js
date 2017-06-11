@@ -18,8 +18,9 @@ describe('basic tests of penthouse functionality', function () {
     page1 = path.join(__dirname, 'static-server', 'page1.html'),
     originalCss = read(page1cssPath).toString()
 
-  // phantomjs takes a while to start up
-  this.timeout(5000)
+  // some of these tests take quite a while,
+  // as we're starting up phantomjs for each
+  this.timeout(10000)
 
   it('should return css', function (done) {
     penthouse({
