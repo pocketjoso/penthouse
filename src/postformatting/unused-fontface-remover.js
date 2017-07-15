@@ -4,11 +4,12 @@ module for removing unused fontface rules - can be used both for the standalone 
 
 'use strict'
 
+// extract full @font-face rules
+const fontFaceRegex = /(@font-face[ \s\S]*?\{([\s\S]*?)\})/gm
+
 function unusedFontfaceRemover (css) {
   const toDeleteSections = []
 
-  // extract full @font-face rules
-  const fontFaceRegex = /(@font-face[ \s\S]*?\{([\s\S]*?)\})/gm
   let ff = null
 
   while ((ff = fontFaceRegex.exec(css)) !== null) {
@@ -24,7 +25,7 @@ function unusedFontfaceRemover (css) {
 
     // does this fontname appear as a font-family or font (shorthand) value?
     const fontNameRegex = new RegExp(
-      '([^{}]*?){[^}]*?font(-family)?[^:]*?:[^;]*' + fontName + '[^,;]*[,;]',
+      '([^{}]*?){[^}]*?font(-family)?[^:}]*?:[^;}]*' + fontName + '[^,;]*[,;]',
       'gmi'
     )
 
