@@ -31,14 +31,16 @@ describe('penthouse post formatting tests', function () {
 
   it('should remove @fontface rule, because it is not used', function (done) {
     var fontFaceRemoveCssFilePath = path.join(__dirname, 'static-server', 'fontface--remove.css'),
-      fontFaceRemoveCss = read(fontFaceRemoveCssFilePath).toString()
+      fontFaceRemoveExpectedCssFilePath = path.join(__dirname, 'static-server', 'fontface--remove--expected.css'),
+      fontFaceRemoveCss = read(fontFaceRemoveCssFilePath).toString(),
+      fontFaceRemoveExpectedCss = read(fontFaceRemoveExpectedCssFilePath).toString()
 
     var result = ffRemover(fontFaceRemoveCss)
 
     try {
       var resultAst = normaliseCssAst(result)
-      var expectedAst = normaliseCssAst(fontFaceRemoveCss)
-      resultAst.stylesheet.rules.should.have.length.lessThan(expectedAst.stylesheet.rules.length)
+      var expectedAst = normaliseCssAst(fontFaceRemoveExpectedCss)
+      resultAst.should.eql(expectedAst)
       done()
     } catch (ex) {
       done(ex)
