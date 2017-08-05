@@ -4,7 +4,13 @@ function getAllKeyframes (rules) {
   const matches = []
   function handleRule (rule) {
     if (rule.type === 'rule') {
-      ;(rule.declarations || []).forEach(function (props) {
+      // mutation to fix this problem in the ast,
+      // can cause crashes when stringifying it later otherwise.
+      // NOTE: would be better to move this code to
+      // separate function, but since we're already looping through the ast here...
+      rule.declarations = rule.declarations || []
+
+      rule.declarations.forEach(function (props) {
         if (
           props.property === 'animation' ||
           props.property === 'animation-name'
