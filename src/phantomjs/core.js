@@ -149,11 +149,26 @@ function pruneNonCriticalCss (
   // we will replace all instances of these psuedo selectors; hence global flag
   var PSUEDO_SELECTOR_REGEXP = new RegExp(psuedoSelectorsToKeepRegex, 'g')
 
+  // cache whether elements are above fold,
+  // primarily because getBoundingClientRect() can be slow to query,
+  // and some stylesheets have lots of generic selectors (like '.button', '.fa' etc)
+  var isElementAboveFoldCache = []
   var isElementAboveFold = function (element) {
+    // no support for Array.find
+    var matching = isElementAboveFoldCache.filter(c => c.element === element)
+    var cached = matching && matching[0]
+    if (cached) {
+      return cached.aboveFold
+    }
     // temporarily force clear none in order to catch elements that clear previous content themselves and who w/o their styles could show up unstyled in above the fold content (if they rely on f.e. 'clear:both;' to clear some main content)
     var originalClearStyle = element.style.clear || ''
     element.style.clear = 'none'
     var aboveFold = element.getBoundingClientRect().top < h
+    // cache so we dont have to re-query dom for this value
+    isElementAboveFoldCache.push({
+      element: element,
+      aboveFold: aboveFold
+    })
 
     // set clear style back to what it was
     element.style.clear = originalClearStyle
