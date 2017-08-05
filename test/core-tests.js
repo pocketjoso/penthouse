@@ -14,7 +14,7 @@ describe('penthouse core tests', function () {
   var page1 = path.join(__dirname, 'static-server', 'page1.html')
 
   // phantomjs takes a while to start up
-  this.timeout(5000)
+  this.timeout(10000)
 
   it('should match exactly the css in the yeoman test', function (done) {
     var yeomanFullCssFilePath = path.join(__dirname, 'static-server', 'yeoman-full.css'),
