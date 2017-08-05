@@ -2,7 +2,7 @@
 
 import { describe, it } from 'global-mocha'
 import path from 'path'
-import penthouse from '../src/'
+import penthouse from '../lib/'
 import { readFileSync as read } from 'fs'
 import normaliseCssAst from './util/normaliseCssAst'
 import chai from 'chai'

@@ -3,8 +3,8 @@
 import generateScreenshots from 'css-compare-screenshots'
 import { after, describe, it } from 'global-mocha'
 import path from 'path'
-import penthouse from '../src'
-import normalizeCss from '../src/normalize-css-module'
+import penthouse from '../lib'
+import normalizeCss from '../lib/normalize-css-module'
 import rimraf from 'rimraf'
 
 import compareScreenshots from './util/compareScreenshots'

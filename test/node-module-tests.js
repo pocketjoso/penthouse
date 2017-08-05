@@ -4,7 +4,7 @@ import css from 'css'
 import { readFileSync as read } from 'fs'
 import { describe, it } from 'global-mocha'
 import path from 'path'
-import penthouse from '../src/'
+import penthouse from '../lib/'
 import chai from 'chai'
 chai.should() // binds globally on Object
 
