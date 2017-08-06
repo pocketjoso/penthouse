@@ -268,18 +268,23 @@ const generateCriticalCss = async function generateCriticalCss (
         }
 
         // remove irrelevant css properties
-        const cleanedCss = apartment(formattedCss, {
-          properties: [
-            '(.*)transition(.*)',
-            'cursor',
-            'pointer-events',
-            '(-webkit-)?tap-highlight-color',
-            '(.*)user-select'
-          ],
-          // TODO: move into core phantomjs script
-          selectors: ['::(-moz-)?selection']
-        })
-        resolve(cleanedCss)
+        try {
+          const cleanedCss = apartment(formattedCss, {
+            properties: [
+              '(.*)transition(.*)',
+              'cursor',
+              'pointer-events',
+              '(-webkit-)?tap-highlight-color',
+              '(.*)user-select'
+            ],
+            // TODO: move into core phantomjs script
+            selectors: ['::(-moz-)?selection']
+          })
+          resolve(cleanedCss)
+        } catch (e) {
+          reject(e)
+          return
+        }
       } else {
         debuggingHelp += 'PhantomJS process exited with code ' + code
         const err = new Error(stdErr + stdOut)
