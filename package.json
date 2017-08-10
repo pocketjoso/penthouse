@@ -25,7 +25,7 @@
     "test": "mocha --compilers js:babel-core/register test/core-tests",
     "test-all": "mocha --compilers js:babel-core/register",
     "precommit": "lint-staged",
-    "prepublish": "npm run lint && npm run transpile",
+    "prepublish": "npm run lint && npm run transpile && cp {src,lib}/phantomjs/config.json",
     "transpile": "babel -d lib src/"
   },
   "lint-staged": {
