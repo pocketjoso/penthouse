@@ -213,7 +213,7 @@ describe('penthouse core tests', function () {
       forceInclude: [
         '.myLoggedInSelectorRemainsEvenThoughNotFoundOnPage',
         '#box1:hover',
-        /^\.component/
+        /^\.COMPONENT/i // intentionally mismatching case to test regex flags
       ]
     }, function (err, result) {
       try {
