@@ -189,8 +189,9 @@ function pruneNonCriticalCss (
   var matchesForceInclude = function (selector) {
     return forceInclude.some(function (includeSelector) {
       if (includeSelector.type === 'RegExp') {
-        var pattern = new RegExp(includeSelector.value)
-        return pattern.test(selector)
+        const { source, flags } = includeSelector
+        const re = new RegExp(source, flags)
+        return re.test(selector)
       }
       return includeSelector.value === selector
     })

@@ -59,7 +59,11 @@ function penthouseScriptArgs (options, astFilename) {
         typeof forceIncludeValue === 'object' &&
         forceIncludeValue.constructor.name === 'RegExp'
       ) {
-        return { type: 'RegExp', value: forceIncludeValue.source }
+        return {
+          type: 'RegExp',
+          source: forceIncludeValue.source,
+          flags: forceIncludeValue.flags
+        }
       }
       return { value: forceIncludeValue }
     })
