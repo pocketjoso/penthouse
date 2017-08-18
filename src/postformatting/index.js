@@ -8,18 +8,18 @@ const unusedKeyframeRemover = require('./unused-keyframe-remover')
 // PhantomJS spits out these messages straight into stdOut,
 // causing it to mix with our critical css.
 // AFAIK no better way to handle this than to hard code and filter them out here
-const removePhantomJSSecurityErrors = function (stdOut) {
-  stdOut = stdOut.replace(
-    'Unsafe JavaScript attempt to access frame with URL about:blank from frame with URL ',
-    ''
-  )
-  stdOut = stdOut.replace(/file:\/\/.*core.js\./, '')
-  stdOut = stdOut.replace(' Domains, protocols and ports must match.', '')
-  return stdOut
-}
+// const removePhantomJSSecurityErrors = function (stdOut) {
+//   stdOut = stdOut.replace(
+//     'Unsafe JavaScript attempt to access frame with URL about:blank from frame with URL ',
+//     ''
+//   )
+//   stdOut = stdOut.replace(/file:\/\/.*core.js\./, '')
+//   stdOut = stdOut.replace(' Domains, protocols and ports must match.', '')
+//   return stdOut
+// }
 
 module.exports = function postformatting (
-  stdOutString,
+  criticalAstRules,
   criticalCssOptions,
   debugMode,
   START_TIME
@@ -37,18 +37,18 @@ module.exports = function postformatting (
     }
   }
 
-  const cssAstRulesJsonString = removePhantomJSSecurityErrors(stdOutString)
-  debuglog('remove phantom js security errors')
+  // const cssAstRulesJsonString = removePhantomJSSecurityErrors(stdOutString)
+  // debuglog('remove phantom js security errors')
+  //
+  // let criticalRules = JSON.parse(cssAstRulesJsonString)
+  // debuglog('JSON parse')
 
-  let criticalRules = JSON.parse(cssAstRulesJsonString)
-  debuglog('JSON parse')
-
-  criticalRules = unusedKeyframeRemover(criticalRules)
+  const usedCriticalRules = unusedKeyframeRemover(criticalAstRules)
   debuglog('unusedKeyframeRemover')
 
   let finalCss = cssAstFormatter.stringify({
     stylesheet: {
-      rules: criticalRules
+      rules: usedCriticalRules
     }
   })
   debuglog('stringify from ast')
