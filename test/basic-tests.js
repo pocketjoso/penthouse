@@ -8,14 +8,18 @@ import { readFileSync as read } from 'fs'
 import chai from 'chai'
 chai.should() // binds globally on Object
 
-// becasuse dont want to fail tests on white space differences
+// because dont want to fail tests on white space differences
 function normalisedCssAst (cssString) {
   return css.parse(css.stringify(css.parse(cssString), { compress: true }))
 }
 
+function staticServerFileUrl (file) {
+  return 'file://' + path.join(__dirname, 'static-server', file)
+}
+
 describe('basic tests of penthouse functionality', function () {
+  var page1FileUrl = staticServerFileUrl('page1.html')
   var page1cssPath = path.join(__dirname, 'static-server', 'page1.css'),
-    page1 = path.join(__dirname, 'static-server', 'page1.html'),
     originalCss = read(page1cssPath).toString()
 
   // some of these tests take quite a while,
@@ -24,7 +28,7 @@ describe('basic tests of penthouse functionality', function () {
 
   it('should return css', function (done) {
     penthouse({
-      url: page1,
+      url: page1FileUrl,
       css: page1cssPath
     }, function (err, result) {
       if (err) { done(err) }
@@ -41,7 +45,7 @@ describe('basic tests of penthouse functionality', function () {
     var widthLargerThanTotalTestCSS = 1000,
       heightLargerThanTotalTestCSS = 1000
     penthouse({
-      url: page1,
+      url: page1FileUrl,
       css: page1cssPath,
       width: widthLargerThanTotalTestCSS,
       height: heightLargerThanTotalTestCSS
@@ -65,7 +69,7 @@ describe('basic tests of penthouse functionality', function () {
     var widthLargerThanTotalTestCSS = 1000,
       heightSmallerThanTotalTestCSS = 100
     penthouse({
-      url: page1,
+      url: page1FileUrl,
       css: page1cssPath,
       width: widthLargerThanTotalTestCSS,
       height: heightSmallerThanTotalTestCSS
@@ -85,7 +89,7 @@ describe('basic tests of penthouse functionality', function () {
 
   it('should not crash on invalid css', function (done) {
     penthouse({
-      url: page1,
+      url: page1FileUrl,
       css: path.join(__dirname, 'static-server', 'invalid.css')
     }, function (err, result) {
       if (err) {
@@ -107,7 +111,7 @@ describe('basic tests of penthouse functionality', function () {
 
   it('should not crash on invalid media query', function (done) {
     penthouse({
-      url: page1,
+      url: page1FileUrl,
       css: path.join(__dirname, 'static-server', 'invalid-media.css')
     }, function (err, result) {
       if (err) { done(err) }
@@ -122,7 +126,7 @@ describe('basic tests of penthouse functionality', function () {
 
   it('should crash with errors in strict mode on invalid css', function (done) {
     penthouse({
-      url: page1,
+      url: page1FileUrl,
       css: path.join(__dirname, 'static-server', 'invalid.css'),
       strict: true
     }, function (err) {
@@ -136,7 +140,7 @@ describe('basic tests of penthouse functionality', function () {
 
   it('should not crash on special chars', function (done) {
     penthouse({
-      url: page1,
+      url: page1FileUrl,
       css: path.join(__dirname, 'static-server', 'special-chars.css')
     }, function (err, result) {
       if (err) { done(err) }
@@ -163,7 +167,7 @@ describe('basic tests of penthouse functionality', function () {
 
   it('should exit after timeout', function (done) {
     penthouse({
-      url: page1,
+      url: page1FileUrl,
       css: page1cssPath,
       timeout: 100
     }, function (err) {

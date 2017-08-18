@@ -10,8 +10,12 @@ chai.should() // binds globally on Object
 
 process.setMaxListeners(0)
 
+function staticServerFileUrl (file) {
+  return 'file://' + path.join(__dirname, 'static-server', file)
+}
+
 describe('penthouse core tests', function () {
-  var page1 = path.join(__dirname, 'static-server', 'page1.html')
+  var page1FileUrl = staticServerFileUrl('page1.html')
 
   // phantomjs takes a while to start up
   this.timeout(10000)
@@ -22,7 +26,7 @@ describe('penthouse core tests', function () {
       yeomanExpectedCss = read(yeomanExpectedCssFilePath).toString()
 
     penthouse({
-      url: path.join(__dirname, 'static-server', 'yeoman.html'),
+      url: staticServerFileUrl('yeoman.html'),
       css: yeomanFullCssFilePath,
       width: 800,
       height: 450
@@ -46,7 +50,7 @@ describe('penthouse core tests', function () {
       pusedoRemainCss = read(pusedoRemainCssFilePath).toString()
 
     penthouse({
-      url: page1,
+      url: page1FileUrl,
       css: pusedoRemainCssFilePath
     }, function (err, result) {
       try {
@@ -64,7 +68,7 @@ describe('penthouse core tests', function () {
     var pusedoRemoveCssFilePath = path.join(__dirname, 'static-server', 'psuedo--remove.css')
 
     penthouse({
-      url: page1,
+      url: page1FileUrl,
       css: pusedoRemoveCssFilePath
     }, function (err, result) {
       try {
@@ -85,7 +89,7 @@ describe('penthouse core tests', function () {
       atRuleCase0RemainCss = read(atRuleCase0RemainCssFilePath).toString()
 
     penthouse({
-      url: page1,
+      url: page1FileUrl,
       css: atRuleCase0RemainCssFilePath
     }, function (err, result) {
       try {
@@ -108,7 +112,7 @@ describe('penthouse core tests', function () {
       atRuleCase1RemainCss = read(atRuleCase1RemainCssFilePath).toString()
 
     penthouse({
-      url: page1,
+      url: page1FileUrl,
       css: atRuleCase1RemainCssFilePath
     }, function (err, result) {
       try {
@@ -129,7 +133,7 @@ describe('penthouse core tests', function () {
     var atRuleCase2RemoveCssFilePath = path.join(__dirname, 'static-server', 'at-rule-case-2--remove.css')
 
     penthouse({
-      url: page1,
+      url: page1FileUrl,
       css: atRuleCase2RemoveCssFilePath
     }, function (err, result) {
       try {
@@ -150,7 +154,7 @@ describe('penthouse core tests', function () {
       atRuleCase3RemainCss = read(atRuleCase3RemainCssFilePath).toString()
 
     penthouse({
-      url: page1,
+      url: page1FileUrl,
       css: atRuleCase3RemainCssFilePath,
       strict: true
     }, function (err, result) {
@@ -172,7 +176,7 @@ describe('penthouse core tests', function () {
     var atRuleCase4RemoveCssFilePath = path.join(__dirname, 'static-server', 'at-rule-case-4--remove.css')
 
     penthouse({
-      url: page1,
+      url: page1FileUrl,
       css: atRuleCase4RemoveCssFilePath
     }, function (err, result) {
       try {
@@ -190,7 +194,7 @@ describe('penthouse core tests', function () {
       clearSelfRemainCss = read(clearSelfRemainCssFilePath).toString()
 
     penthouse({
-      url: path.join(__dirname, 'static-server', 'clearSelf.html'),
+      url: staticServerFileUrl('clearSelf.html'),
       css: clearSelfRemainCssFilePath
     }, function (err, result) {
       try {
@@ -208,7 +212,7 @@ describe('penthouse core tests', function () {
     var forceIncludeCssFilePath = path.join(__dirname, 'static-server', 'forceInclude.css'),
       forceIncludeCss = read(forceIncludeCssFilePath).toString()
     penthouse({
-      url: path.join(__dirname, 'static-server', 'page1.html'),
+      url: page1FileUrl,
       css: forceIncludeCssFilePath,
       forceInclude: [
         '.myLoggedInSelectorRemainsEvenThoughNotFoundOnPage',
@@ -229,11 +233,10 @@ describe('penthouse core tests', function () {
 
   // non essential
   it('should remove empty rules', function (done) {
-    var page1 = path.join(__dirname, 'static-server', 'page1.html')
     var emptyRemoveCssFilePath = path.join(__dirname, 'static-server', 'empty-rules--remove.css')
 
     penthouse({
-      url: page1,
+      url: page1FileUrl,
       css: emptyRemoveCssFilePath
     }, function (err, result) {
       try {

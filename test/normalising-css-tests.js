@@ -24,11 +24,15 @@ function normalisedCssAst (cssString) {
   // this is relevant for the extra closing brace test(s)
   return css.parse(css.stringify(css.parse(cssString, { silent: true }), { compress: true }))
 }
+function staticServerFileUrl (file) {
+  return 'file://' + path.join(__dirname, 'static-server', file)
+}
 
 describe('penthouse fault tolerant normalising css tests', function () {
   after(function () {
     rimraf.sync(SCREENSHOT_DIST.replace(/\/$/, ''))
   })
+  var page1FileUrl = staticServerFileUrl('page1.html')
   this.timeout(20000)
 
   it('should preserve escaped hex reference styles', function (done) {
@@ -39,7 +43,7 @@ describe('penthouse fault tolerant normalising css tests', function () {
     const expected = fs.readFileSync(cssPath, 'utf8').replace('{ invalid }', '')
 
     var options = {
-      url: path.join(STATIC_SERVER_PATH, 'page1.html'),
+      url: page1FileUrl,
       css: cssPath
     }
 
@@ -66,7 +70,7 @@ describe('penthouse fault tolerant normalising css tests', function () {
     penthouse.DEBUG = false
     console.log('get critical css..')
     penthouse({
-      url: path.join(STATIC_SERVER_PATH, 'yeoman.html'),
+      url: staticServerFileUrl('yeoman.html'),
       css: path.join(STATIC_SERVER_PATH, 'yeoman-full--invalid.css'),
       width: 800,
       height: 450

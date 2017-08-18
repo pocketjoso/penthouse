@@ -42,7 +42,7 @@ const penthouse = require('penthouse'),
     __basedir = './';
 
 penthouse({
-    url: 'http://google.com',       // can be local html file path
+    url: 'http://google.com',       // can also use file:/// protocol for local files
     css: path.join(__basedir + 'static/main.css'),
     // OPTIONAL params
     width: 1300,                    // viewport width

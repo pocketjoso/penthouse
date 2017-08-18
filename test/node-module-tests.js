@@ -12,8 +12,12 @@ chai.should() // binds globally on Object
 function normalisedCssAst (cssString) {
   return css.parse(css.stringify(css.parse(cssString), { compress: true }))
 }
+function staticServerFileUrl (file) {
+  return 'file://' + path.join(__dirname, 'static-server', file)
+}
 
 describe('extra tests for penthouse node module', function () {
+  var page1FileUrl = staticServerFileUrl('page1.html')
   var page1cssPath = path.join(__dirname, 'static-server', 'page1.css')
 
   // phantomjs takes a while to start up
@@ -21,11 +25,10 @@ describe('extra tests for penthouse node module', function () {
 
   // module handles both callback (legacy), and promise
   it('module invocation should return promise', function (done) {
-    var page1 = path.join(__dirname, 'static-server', 'page1.html')
     var originalCss = read(page1cssPath).toString()
 
     const penthousePromise = penthouse({
-      url: page1,
+      url: page1FileUrl,
       css: page1cssPath
     })
     penthousePromise
