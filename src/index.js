@@ -3,14 +3,11 @@
  */
 
 'use strict'
-require('regenerator-runtime/runtime') // support Node 4
+// support Node 4
+// TODO: re-evaluate, if puppeteer does not support lower than node 7
+require('regenerator-runtime/runtime')
 
 const fs = require('fs')
-// const tmp = require('tmp')
-// const path = require('path')
-// const spawn = require('child_process').spawn
-// const phantomjs = require('phantomjs-prebuilt')
-// const phantomJsBinPath = phantomjs.path
 const apartment = require('apartment')
 const cssAstFormatter = require('css-fork-pocketjoso')
 const generateCriticalCss = require('./core').default
@@ -18,11 +15,6 @@ const generateCriticalCss = require('./core').default
 const nonMatchingMediaQueryRemover = require('./non-matching-media-query-remover')
 const postformatting = require('./postformatting/')
 const normalizeCss = require('./normalize-css-module')
-
-// for phantomjs
-// const configString =
-//   '--config=' + path.join(__dirname, 'phantomjs', 'config.json')
-// const script = path.join(__dirname, 'phantomjs', 'core.js')
 
 const DEFAULT_VIEWPORT_WIDTH = 1300 // px
 const DEFAULT_VIEWPORT_HEIGHT = 900 // px
@@ -43,15 +35,6 @@ function readFilePromise (filepath, encoding) {
   })
 }
 
-// const toPhantomJsOptions = function (maybeOptionsHash) {
-//   if (typeof maybeOptionsHash !== 'object') {
-//     return []
-//   }
-//   return Object.keys(maybeOptionsHash).map(function (optName) {
-//     return '--' + optName + '=' + maybeOptionsHash[optName]
-//   })
-// }
-
 function prepareForceIncludeForSerialization (forceInclude = []) {
   // need to annotate forceInclude values to allow RegExp to pass through JSON serialization
   return forceInclude.map(function (forceIncludeValue) {
@@ -68,43 +51,6 @@ function prepareForceIncludeForSerialization (forceInclude = []) {
     return { value: forceIncludeValue }
   })
 }
-
-// function penthouseScriptArgs (options, astFilename) {
-//   // TODO: should just stringify the whole thing and parse inside, rather than doing like this,
-//   // since the command line util no longer used
-//   return [
-//     options.url || '',
-//     astFilename,
-//     options.width || DEFAULT_VIEWPORT_WIDTH,
-//     options.height || DEFAULT_VIEWPORT_HEIGHT,
-//     JSON.stringify(forceInclude), // stringify to maintain array
-//     options.userAgent || DEFAULT_USER_AGENT,
-//     options.renderWaitTime || DEFAULT_RENDER_WAIT_TIMEOUT,
-//     typeof options.blockJSRequests !== 'undefined'
-//       ? options.blockJSRequests
-//       : DEFAULT_BLOCK_JS_REQUESTS,
-//     // object, needs to be stringified
-//     JSON.stringify(options.customPageHeaders || {}),
-//     m.DEBUG
-//   ]
-// }
-
-// function writeToTmpFile (string) {
-//   return new Promise((resolve, reject) => {
-//     tmp.file({ dir: TMP_DIR }, (err, path, fd, cleanupCallback) => {
-//       if (err) {
-//         return reject(err)
-//       }
-//
-//       fs.writeFile(path, string, err => {
-//         if (err) {
-//           return reject(err)
-//         }
-//         resolve({ path, cleanupCallback })
-//       })
-//     })
-//   })
-// }
 
 // const so not hoisted, so can get regeneratorRuntime inlined above, needed for Node 4
 const generateAstFromCssFile = async function generateAstFromCssFile (
@@ -279,84 +225,6 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
       cleanupAndExit({ returnValue: '' })
       return
     }
-
-    // const scriptArgs = penthouseScriptArgs(options, astFilePath)
-    // const phantomJsArgs = [
-    //   configString,
-    //   ...toPhantomJsOptions(options.phantomJsOptions),
-    //   script,
-    //   ...scriptArgs
-    // ]
-    //
-    // const cp = spawn(phantomJsBinPath, phantomJsArgs)
-    //
-    // return new Promise((resolve, reject) => {
-    //   // Errors arise before the process starts
-    //   cp.on('error', function (err) {
-    //     debuggingHelp += 'Error executing penthouse using ' + phantomJsBinPath
-    //     debuggingHelp += err.stack
-    //     err.debug = debuggingHelp
-    //     reject(err)
-    //     // remove the tmp file we created
-    //     // library would clean up after process ends, but this is better for long living proccesses
-    //     astFileCleanupCallback()
-    //   })
-    //
-    //   cp.stdout.on('data', function (data) {
-    //     stdOut += data
-    //   })
-    //
-    //   cp.stderr.on('data', function (data) {
-    //     stdErr += debuglog(String(data)) || data
-    //   })
-    //
-    //   cp.on('close', function (code) {
-    //     if (code !== 0) {
-    //       debuggingHelp += 'PhantomJS process closed with code ' + code
-    //     }
-    //   })
-    //
-    //   // kill after timeout
-    //   const killTimeout = setTimeout(function () {
-    //     const msg = 'Penthouse timed out after ' + timeoutWait / 1000 + 's. '
-    //     debuggingHelp += msg
-    //     stdErr += msg
-    //     cp.kill('SIGTERM')
-    //   }, timeoutWait)
-    //
-    //   cp.on('exit', function (code) {
-    //     if (code === 0) {
-    //     } else {
-    //       debuggingHelp += 'PhantomJS process exited with code ' + code
-    //       const err = new Error(stdErr + stdOut)
-    //       err.code = code
-    //       err.debug = debuggingHelp
-    //       err.stdout = stdOut
-    //       err.stderr = stdErr
-    //       reject(err)
-    //     }
-    //     // we're done here - clean up
-    //     clearTimeout(killTimeout)
-    //     // can't rely on that the parent process will be terminated any time soon,
-    //     // need to rm listeners and kill child process manually
-    //     process.removeListener('exit', exitHandler)
-    //     process.removeListener('SIGTERM', sigtermHandler)
-    //     // remove the tmp file we created
-    //     // library would clean up after process ends, but this is better for long living proccesses
-    //     astFileCleanupCallback()
-    //     cp.kill('SIGTERM')
-    //   })
-    //
-    //   function exitHandler () {
-    //     cp.kill('SIGTERM')
-    //   }
-    //   function sigtermHandler () {
-    //     cp.kill('SIGTERM')
-    //     process.exit(0)
-    //   }
-    //   process.on('exit', exitHandler)
-    //   process.on('SIGTERM', sigtermHandler)
-    // })
 
     // remove irrelevant css properties
     try {
