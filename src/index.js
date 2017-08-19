@@ -139,7 +139,6 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
 ) {
   // TODO
   // let debuggingHelp = ''
-  // let stdOut = ''
   const width = options.width || DEFAULT_VIEWPORT_WIDTH
   const height = options.height || DEFAULT_VIEWPORT_HEIGHT
   const timeoutWait = options.timeout || DEFAULT_TIMEOUT
@@ -194,11 +193,14 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         debugMode: m.DEBUG
       })
     } catch (e) {
-      cleanupAndExit({ error: e })
+      stdErr += e
+      const err = new Error(stdErr)
+      err.stderr = stdErr
+      cleanupAndExit({ error: err })
       return
     }
 
-    stdErr += debuglog('recevied (good) exit signal; process stdOut')
+    stdErr += debuglog('generateCriticalCss done, now postformat')
     let formattedCss
     try {
       formattedCss = postformatting(
