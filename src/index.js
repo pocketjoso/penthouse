@@ -26,7 +26,7 @@ const normalizeCss = require('./normalize-css-module')
 
 const DEFAULT_VIEWPORT_WIDTH = 1300 // px
 const DEFAULT_VIEWPORT_HEIGHT = 900 // px
-// const DEFAULT_TIMEOUT = 30000 // ms
+const DEFAULT_TIMEOUT = 30000 // ms
 const DEFAULT_MAX_EMBEDDED_BASE64_LENGTH = 1000 // chars
 const DEFAULT_USER_AGENT = 'Penthouse Critical Path CSS Generator'
 const DEFAULT_RENDER_WAIT_TIMEOUT = 100
@@ -192,14 +192,14 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
   { debuglog, stdErr, START_TIME }
 ) {
   // TODO
-  // const timeoutWait = options.timeout || DEFAULT_TIMEOUT
   // let debuggingHelp = ''
   // let stdOut = ''
   const width = options.width || DEFAULT_VIEWPORT_WIDTH
   const height = options.height || DEFAULT_VIEWPORT_HEIGHT
+  const timeoutWait = options.timeout || DEFAULT_TIMEOUT
+
   // first strip out non matching media queries
-  // TODO: why not do this outside of core?
-  let astRules = nonMatchingMediaQueryRemover(
+  const astRules = nonMatchingMediaQueryRemover(
     ast.stylesheet.rules,
     width,
     height
@@ -213,150 +213,170 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
     )
   )
 
-  let criticalAstRules
-  try {
-    criticalAstRules = await generateCriticalCss({
-      url: options.url,
-      astRules,
-      width,
-      height,
-      forceInclude,
-      userAgent: options.userAgent || DEFAULT_USER_AGENT,
-      renderWaitTime: options.renderWaitTime || DEFAULT_RENDER_WAIT_TIMEOUT,
-      blockJSRequests: options.blockJSRequests || DEFAULT_BLOCK_JS_REQUESTS,
-      // object, needs to be stringified
-      // JSON.stringify(options.customPageHeaders || {}),
-      customPageHeaders: options.customPageHeaders,
-      debugMode: m.DEBUG
-    })
-  } catch (e) {
-    console.log('generateCriticalCss crashed', e)
-    throw e
-  }
+  // promise so we can handle errors and reject,
+  // instead of throwing what would otherwise be uncaught errors in node process
+  return new Promise(async (resolve, reject) => {
+    const killTimeout = setTimeout(() => {
+      reject(
+        new Error('Penthouse timed out after ' + timeoutWait / 1000 + 's. ')
+      )
+    }, timeoutWait)
+    const cleanupAndExit = ({ returnValue, error }) => {
+      clearTimeout(killTimeout)
+      if (error) {
+        reject(error)
+      } else {
+        resolve(returnValue)
+      }
+    }
 
-  stdErr += debuglog('call generateCriticalCssWrapped')
+    stdErr += debuglog('call generateCriticalCssWrapped')
+    let criticalAstRules
+    try {
+      criticalAstRules = await generateCriticalCss({
+        url: options.url,
+        astRules,
+        width,
+        height,
+        forceInclude,
+        userAgent: options.userAgent || DEFAULT_USER_AGENT,
+        renderWaitTime: options.renderWaitTime || DEFAULT_RENDER_WAIT_TIMEOUT,
+        blockJSRequests: options.blockJSRequests || DEFAULT_BLOCK_JS_REQUESTS,
+        // object, needs to be stringified
+        // JSON.stringify(options.customPageHeaders || {}),
+        customPageHeaders: options.customPageHeaders,
+        debugMode: m.DEBUG
+      })
+    } catch (e) {
+      cleanupAndExit({ error: e })
+      return
+    }
 
-  stdErr += debuglog('recevied (good) exit signal; process stdOut')
-  let formattedCss
-  try {
-    formattedCss = postformatting(
-      criticalAstRules,
-      {
-        maxEmbeddedBase64Length: typeof options.maxEmbeddedBase64Length ===
-          'number'
-          ? options.maxEmbeddedBase64Length
-          : DEFAULT_MAX_EMBEDDED_BASE64_LENGTH
-      },
-      m.DEBUG,
-      START_TIME
-    )
-  } catch (e) {
-    throw e
-  }
+    stdErr += debuglog('recevied (good) exit signal; process stdOut')
+    let formattedCss
+    try {
+      formattedCss = postformatting(
+        criticalAstRules,
+        {
+          maxEmbeddedBase64Length: typeof options.maxEmbeddedBase64Length ===
+            'number'
+            ? options.maxEmbeddedBase64Length
+            : DEFAULT_MAX_EMBEDDED_BASE64_LENGTH
+        },
+        m.DEBUG,
+        START_TIME
+      )
+    } catch (e) {
+      cleanupAndExit({ error: e })
+      return
+    }
 
-  if (formattedCss.trim().length === 0) {
-    // TODO: this error should surface to user
-    stdErr += debuglog(
-      'Note: Generated critical css was empty for URL: ' + options.url
-    )
-    return formattedCss
-  }
+    if (formattedCss.trim().length === 0) {
+      // TODO: this error should surface to user
+      stdErr += debuglog(
+        'Note: Generated critical css was empty for URL: ' + options.url
+      )
+      cleanupAndExit({ returnValue: '' })
+      return
+    }
 
-  // remove irrelevant css properties
-  try {
-    const cleanedCss = apartment(formattedCss, {
-      properties: [
-        '(.*)transition(.*)',
-        'cursor',
-        'pointer-events',
-        '(-webkit-)?tap-highlight-color',
-        '(.*)user-select'
-      ],
-      // TODO: move into core phantomjs script
-      selectors: ['::(-moz-)?selection']
-    })
-    return cleanedCss
-  } catch (e) {
-    throw e
-  }
+    // const scriptArgs = penthouseScriptArgs(options, astFilePath)
+    // const phantomJsArgs = [
+    //   configString,
+    //   ...toPhantomJsOptions(options.phantomJsOptions),
+    //   script,
+    //   ...scriptArgs
+    // ]
+    //
+    // const cp = spawn(phantomJsBinPath, phantomJsArgs)
+    //
+    // return new Promise((resolve, reject) => {
+    //   // Errors arise before the process starts
+    //   cp.on('error', function (err) {
+    //     debuggingHelp += 'Error executing penthouse using ' + phantomJsBinPath
+    //     debuggingHelp += err.stack
+    //     err.debug = debuggingHelp
+    //     reject(err)
+    //     // remove the tmp file we created
+    //     // library would clean up after process ends, but this is better for long living proccesses
+    //     astFileCleanupCallback()
+    //   })
+    //
+    //   cp.stdout.on('data', function (data) {
+    //     stdOut += data
+    //   })
+    //
+    //   cp.stderr.on('data', function (data) {
+    //     stdErr += debuglog(String(data)) || data
+    //   })
+    //
+    //   cp.on('close', function (code) {
+    //     if (code !== 0) {
+    //       debuggingHelp += 'PhantomJS process closed with code ' + code
+    //     }
+    //   })
+    //
+    //   // kill after timeout
+    //   const killTimeout = setTimeout(function () {
+    //     const msg = 'Penthouse timed out after ' + timeoutWait / 1000 + 's. '
+    //     debuggingHelp += msg
+    //     stdErr += msg
+    //     cp.kill('SIGTERM')
+    //   }, timeoutWait)
+    //
+    //   cp.on('exit', function (code) {
+    //     if (code === 0) {
+    //     } else {
+    //       debuggingHelp += 'PhantomJS process exited with code ' + code
+    //       const err = new Error(stdErr + stdOut)
+    //       err.code = code
+    //       err.debug = debuggingHelp
+    //       err.stdout = stdOut
+    //       err.stderr = stdErr
+    //       reject(err)
+    //     }
+    //     // we're done here - clean up
+    //     clearTimeout(killTimeout)
+    //     // can't rely on that the parent process will be terminated any time soon,
+    //     // need to rm listeners and kill child process manually
+    //     process.removeListener('exit', exitHandler)
+    //     process.removeListener('SIGTERM', sigtermHandler)
+    //     // remove the tmp file we created
+    //     // library would clean up after process ends, but this is better for long living proccesses
+    //     astFileCleanupCallback()
+    //     cp.kill('SIGTERM')
+    //   })
+    //
+    //   function exitHandler () {
+    //     cp.kill('SIGTERM')
+    //   }
+    //   function sigtermHandler () {
+    //     cp.kill('SIGTERM')
+    //     process.exit(0)
+    //   }
+    //   process.on('exit', exitHandler)
+    //   process.on('SIGTERM', sigtermHandler)
+    // })
 
-  // const scriptArgs = penthouseScriptArgs(options, astFilePath)
-  // const phantomJsArgs = [
-  //   configString,
-  //   ...toPhantomJsOptions(options.phantomJsOptions),
-  //   script,
-  //   ...scriptArgs
-  // ]
-  //
-  // const cp = spawn(phantomJsBinPath, phantomJsArgs)
-  //
-  // return new Promise((resolve, reject) => {
-  //   // Errors arise before the process starts
-  //   cp.on('error', function (err) {
-  //     debuggingHelp += 'Error executing penthouse using ' + phantomJsBinPath
-  //     debuggingHelp += err.stack
-  //     err.debug = debuggingHelp
-  //     reject(err)
-  //     // remove the tmp file we created
-  //     // library would clean up after process ends, but this is better for long living proccesses
-  //     astFileCleanupCallback()
-  //   })
-  //
-  //   cp.stdout.on('data', function (data) {
-  //     stdOut += data
-  //   })
-  //
-  //   cp.stderr.on('data', function (data) {
-  //     stdErr += debuglog(String(data)) || data
-  //   })
-  //
-  //   cp.on('close', function (code) {
-  //     if (code !== 0) {
-  //       debuggingHelp += 'PhantomJS process closed with code ' + code
-  //     }
-  //   })
-  //
-  //   // kill after timeout
-  //   const killTimeout = setTimeout(function () {
-  //     const msg = 'Penthouse timed out after ' + timeoutWait / 1000 + 's. '
-  //     debuggingHelp += msg
-  //     stdErr += msg
-  //     cp.kill('SIGTERM')
-  //   }, timeoutWait)
-  //
-  //   cp.on('exit', function (code) {
-  //     if (code === 0) {
-  //     } else {
-  //       debuggingHelp += 'PhantomJS process exited with code ' + code
-  //       const err = new Error(stdErr + stdOut)
-  //       err.code = code
-  //       err.debug = debuggingHelp
-  //       err.stdout = stdOut
-  //       err.stderr = stdErr
-  //       reject(err)
-  //     }
-  //     // we're done here - clean up
-  //     clearTimeout(killTimeout)
-  //     // can't rely on that the parent process will be terminated any time soon,
-  //     // need to rm listeners and kill child process manually
-  //     process.removeListener('exit', exitHandler)
-  //     process.removeListener('SIGTERM', sigtermHandler)
-  //     // remove the tmp file we created
-  //     // library would clean up after process ends, but this is better for long living proccesses
-  //     astFileCleanupCallback()
-  //     cp.kill('SIGTERM')
-  //   })
-  //
-  //   function exitHandler () {
-  //     cp.kill('SIGTERM')
-  //   }
-  //   function sigtermHandler () {
-  //     cp.kill('SIGTERM')
-  //     process.exit(0)
-  //   }
-  //   process.on('exit', exitHandler)
-  //   process.on('SIGTERM', sigtermHandler)
-  // })
+    // remove irrelevant css properties
+    try {
+      const cleanedCss = apartment(formattedCss, {
+        properties: [
+          '(.*)transition(.*)',
+          'cursor',
+          'pointer-events',
+          '(-webkit-)?tap-highlight-color',
+          '(.*)user-select'
+        ],
+        // TODO: move into core phantomjs script
+        selectors: ['::(-moz-)?selection']
+      })
+      cleanupAndExit({ returnValue: cleanedCss })
+      return
+    } catch (e) {
+      cleanupAndExit({ error: e })
+    }
+  })
 }
 
 const m = (module.exports = function (options, callback) {
@@ -382,19 +402,25 @@ const m = (module.exports = function (options, callback) {
     START_TIME
   }
 
-  return generateAstFromCssFile(options, logging)
-    .then(ast => generateCriticalCssWrapped(options, ast, logging))
-    .then(criticalCss => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const ast = await generateAstFromCssFile(options, logging)
+      const criticalCss = await generateCriticalCssWrapped(
+        options,
+        ast,
+        logging
+      )
       if (callback) {
         callback(null, criticalCss)
+        return
       }
-      return criticalCss
-    })
-    .catch(err => {
+      resolve(criticalCss)
+    } catch (err) {
       if (callback) {
         callback(err)
         return
       }
-      throw err
-    })
+      reject(err)
+    }
+  })
 })
