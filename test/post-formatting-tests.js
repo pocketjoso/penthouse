@@ -11,7 +11,7 @@ chai.should() // binds globally on Object
 import ffRemover from '../lib/postformatting/unused-fontface-remover'
 import unusedKeyframeRemover from '../lib/postformatting/unused-keyframe-remover'
 import embeddedbase64Remover from '../lib/postformatting/embedded-base64-remover'
-import nonMatchingMediaQueryRemover from '../lib/phantomjs/non-matching-media-query-remover'
+import nonMatchingMediaQueryRemover from '../lib/non-matching-media-query-remover'
 
 process.setMaxListeners(0)
 

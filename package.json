@@ -25,7 +25,7 @@
     "test": "mocha --compilers js:babel-core/register test/core-tests",
     "test-all": "mocha --compilers js:babel-core/register",
     "precommit": "lint-staged",
-    "prepublish": "npm run lint && npm run transpile && cp src/phantomjs/config.json lib/phantomjs/",
+    "prepublish": "npm run lint && npm run transpile",
     "transpile": "babel -d lib src/"
   },
   "lint-staged": {
@@ -39,7 +39,6 @@
     "css-fork-pocketjoso": "^2.2.1",
     "css-mediaquery": "^0.1.2",
     "jsesc": "^1.0.0",
-    "phantomjs-prebuilt": "^2.1.15",
     "puppeteer": "^0.9.0"
   },
   "devDependencies": {
@@ -61,15 +60,14 @@
   },
   "keywords": [
     "CSS Critical Path Generator",
-    "phantomjs",
     "css",
     "performance",
     "build",
-    "tool"
+    "tool",
+    "chrome:headless"
   ],
   "files": [
-    "lib/**/*.js",
-    "lib/phantomjs/config.json"
+    "lib/**/*.js"
   ],
   "babel": {
     "presets": [

@@ -20,9 +20,6 @@ describe('extra tests for penthouse node module', function () {
   var page1FileUrl = staticServerFileUrl('page1.html')
   var page1cssPath = path.join(__dirname, 'static-server', 'page1.css')
 
-  // phantomjs takes a while to start up
-  this.timeout(10000)
-
   // module handles both callback (legacy), and promise
   it('module invocation should return promise', function (done) {
     var originalCss = read(page1cssPath).toString()

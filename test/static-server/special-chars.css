@@ -1,7 +1,7 @@
 html:after {
 	content: '→';
 }
-.test  { /* there is a special Unicode Character 'LINE SEPARATOR' (U+2028) after t, before space.. breaks phantomJS */
+.test  { /* there is a special Unicode Character 'LINE SEPARATOR' (U+2028) after t, before space.. used to break phantomJS */
 	color: red;
 }
 .test💩 {

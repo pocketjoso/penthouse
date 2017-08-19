@@ -229,7 +229,7 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
           '(-webkit-)?tap-highlight-color',
           '(.*)user-select'
         ],
-        // TODO: move into core phantomjs script
+        // TODO: move into pruneNonCriticalCss script
         selectors: ['::(-moz-)?selection']
       })
       cleanupAndExit({ returnValue: cleanedCss })

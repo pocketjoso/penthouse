@@ -4,7 +4,7 @@ import generateScreenshots from 'css-compare-screenshots'
 import { after, describe, it } from 'global-mocha'
 import path from 'path'
 import penthouse from '../lib'
-import normalizeCss from '../lib/normalize-css-module'
+import normalizeCss from '../lib/normalize-css'
 import rimraf from 'rimraf'
 
 import compareScreenshots from './util/compareScreenshots'

@@ -1,5 +1,5 @@
 /*
-module for removing unused fontface rules - can be used both for the standalone node binary and the phantomjs script
+module for removing unused fontface rules
 */
 
 'use strict'

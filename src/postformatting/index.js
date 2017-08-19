@@ -5,19 +5,6 @@ const embeddedbase64Remover = require('./embedded-base64-remover')
 const ffRemover = require('./unused-fontface-remover')
 const unusedKeyframeRemover = require('./unused-keyframe-remover')
 
-// PhantomJS spits out these messages straight into stdOut,
-// causing it to mix with our critical css.
-// AFAIK no better way to handle this than to hard code and filter them out here
-// const removePhantomJSSecurityErrors = function (stdOut) {
-//   stdOut = stdOut.replace(
-//     'Unsafe JavaScript attempt to access frame with URL about:blank from frame with URL ',
-//     ''
-//   )
-//   stdOut = stdOut.replace(/file:\/\/.*core.js\./, '')
-//   stdOut = stdOut.replace(' Domains, protocols and ports must match.', '')
-//   return stdOut
-// }
-
 module.exports = function postformatting (
   criticalAstRules,
   criticalCssOptions,
@@ -36,12 +23,6 @@ module.exports = function postformatting (
       )
     }
   }
-
-  // const cssAstRulesJsonString = removePhantomJSSecurityErrors(stdOutString)
-  // debuglog('remove phantom js security errors')
-  //
-  // let criticalRules = JSON.parse(cssAstRulesJsonString)
-  // debuglog('JSON parse')
 
   const usedCriticalRules = unusedKeyframeRemover(criticalAstRules)
   debuglog('unusedKeyframeRemover')

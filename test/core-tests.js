@@ -17,9 +17,6 @@ function staticServerFileUrl (file) {
 describe('penthouse core tests', function () {
   var page1FileUrl = staticServerFileUrl('page1.html')
 
-  // phantomjs takes a while to start up
-  this.timeout(10000)
-
   it('should match exactly the css in the yeoman test', function (done) {
     var yeomanFullCssFilePath = path.join(__dirname, 'static-server', 'yeoman-full.css'),
       yeomanExpectedCssFilePath = path.join(__dirname, 'static-server', 'yeoman-medium--expected.css'),
