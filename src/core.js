@@ -1,6 +1,6 @@
 import puppeteer from 'puppeteer'
 
-function pruneNonCriticalCss ({ astRules, forceInclude }) {
+function pruneNonCriticalCss ({ astRules, forceInclude, renderWaitTime }) {
   console.log('debug: pruneNonCriticalCss')
   var h = window.innerHeight
   // TODO: bind with forceInclude argument instead
@@ -181,7 +181,13 @@ function pruneNonCriticalCss ({ astRules, forceInclude }) {
     // })
   }
 
-  return processCssRules(astRules)
+  // give some time (renderWaitTime) for sites like facebook that build their page dynamically,
+  // otherwise we can miss some selectors (and therefor rules)
+  // --tradeoff here: if site is too slow with dynamic content,
+  // it doesn't deserve to be in critical path.
+  return new Promise(resolve => setTimeout(resolve, renderWaitTime)).then(() =>
+    processCssRules(astRules)
+  )
 }
 
 async function blockJsRequests (page) {
@@ -231,14 +237,7 @@ async function generateCriticalCss ({
       debuglog(msg.replace(/^debug: /, ''))
     }
   })
-  // load page
-  // TODO: customize via options
-  // https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pagegotourl-options
-  // add renderWaitTime (old comment below)
-  // give some time (renderWaitTime) for sites like facebook that build their page dynamically,
-  // otherwise we can miss some selectors (and therefor rules)
-  // --tradeoff here: if site is too slow with dynamic content,
-  // it doesn't deserve to be in critical path.
+
   await page.goto(url, {
     timeout
   })
@@ -246,7 +245,8 @@ async function generateCriticalCss ({
 
   const criticalRules = await page.evaluate(pruneNonCriticalCss, {
     astRules,
-    forceInclude
+    forceInclude,
+    renderWaitTime
   })
 
   debuglog('GENERATION_DONE')
