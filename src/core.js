@@ -205,30 +205,31 @@ async function generateCriticalCss ({
   renderWaitTime,
   blockJSRequests,
   customPageHeaders = {},
-  debugMode
+  debuglog
 }) {
-  function debuglog (msg, isError) {
-    if (debugMode) {
-      console.log((isError ? 'ERR: ' : '') + msg)
-    }
-  }
-
-  debuglog('getCriticalPathCss')
+  debuglog('Penthouse core start')
 
   // launch browser - todo - consider reusing instances
   const browser = await puppeteer.launch()
   debuglog('browser launched')
+
   const page = await browser.newPage()
   debuglog('new page opened in browser')
-  // set viewport
+
   await page.setViewport({ width, height })
   debuglog('viewport set')
-  // block JS requests, unless disabled
+
   if (blockJSRequests) {
     await blockJsRequests(page)
+    debuglog('blocking js requests')
   }
-  debuglog('blocking js requests')
-  debuglog('load page: ' + url)
+  page.on('console', msg => {
+    // pass through log messages
+    // - the ones sent by penthouse for debugging has 'debug: ' prefix.
+    if (/^debug: /.test(msg)) {
+      debuglog(msg.replace(/^debug: /, ''))
+    }
+  })
   // load page
   // TODO: customize via options
   // https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pagegotourl-options
@@ -244,6 +245,8 @@ async function generateCriticalCss ({
     astRules,
     forceInclude
   })
+
+  debuglog('GENERATION_DONE')
 
   // cleanup
   browser.close()
