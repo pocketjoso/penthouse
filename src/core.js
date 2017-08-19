@@ -29,7 +29,9 @@ async function generateCriticalCss ({
   debuglog('Penthouse core start')
 
   // launch browser - todo - consider reusing instances
-  const browser = await puppeteer.launch()
+  const browser = await puppeteer.launch({
+    ignoreHTTPSErrors: true
+  })
   debuglog('browser launched')
 
   const page = await browser.newPage()
