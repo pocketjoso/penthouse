@@ -1,12 +1,3 @@
-/*
- * Node module wrapper for the PhantomJS script
- */
-
-'use strict'
-// support Node 4
-// TODO: re-evaluate, if puppeteer does not support lower than node 7
-require('regenerator-runtime/runtime')
-
 const fs = require('fs')
 const apartment = require('apartment')
 const cssAstFormatter = require('css-fork-pocketjoso')
