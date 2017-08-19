@@ -32,7 +32,6 @@ describe('penthouse fault tolerant normalising css tests', function () {
   after(function () {
     rimraf.sync(SCREENSHOT_DIST.replace(/\/$/, ''))
   })
-  var page1FileUrl = staticServerFileUrl('page1.html')
   this.timeout(20000)
 
   it('should preserve escaped hex reference styles', function (done) {
@@ -40,28 +39,30 @@ describe('penthouse fault tolerant normalising css tests', function () {
     // as single quotes, regardless of what they were before.
     // This test will fail if the css uses double quotes (although false negative: still works)
     const cssPath = path.join(STATIC_SERVER_PATH, 'escaped-hex-reference-in-invalid.css')
-    const expected = fs.readFileSync(cssPath, 'utf8').replace('{ invalid }', '')
+    const css = fs.readFileSync(cssPath, 'utf8')
+
+    // because too lazy to create separate 'original' and 'expected' stylesheets (• -> \u2022)
+    const expected = css
+      .replace('{ invalid }', '')
+      .replace(/(['"])•(['"])/g, `$1\\2022$2`)
+      // chrome now turns all quotes into double quotes
+      // so match here
+      .replace(/'/g, '"')
+    const expectedAst = normalisedCssAst(expected)
 
     var options = {
-      url: page1FileUrl,
-      css: cssPath
+      css,
+      debuglog: () => {}
     }
 
-    normalizeCss(options,
-    function (err, result) {
-      if (err) {
-        done(err)
-      }
-      const resultAst = normalisedCssAst(
-        // because Chrome returns single quotes
-        result.replace(/"/g, '\'')
-      )
-      const expectedAst = normalisedCssAst(
-        // because too lazy to create separate 'original' and 'expected' stylesheets (• -> \u2022)
-        expected.replace(/['"]•['"]/g, '\'\\2022\'')
-      )
+    normalizeCss(options)
+    .then(result => {
+      const resultAst = normalisedCssAst(result)
       resultAst.should.eql(expectedAst)
       done()
+    })
+    .catch(err => {
+      done(err)
     })
   })
 

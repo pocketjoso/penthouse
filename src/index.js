@@ -2,10 +2,10 @@ const fs = require('fs')
 const apartment = require('apartment')
 const cssAstFormatter = require('css-fork-pocketjoso')
 const generateCriticalCss = require('./core').default
+const normalizeCss = require('./normalize-css').default
 
 const nonMatchingMediaQueryRemover = require('./non-matching-media-query-remover')
 const postformatting = require('./postformatting/')
-const normalizeCss = require('./normalize-css-module')
 
 const DEFAULT_VIEWPORT_WIDTH = 1300 // px
 const DEFAULT_VIEWPORT_HEIGHT = 900 // px
@@ -73,52 +73,49 @@ const generateAstFromCssFile = async function generateAstFromCssFile (
   // NOTE: only informing about first error, even if there were more than one.
   const parsingErrorMessage = parsingErrors[0].message
   if (options.strict === true) {
-    throw parsingErrorMessage
+    // TODO: filename will be 'undefined', could enhance this error message
+    throw new Error(parsingErrorMessage)
   }
 
   stdErr += debuglog(
     "Failed ast formatting css '" + parsingErrorMessage + "': "
   )
-  return new Promise((resolve, reject) => {
-    normalizeCss(
-      {
-        url: options.url || '',
-        css: options.css || '',
-        userAgent: options.userAgent || DEFAULT_USER_AGENT,
-        timeout: options.timeout,
-        debug: m.DEBUG
-      },
-      function (err, normalizedCss) {
-        if (err) {
-          reject(err)
-          return
-        }
-        stdErr += debuglog(
-          'normalized css: ' +
-            (normalizedCss ? normalizedCss.length : typeof normalizedCss)
-        )
-        if (!normalizedCss) {
-          reject(
-            new Error(
-              "Failed to normalize CSS errors. Run Penthouse with 'strict: true' option to see these css errors."
-            )
-          )
-          return
-        }
-        ast = cssAstFormatter.parse(normalizedCss, { silent: true })
-        stdErr += debuglog('parsed normalised css into ast')
-        const parsingErrors = ast.stylesheet.parsingErrors.filter(function (
-          err
-        ) {
-          // the forked version of the astParser used fixes these errors itself
-          return err.reason !== 'Extra closing brace'
-        })
-        if (parsingErrors.length > 0) {
-          stdErr += debuglog('..with parsingErrors: ' + parsingErrors[0].reason)
-        }
-        resolve(ast)
-      }
+  return new Promise(async (resolve, reject) => {
+    // TODO
+    // timeout: options.timeout,
+    let normalizedCss
+    try {
+      normalizedCss = await normalizeCss({
+        css,
+        debuglog
+      })
+    } catch (e) {
+      reject(e)
+      return
+    }
+
+    stdErr += debuglog(
+      'normalized css: ' +
+        (normalizedCss ? normalizedCss.length : typeof normalizedCss)
     )
+    if (!normalizedCss) {
+      reject(
+        new Error(
+          "Failed to normalize CSS errors. Run Penthouse with 'strict: true' option to see these css errors."
+        )
+      )
+      return
+    }
+    ast = cssAstFormatter.parse(normalizedCss, { silent: true })
+    stdErr += debuglog('parsed normalised css into ast')
+    const parsingErrors = ast.stylesheet.parsingErrors.filter(function (err) {
+      // the forked version of the astParser used fixes these errors itself
+      return err.reason !== 'Extra closing brace'
+    })
+    if (parsingErrors.length > 0) {
+      stdErr += debuglog('..with parsingErrors: ' + parsingErrors[0].reason)
+    }
+    resolve(ast)
   })
 }
 
