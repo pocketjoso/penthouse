@@ -172,10 +172,12 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         width,
         height,
         forceInclude,
+        // TODO: make use of again
         userAgent: options.userAgent || DEFAULT_USER_AGENT,
         renderWaitTime: options.renderWaitTime || DEFAULT_RENDER_WAIT_TIMEOUT,
         timeout: timeoutWait,
         blockJSRequests: options.blockJSRequests || DEFAULT_BLOCK_JS_REQUESTS,
+        // TODO: make use of again
         // object, needs to be stringified
         // JSON.stringify(options.customPageHeaders || {}),
         customPageHeaders: options.customPageHeaders,
