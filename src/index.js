@@ -1,11 +1,11 @@
-const fs = require('fs')
-const apartment = require('apartment')
-const cssAstFormatter = require('css-fork-pocketjoso')
-const generateCriticalCss = require('./core').default
-const normalizeCss = require('./normalize-css').default
+import fs from 'fs'
+import apartment from 'apartment'
+import cssAstFormatter from 'css-fork-pocketjoso'
 
-const nonMatchingMediaQueryRemover = require('./non-matching-media-query-remover')
-const postformatting = require('./postformatting/')
+import generateCriticalCss from './core'
+import normalizeCss from './normalize-css'
+import nonMatchingMediaQueryRemover from './non-matching-media-query-remover'
+import postformatting from './postformatting/'
 
 const DEFAULT_VIEWPORT_WIDTH = 1300 // px
 const DEFAULT_VIEWPORT_HEIGHT = 900 // px
