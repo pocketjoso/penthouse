@@ -13,7 +13,7 @@ async function blockJsRequests (page) {
   })
 }
 
-async function generateCriticalCss ({
+async function pruneNonCriticalCssLauncher ({
   url,
   astRules,
   width,
@@ -72,4 +72,4 @@ async function generateCriticalCss ({
   return criticalRules
 }
 
-export default generateCriticalCss
+export default pruneNonCriticalCssLauncher

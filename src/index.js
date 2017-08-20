@@ -66,43 +66,38 @@ const astFromCss = async function astFromCss (options, { debuglog, stdErr }) {
   stdErr += debuglog(
     "Failed ast formatting css '" + parsingErrorMessage + "': "
   )
-  return new Promise(async (resolve, reject) => {
-    // TODO
-    // timeout: options.timeout,
-    let normalizedCss
-    try {
-      normalizedCss = await normalizeCss({
-        css,
-        debuglog
-      })
-    } catch (e) {
-      reject(e)
-      return
-    }
 
-    stdErr += debuglog(
-      'normalized css: ' +
-        (normalizedCss ? normalizedCss.length : typeof normalizedCss)
-    )
-    if (!normalizedCss) {
-      reject(
-        new Error(
-          "Failed to normalize CSS errors. Run Penthouse with 'strict: true' option to see these css errors."
-        )
-      )
-      return
-    }
-    ast = cssAstFormatter.parse(normalizedCss, { silent: true })
-    stdErr += debuglog('parsed normalised css into ast')
-    const parsingErrors = ast.stylesheet.parsingErrors.filter(function (err) {
-      // the forked version of the astParser used fixes these errors itself
-      return err.reason !== 'Extra closing brace'
+  // TODO
+  // timeout: options.timeout,
+  let normalizedCss
+  try {
+    normalizedCss = await normalizeCss({
+      css,
+      debuglog
     })
-    if (parsingErrors.length > 0) {
-      stdErr += debuglog('..with parsingErrors: ' + parsingErrors[0].reason)
-    }
-    resolve(ast)
+  } catch (e) {
+    throw e
+  }
+
+  stdErr += debuglog(
+    'normalized css: ' +
+      (normalizedCss ? normalizedCss.length : typeof normalizedCss)
+  )
+  if (!normalizedCss) {
+    throw new Error(
+      "Failed to normalize CSS errors. Run Penthouse with 'strict: true' option to see these css errors."
+    )
+  }
+  ast = cssAstFormatter.parse(normalizedCss, { silent: true })
+  stdErr += debuglog('parsed normalised css into ast')
+  const finalParsingErrors = ast.stylesheet.parsingErrors.filter(function (err) {
+    // the forked version of the astParser used fixes these errors itself
+    return err.reason !== 'Extra closing brace'
   })
+  if (finalParsingErrors.length > 0) {
+    stdErr += debuglog('..with parsingErrors: ' + finalParsingErrors[0].reason)
+  }
+  return ast
 }
 
 // const so not hoisted, so can get regeneratorRuntime inlined above, needed for Node 4
