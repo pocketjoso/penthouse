@@ -129,8 +129,8 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
 ) {
   // TODO
   // let debuggingHelp = ''
-  const width = options.width || DEFAULT_VIEWPORT_WIDTH
-  const height = options.height || DEFAULT_VIEWPORT_HEIGHT
+  const width = parseInt(options.width || DEFAULT_VIEWPORT_WIDTH, 10)
+  const height = parseInt(options.height || DEFAULT_VIEWPORT_HEIGHT, 10)
   const timeoutWait = options.timeout || DEFAULT_TIMEOUT
 
   // first strip out non matching media queries
