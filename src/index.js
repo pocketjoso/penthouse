@@ -43,22 +43,8 @@ function prepareForceIncludeForSerialization (forceInclude = []) {
   })
 }
 
-// const so not hoisted, so can get regeneratorRuntime inlined above, needed for Node 4
-const generateAstFromCssFile = async function generateAstFromCssFile (
-  options,
-  { debuglog, stdErr }
-) {
-  // read the css and parse the ast
-  // if errors, normalize css and try again
-  // only then pass css to penthouse
-  let css
-  try {
-    css = await readFilePromise(options.css, 'utf8')
-  } catch (e) {
-    throw e
-  }
-  stdErr += debuglog('opened css file')
-
+const astFromCss = async function astFromCss (options, { debuglog, stdErr }) {
+  const css = options.cssString
   let ast = cssAstFormatter.parse(css, { silent: true })
   const parsingErrors = ast.stylesheet.parsingErrors.filter(function (err) {
     // the forked version of the astParser used fixes these errors itself
@@ -116,6 +102,27 @@ const generateAstFromCssFile = async function generateAstFromCssFile (
       stdErr += debuglog('..with parsingErrors: ' + parsingErrors[0].reason)
     }
     resolve(ast)
+  })
+}
+
+// const so not hoisted, so can get regeneratorRuntime inlined above, needed for Node 4
+const generateAstFromCssFile = async function generateAstFromCssFile (
+  options,
+  { debuglog, stdErr }
+) {
+  // read the css and parse the ast
+  // if errors, normalize css and try again
+  // only then pass css to penthouse
+  let css
+  try {
+    css = await readFilePromise(options.css, 'utf8')
+  } catch (e) {
+    throw e
+  }
+  stdErr += debuglog('opened css file')
+  return astFromCss(Object.assign({}, options, { cssString: css }), {
+    debuglog,
+    stdErr
   })
 }
 
@@ -265,7 +272,12 @@ const m = (module.exports = function (options, callback) {
 
   return new Promise(async (resolve, reject) => {
     try {
-      const ast = await generateAstFromCssFile(options, logging)
+      let ast
+      if (options.cssString) {
+        ast = await astFromCss(options, logging)
+      } else {
+        ast = await generateAstFromCssFile(options, logging)
+      }
       const criticalCss = await generateCriticalCssWrapped(
         options,
         ast,
