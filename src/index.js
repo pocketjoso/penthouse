@@ -67,8 +67,6 @@ const astFromCss = async function astFromCss (options, { debuglog, stdErr }) {
     "Failed ast formatting css '" + parsingErrorMessage + "': "
   )
 
-  // TODO
-  // timeout: options.timeout,
   let normalizedCss
   try {
     normalizedCss = await normalizeCss({
@@ -127,8 +125,6 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
   ast,
   { debuglog, stdErr, START_TIME }
 ) {
-  // TODO
-  // let debuggingHelp = ''
   const width = parseInt(options.width || DEFAULT_VIEWPORT_WIDTH, 10)
   const height = parseInt(options.height || DEFAULT_VIEWPORT_HEIGHT, 10)
   const timeoutWait = options.timeout || DEFAULT_TIMEOUT
