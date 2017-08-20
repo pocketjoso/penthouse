@@ -84,6 +84,15 @@ supported command line version and follow the instructions in the README there: 
 
 ## Troubleshooting
 
+### Not working on Linux
+Install missing dependencies to get the headless Chrome to run:
+
+```
+sudo apt-get install libnss3
+```
+You might possibly need an even longer list of deps, depending on your dist,
+see [this answer](https://github.com/GoogleChrome/puppeteer/issues/404#issuecomment-323555784)
+
 ### Problems with generated CSS
 
 Before going further, make sure that you fix any errors in your own CSS, as detected by [this AST explorer](http://astexplorer.net/), as they can cause problems with critical CSS generation.
