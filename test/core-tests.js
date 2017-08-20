@@ -27,19 +27,14 @@ describe('penthouse core tests', function () {
       css: yeomanFullCssFilePath,
       width: 800,
       height: 450
-    }, function (err, result) {
-      if (err) {
-        done(err)
-      }
-      try {
-        var resultAst = normaliseCssAst(result)
-        var expectedAst = normaliseCssAst(yeomanExpectedCss)
-        resultAst.should.eql(expectedAst)
-        done()
-      } catch (ex) {
-        done(ex)
-      }
     })
+    .then(result => {
+      var resultAst = normaliseCssAst(result)
+      var expectedAst = normaliseCssAst(yeomanExpectedCss)
+      resultAst.should.eql(expectedAst)
+      done()
+    })
+    .catch(done)
   })
 
   it('should keep :before, :after, :visited rules (because el above fold)', function (done) {
@@ -49,15 +44,12 @@ describe('penthouse core tests', function () {
     penthouse({
       url: page1FileUrl,
       css: pusedoRemainCssFilePath
-    }, function (err, result) {
-      try {
-        var resultAst = normaliseCssAst(result)
-        var expectedAst = normaliseCssAst(pusedoRemainCss)
-        resultAst.should.eql(expectedAst)
-        done()
-      } catch (ex) {
-        done(ex)
-      }
+    })
+    .then(result => {
+      var resultAst = normaliseCssAst(result)
+      var expectedAst = normaliseCssAst(pusedoRemainCss)
+      resultAst.should.eql(expectedAst)
+      done()
     })
   })
 
@@ -67,14 +59,12 @@ describe('penthouse core tests', function () {
     penthouse({
       url: page1FileUrl,
       css: pusedoRemoveCssFilePath
-    }, function (err, result) {
-      try {
-        result.trim().should.equal('')
-        done()
-      } catch (ex) {
-        done(ex)
-      }
     })
+    .then(result => {
+      result.trim().should.equal('')
+      done()
+    })
+    .catch(done)
   })
 
   /* ==@-rule handling==*/
@@ -88,15 +78,12 @@ describe('penthouse core tests', function () {
     penthouse({
       url: page1FileUrl,
       css: atRuleCase0RemainCssFilePath
-    }, function (err, result) {
-      try {
-        var resultAst = normaliseCssAst(result)
-        var expectedAst = normaliseCssAst(atRuleCase0RemainCss)
-        resultAst.should.eql(expectedAst)
-        done()
-      } catch (ex) {
-        done(ex)
-      }
+    })
+    .then(result => {
+      var resultAst = normaliseCssAst(result)
+      var expectedAst = normaliseCssAst(atRuleCase0RemainCss)
+      resultAst.should.eql(expectedAst)
+      done()
     })
   })
 
@@ -111,16 +98,14 @@ describe('penthouse core tests', function () {
     penthouse({
       url: page1FileUrl,
       css: atRuleCase1RemainCssFilePath
-    }, function (err, result) {
-      try {
-        var resultAst = normaliseCssAst(result)
-        var expectedAst = normaliseCssAst(atRuleCase1RemainCss)
-        resultAst.should.eql(expectedAst)
-        done()
-      } catch (ex) {
-        done(ex)
-      }
     })
+    .then(result => {
+      var resultAst = normaliseCssAst(result)
+      var expectedAst = normaliseCssAst(atRuleCase1RemainCss)
+      resultAst.should.eql(expectedAst)
+      done()
+    })
+    .catch(done)
   })
 
   /* Case 2: @-rule with CSS properties inside [REMOVE]
@@ -132,14 +117,12 @@ describe('penthouse core tests', function () {
     penthouse({
       url: page1FileUrl,
       css: atRuleCase2RemoveCssFilePath
-    }, function (err, result) {
-      try {
-        result.trim().should.equal('')
-        done()
-      } catch (ex) {
-        done(ex)
-      }
     })
+    .then(result => {
+      result.trim().should.equal('')
+      done()
+    })
+    .catch(done)
   })
 
   /*Case 3: @-rule with full CSS (rules) inside [REMAIN]
@@ -154,15 +137,12 @@ describe('penthouse core tests', function () {
       url: page1FileUrl,
       css: atRuleCase3RemainCssFilePath,
       strict: true
-    }, function (err, result) {
-      try {
-        var resultAst = normaliseCssAst(result)
-        var expectedAst = normaliseCssAst(atRuleCase3RemainCss)
-        resultAst.should.eql(expectedAst)
-        done()
-      } catch (ex) {
-        done(ex)
-      }
+    })
+    .then(result => {
+      var resultAst = normaliseCssAst(result)
+      var expectedAst = normaliseCssAst(atRuleCase3RemainCss)
+      resultAst.should.eql(expectedAst)
+      done()
     })
   })
 
@@ -175,15 +155,12 @@ describe('penthouse core tests', function () {
     penthouse({
       url: page1FileUrl,
       css: atRuleCase4RemoveCssFilePath
-    }, function (err, result) {
-      try {
-        result.trim().should.equal('')
-        done()
-      } catch (ex) {
-        done(ex)
-      }
-
     })
+    .then(result => {
+      result.trim().should.equal('')
+      done()
+    })
+    .catch(done)
   })
 
   it('should keep self clearing rules when needed to stay outside the fold', function (done) {
@@ -193,16 +170,14 @@ describe('penthouse core tests', function () {
     penthouse({
       url: staticServerFileUrl('clearSelf.html'),
       css: clearSelfRemainCssFilePath
-    }, function (err, result) {
-      try {
-        var resultAst = normaliseCssAst(result)
-        var expectedAst = normaliseCssAst(clearSelfRemainCss)
-        resultAst.should.eql(expectedAst)
-        done()
-      } catch (ex) {
-        done(ex)
-      }
     })
+    .then(result => {
+      var resultAst = normaliseCssAst(result)
+      var expectedAst = normaliseCssAst(clearSelfRemainCss)
+      resultAst.should.eql(expectedAst)
+      done()
+    })
+    .catch(done)
   })
 
   it('should force include specified selectors', function (done) {
@@ -216,15 +191,12 @@ describe('penthouse core tests', function () {
         '#box1:hover',
         /^\.COMPONENT/i // intentionally mismatching case to test regex flags
       ]
-    }, function (err, result) {
-      try {
-        var resultAst = normaliseCssAst(result)
-        var expectedAst = normaliseCssAst(forceIncludeCss)
-        resultAst.should.eql(expectedAst)
-        done()
-      } catch (ex) {
-        done(ex)
-      }
+    })
+    .then(result => {
+      var resultAst = normaliseCssAst(result)
+      var expectedAst = normaliseCssAst(forceIncludeCss)
+      resultAst.should.eql(expectedAst)
+      done()
     })
   })
 
@@ -235,13 +207,11 @@ describe('penthouse core tests', function () {
     penthouse({
       url: page1FileUrl,
       css: emptyRemoveCssFilePath
-    }, function (err, result) {
-      try {
-        result.trim().should.equal('')
-        done()
-      } catch (ex) {
-        done(ex)
-      }
     })
+    .then(result => {
+      result.trim().should.equal('')
+      done()
+    })
+    .catch(done)
   })
 })

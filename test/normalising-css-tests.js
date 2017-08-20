@@ -75,27 +75,27 @@ describe('penthouse fault tolerant normalising css tests', function () {
       css: path.join(STATIC_SERVER_PATH, 'yeoman-full--invalid.css'),
       width: 800,
       height: 450
-    }, function (err, result) {
-      if (err) {
-        done(err)
-      }
+    })
+    .then(result => {
       console.log('generate screenshots..')
-      generateScreenshots({
+      return generateScreenshots({
         url: path.join(__dirname, 'static-server', 'yeoman.html'),
         css: result,
         width: 800,
         height: 450,
         dist: SCREENSHOT_DIST,
         fileName: screenshotFilename
-      }).then(function () {
-        console.log('compare screenshots..')
-        return compareScreenshots(
-          `${SCREENSHOT_DIST + screenshotFilename}-before.jpg`,
-          `${SCREENSHOT_DIST + screenshotFilename}-after.jpg`
-        )
-      }).then(done)
-        .catch(done)
+      })
     })
+    .then(function () {
+      console.log('compare screenshots..')
+      return compareScreenshots(
+        `${SCREENSHOT_DIST + screenshotFilename}-before.jpg`,
+        `${SCREENSHOT_DIST + screenshotFilename}-after.jpg`
+      )
+    })
+    .then(() => done())
+    .catch(done)
   })
 
   // NOTE: the functionality for handling extra closing brace errors is in

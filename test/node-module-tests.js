@@ -24,11 +24,10 @@ describe('extra tests for penthouse node module', function () {
   it('module invocation should return promise', function (done) {
     var originalCss = read(page1cssPath).toString()
 
-    const penthousePromise = penthouse({
+    penthouse({
       url: page1FileUrl,
       css: page1cssPath
     })
-    penthousePromise
     .then(result => {
       var resultAst = normalisedCssAst(result)
       var expectedAst = normalisedCssAst(originalCss)
