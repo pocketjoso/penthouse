@@ -30,7 +30,8 @@ async function generateCriticalCss ({
 
   // launch browser - todo - consider reusing instances
   const browser = await puppeteer.launch({
-    ignoreHTTPSErrors: true
+    ignoreHTTPSErrors: true,
+    args: ['--disable-setuid-sandbox', '--no-sandbox']
   })
   debuglog('browser launched')
 
