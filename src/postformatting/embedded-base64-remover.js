@@ -1,6 +1,6 @@
 'use strict'
 
-const cssAstFormatter = require('css')
+const cssAstFormatter = require('css-fork-pocketjoso')
 
 const BASE64_ENCODE_PATTERN = /data:[^,]*base64,/
 

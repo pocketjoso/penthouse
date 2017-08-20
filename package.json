@@ -36,7 +36,7 @@
   },
   "dependencies": {
     "apartment": "^1.1.1",
-    "css": "https://github.com/pocketjoso/css.git#master",
+    "css-fork-pocketjoso": "^2.2.1",
     "css-mediaquery": "^0.1.2",
     "jsesc": "^1.0.0",
     "os-tmpdir": "^1.0.1",

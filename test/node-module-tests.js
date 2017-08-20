@@ -1,6 +1,6 @@
 'use strict'
 
-import css from 'css'
+import css from 'css-fork-pocketjoso'
 import { readFileSync as read } from 'fs'
 import { describe, it } from 'global-mocha'
 import path from 'path'

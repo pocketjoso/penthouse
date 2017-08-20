@@ -1,6 +1,6 @@
 'use strict'
 
-const cssAstFormatter = require('css')
+const cssAstFormatter = require('css-fork-pocketjoso')
 const embeddedbase64Remover = require('./embedded-base64-remover')
 const ffRemover = require('./unused-fontface-remover')
 const unusedKeyframeRemover = require('./unused-keyframe-remover')

@@ -9,7 +9,7 @@ import rimraf from 'rimraf'
 
 import compareScreenshots from './util/compareScreenshots'
 
-import css from 'css'
+import css from 'css-fork-pocketjoso'
 import fs from 'fs'
 import chai from 'chai'
 chai.should() // binds globally on Object

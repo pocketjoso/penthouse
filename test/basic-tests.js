@@ -1,6 +1,6 @@
 'use strict'
 
-import css from 'css'
+import css from 'css-fork-pocketjoso'
 import { describe, it } from 'global-mocha'
 import path from 'path'
 import penthouse from '../lib/'
