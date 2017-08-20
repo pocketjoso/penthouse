@@ -1,10 +1,19 @@
-sudo: true
 language: node_js
 node_js:
     - "7.10"
+dist: trusty
+addons:
+  apt:
+    packages:
+      # This is required to run puppeteer (chrome) on linux/trusty
+      - libnss3
+      # for screenshot comparison
+      - graphicsmagick
+cache:
+  yarn: true
+  directories:
+    - node_modules
 install:
-  - "npm install"
-  - "sudo apt-get update"
-  - "sudo apt-get install graphicsmagick"
+  - yarn install
 script:
-  - "npm run test-all"
+  - yarn run test-all
