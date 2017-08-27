@@ -17,27 +17,24 @@ const DEFAULT_RENDER_WAIT_TIMEOUT = 100
 const DEFAULT_BLOCK_JS_REQUESTS = true
 
 // shared between penthouse calls
-let browserWSEndpoint
-const getBrowser = async function (debuglog) {
-  let browser
-  if (!browserWSEndpoint) {
-    debuglog('no browser instance, launching new..')
-    browser = await puppeteer.launch({
-      headless: false,
+let browser = null
+let _browserLaunchPromise = null
+// browser.pages is not implemented, so need to count myself to not close browser
+// until all pages are closed again
+let _browserPagesOpen = 0
+const launchBrowserIfNeeded = async function (debuglog) {
+  if (browser) {
+    return
+  }
+  if (!_browserLaunchPromise) {
+    debuglog('no browser instance, launching new browser..')
+    _browserLaunchPromise = puppeteer.launch({
+      // headless: false,
       ignoreHTTPSErrors: true,
       args: ['--disable-setuid-sandbox', '--no-sandbox']
     })
-    browserWSEndpoint = browser.wsEndpoint()
-    debuglog('browser launched, browserWSEndpoint: ' + browserWSEndpoint)
-  } else {
-    browser = await puppeteer.connect({
-      headless: false,
-      ignoreHTTPSErrors: true,
-      browserWSEndpoint
-    })
-    debuglog('reconnected to existing browser')
   }
-  return browser
+  browser = await _browserLaunchPromise
 }
 
 function readFilePromise (filepath, encoding) {
@@ -68,7 +65,7 @@ function prepareForceIncludeForSerialization (forceInclude = []) {
   })
 }
 
-const astFromCss = async function astFromCss (options, browser, { debuglog, stdErr }) {
+const astFromCss = async function astFromCss (options, { debuglog, stdErr }) {
   const css = options.cssString
   let ast = cssAstFormatter.parse(css, { silent: true })
   const parsingErrors = ast.stylesheet.parsingErrors.filter(function (err) {
@@ -94,12 +91,18 @@ const astFromCss = async function astFromCss (options, browser, { debuglog, stdE
 
   let normalizedCss
   try {
+    _browserPagesOpen++
+    debuglog('adding browser page for normalize, now: ' + _browserPagesOpen)
     normalizedCss = await normalizeCss({
       css,
       browser,
       debuglog
     })
+    _browserPagesOpen--
+    debuglog('removing browser page for normalize, now: ' + _browserPagesOpen)
   } catch (e) {
+    _browserPagesOpen--
+    debuglog('removing browser page for normalize after error, now: ' + _browserPagesOpen)
     throw e
   }
 
@@ -128,7 +131,6 @@ const astFromCss = async function astFromCss (options, browser, { debuglog, stdE
 const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
   options,
   ast,
-  browser,
   { debuglog, stdErr, START_TIME }
 ) {
   const width = parseInt(options.width || DEFAULT_VIEWPORT_WIDTH, 10)
@@ -164,6 +166,8 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
     stdErr += debuglog('call generateCriticalCssWrapped')
     let criticalAstRules
     try {
+      _browserPagesOpen++
+      debuglog('adding browser page for generateCriticalCss, now: ' + _browserPagesOpen)
       criticalAstRules = await generateCriticalCss({
         browser,
         url: options.url,
@@ -182,7 +186,11 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         customPageHeaders: options.customPageHeaders,
         debuglog
       })
+      _browserPagesOpen--
+      debuglog('remove browser page for generateCriticalCss, now: ' + _browserPagesOpen)
     } catch (e) {
+      _browserPagesOpen--
+      debuglog('remove browser page for generateCriticalCss after ERROR, now: ' + _browserPagesOpen)
       stdErr += e
       const err = new Error(stdErr)
       err.stderr = stdErr
@@ -264,14 +272,16 @@ const m = (module.exports = function (options, callback) {
 
   return new Promise(async (resolve, reject) => {
     // still supporting legacy callback way of calling Penthouse
-    const cleanupAndExit = ({ returnValue, browser, error = null }) => {
-      // cleanup
-      browserWSEndpoint = null
+    const cleanupAndExit = ({ returnValue, error = null }) => {
       if (browser) {
-        // TODO: not safe to close here,
-        // since other jobs can have connected already
-        browser.close()
-        debuglog('closed browser')
+        if (_browserPagesOpen > 0) {
+          debuglog('keeping browser open as _browserPagesOpen: ' + _browserPagesOpen)
+        } else {
+          browser.close()
+          browser = null
+          _browserLaunchPromise = null
+          debuglog('closed browser')
+        }
       }
 
       if (callback) {
@@ -301,17 +311,15 @@ const m = (module.exports = function (options, callback) {
       return
     }
 
+    await launchBrowserIfNeeded(debuglog)
     try {
-      // get browser instance (launch if necessary)
-      const browser = await getBrowser(debuglog)
-      const ast = await astFromCss(options, browser, logging)
+      const ast = await astFromCss(options, logging)
       const criticalCss = await generateCriticalCssWrapped(
         options,
         ast,
-        browser,
         logging
       )
-      cleanupAndExit({browser, returnValue: criticalCss})
+      cleanupAndExit({returnValue: criticalCss})
     } catch (err) {
       cleanupAndExit({error: err})
     }
