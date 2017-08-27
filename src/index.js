@@ -33,6 +33,10 @@ const launchBrowserIfNeeded = async function (debuglog) {
       ignoreHTTPSErrors: true,
       args: ['--disable-setuid-sandbox', '--no-sandbox']
     })
+    .then(browser => {
+      debuglog('new browser launched')
+      return browser
+    })
   }
   browser = await _browserLaunchPromise
 }
