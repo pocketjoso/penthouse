@@ -1,4 +1,3 @@
-import puppeteer from 'puppeteer'
 import jsesc from 'jsesc'
 
 import normalizeCss from './browser-sandbox/normalizeCss'
@@ -41,7 +40,7 @@ function escapeHexRefences (css) {
   )
 }
 
-async function normalizeCssLauncher ({ css, debuglog }) {
+async function normalizeCssLauncher ({ browser, css, debuglog }) {
   debuglog('normalizeCss: ' + css.length)
 
   // escape hex referenced unicode chars in content:'' declarations,
@@ -49,13 +48,6 @@ async function normalizeCssLauncher ({ css, debuglog }) {
   // so they stay in the same format
   const escapedCss = escapeHexRefences(css)
   debuglog('normalizeCss: escaped hex')
-
-  // launch browser - todo - consider reusing instances
-  const browser = await puppeteer.launch({
-    ignoreHTTPSErrors: true,
-    args: ['--disable-setuid-sandbox', '--no-sandbox']
-  })
-  debuglog('normalizeCss: browser launched')
 
   const page = await browser.newPage()
   debuglog('normalizeCss: new page opened in browser')
@@ -72,7 +64,7 @@ async function normalizeCssLauncher ({ css, debuglog }) {
   const normalized = await page.evaluate(normalizeCss, { css })
 
   // cleanup
-  browser.close()
+  await page.close()
 
   return unEscapeCss(normalized)
 }

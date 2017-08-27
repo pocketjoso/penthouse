@@ -1,5 +1,3 @@
-import puppeteer from 'puppeteer'
-
 import pruneNonCriticalCss from './browser-sandbox/pruneNonCriticalCss'
 
 async function blockJsRequests (page) {
@@ -14,6 +12,7 @@ async function blockJsRequests (page) {
 }
 
 async function pruneNonCriticalCssLauncher ({
+  browser,
   url,
   astRules,
   width,
@@ -27,13 +26,6 @@ async function pruneNonCriticalCssLauncher ({
   debuglog
 }) {
   debuglog('Penthouse core start')
-
-  // launch browser - todo - consider reusing instances
-  const browser = await puppeteer.launch({
-    ignoreHTTPSErrors: true,
-    args: ['--disable-setuid-sandbox', '--no-sandbox']
-  })
-  debuglog('browser launched')
 
   const page = await browser.newPage()
   debuglog('new page opened in browser')
@@ -53,9 +45,7 @@ async function pruneNonCriticalCssLauncher ({
     }
   })
 
-  await page.goto(url, {
-    timeout
-  })
+  await page.goto(url)
   debuglog('page loaded')
 
   const criticalRules = await page.evaluate(pruneNonCriticalCss, {
@@ -67,7 +57,7 @@ async function pruneNonCriticalCssLauncher ({
   debuglog('GENERATION_DONE')
 
   // cleanup
-  browser.close()
+  await page.close()
 
   return criticalRules
 }

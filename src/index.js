@@ -1,6 +1,7 @@
 import fs from 'fs'
 import apartment from 'apartment'
 import cssAstFormatter from 'css-fork-pocketjoso'
+import puppeteer from 'puppeteer'
 
 import generateCriticalCss from './core'
 import normalizeCss from './normalize-css'
@@ -14,6 +15,30 @@ const DEFAULT_MAX_EMBEDDED_BASE64_LENGTH = 1000 // chars
 const DEFAULT_USER_AGENT = 'Penthouse Critical Path CSS Generator'
 const DEFAULT_RENDER_WAIT_TIMEOUT = 100
 const DEFAULT_BLOCK_JS_REQUESTS = true
+
+// shared between penthouse calls
+let browserWSEndpoint
+const getBrowser = async function (debuglog) {
+  let browser
+  if (!browserWSEndpoint) {
+    debuglog('no browser instance, launching new..')
+    browser = await puppeteer.launch({
+      headless: false,
+      ignoreHTTPSErrors: true,
+      args: ['--disable-setuid-sandbox', '--no-sandbox']
+    })
+    browserWSEndpoint = browser.wsEndpoint()
+    debuglog('browser launched, browserWSEndpoint: ' + browserWSEndpoint)
+  } else {
+    browser = await puppeteer.connect({
+      headless: false,
+      ignoreHTTPSErrors: true,
+      browserWSEndpoint
+    })
+    debuglog('reconnected to existing browser')
+  }
+  return browser
+}
 
 function readFilePromise (filepath, encoding) {
   return new Promise((resolve, reject) => {
@@ -43,7 +68,7 @@ function prepareForceIncludeForSerialization (forceInclude = []) {
   })
 }
 
-const astFromCss = async function astFromCss (options, { debuglog, stdErr }) {
+const astFromCss = async function astFromCss (options, browser, { debuglog, stdErr }) {
   const css = options.cssString
   let ast = cssAstFormatter.parse(css, { silent: true })
   const parsingErrors = ast.stylesheet.parsingErrors.filter(function (err) {
@@ -71,6 +96,7 @@ const astFromCss = async function astFromCss (options, { debuglog, stdErr }) {
   try {
     normalizedCss = await normalizeCss({
       css,
+      browser,
       debuglog
     })
   } catch (e) {
@@ -102,6 +128,7 @@ const astFromCss = async function astFromCss (options, { debuglog, stdErr }) {
 const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
   options,
   ast,
+  browser,
   { debuglog, stdErr, START_TIME }
 ) {
   const width = parseInt(options.width || DEFAULT_VIEWPORT_WIDTH, 10)
@@ -144,6 +171,7 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
     let criticalAstRules
     try {
       criticalAstRules = await generateCriticalCss({
+        browser,
         url: options.url,
         astRules,
         width,
@@ -241,6 +269,27 @@ const m = (module.exports = function (options, callback) {
   }
 
   return new Promise(async (resolve, reject) => {
+    // still supporting legacy callback way of calling Penthouse
+    const cleanupAndExit = ({ returnValue, browser, error = null }) => {
+      // cleanup
+      browserWSEndpoint = null
+      if (browser) {
+        // TODO: not safe to close here,
+        // since other jobs can have connected already
+        browser.close()
+        debuglog('closed browser')
+      }
+
+      if (callback) {
+        callback(error, returnValue)
+      }
+      if (error) {
+        reject(error)
+      } else {
+        resolve(returnValue)
+      }
+    }
+
     // support legacy mode of passing in css file path instead of string
     if (!options.cssString && options.css) {
       try {
@@ -248,23 +297,29 @@ const m = (module.exports = function (options, callback) {
         options = Object.assign({}, options, { cssString })
       } catch (err) {
         debuglog('error reading css file: ' + options.css + ', error: ' + err)
+        cleanupAndExit({error: err})
+        return
       }
+    }
+    if (!options.cssString) {
+      debuglog('Passed in css is empty')
+      cleanupAndExit({error: new Error('css should not be empty')})
+      return
+    }
+
+    try {
+      // get browser instance (launch if necessary)
+      const browser = await getBrowser(debuglog)
+      const ast = await astFromCss(options, browser, logging)
       const criticalCss = await generateCriticalCssWrapped(
         options,
         ast,
+        browser,
         logging
       )
-      if (callback) {
-        callback(null, criticalCss)
-        return
-      }
-      resolve(criticalCss)
+      cleanupAndExit({browser, returnValue: criticalCss})
     } catch (err) {
-      if (callback) {
-        callback(err)
-        return
-      }
-      reject(err)
+      cleanupAndExit({error: err})
     }
   })
 })
