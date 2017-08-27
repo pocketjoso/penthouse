@@ -25,11 +25,18 @@ async function pruneNonCriticalCssLauncher ({
   customPageHeaders = {},
   debuglog
 }) {
+  let _hasExited = false
+
   return new Promise(async (resolve, reject) => {
     debuglog('Penthouse core start')
     let page
     let killTimeout
     async function cleanupAndExit ({error, returnValue}) {
+      if (_hasExited) {
+        return
+      }
+      _hasExited = true
+
       clearTimeout(killTimeout)
       // page.close will error if page/browser has already been closed;
       // try to avoid
@@ -69,9 +76,16 @@ async function pruneNonCriticalCssLauncher ({
         }
       })
 
+      // NOTE: have to set a timeout here,
+      // even though we have our own timeout above,
+      // just to override the default puppeteer timeout of 30s
       await page.goto(url, {timeout})
       debuglog('page loaded')
 
+      if (!page) {
+        // in case we timed out
+        return
+      }
       const criticalRules = await page.evaluate(pruneNonCriticalCss, {
         astRules,
         forceInclude,
