@@ -25,41 +25,54 @@ async function pruneNonCriticalCssLauncher ({
   customPageHeaders = {},
   debuglog
 }) {
-  debuglog('Penthouse core start')
+  return new Promise(async (resolve, reject) => {
+    let page
+    setTimeout(() => {
+      if (page) {
+        // not waiting for, in case it's hung
+        page.close()
+      }
+      reject(
+        new Error('Penthouse timed out after ' + timeout / 1000 + 's. ')
+      )
+    }, timeout)
 
-  const page = await browser.newPage()
-  debuglog('new page opened in browser')
+    debuglog('Penthouse core start')
 
-  await page.setViewport({ width, height })
-  debuglog('viewport set')
+    page = await browser.newPage()
+    debuglog('new page opened in browser')
 
-  if (blockJSRequests) {
-    await blockJsRequests(page)
-    debuglog('blocking js requests')
-  }
-  page.on('console', msg => {
-    // pass through log messages
-    // - the ones sent by penthouse for debugging has 'debug: ' prefix.
-    if (/^debug: /.test(msg)) {
-      debuglog(msg.replace(/^debug: /, ''))
+    await page.setViewport({ width, height })
+    debuglog('viewport set')
+
+    if (blockJSRequests) {
+      await blockJsRequests(page)
+      debuglog('blocking js requests')
     }
+    page.on('console', msg => {
+      // pass through log messages
+      // - the ones sent by penthouse for debugging has 'debug: ' prefix.
+      if (/^debug: /.test(msg)) {
+        debuglog(msg.replace(/^debug: /, ''))
+      }
+    })
+
+    await page.goto(url)
+    debuglog('page loaded')
+
+    const criticalRules = await page.evaluate(pruneNonCriticalCss, {
+      astRules,
+      forceInclude,
+      renderWaitTime
+    })
+
+    debuglog('GENERATION_DONE')
+
+    // cleanup
+    await page.close()
+
+    resolve(criticalRules)
   })
-
-  await page.goto(url)
-  debuglog('page loaded')
-
-  const criticalRules = await page.evaluate(pruneNonCriticalCss, {
-    astRules,
-    forceInclude,
-    renderWaitTime
-  })
-
-  debuglog('GENERATION_DONE')
-
-  // cleanup
-  await page.close()
-
-  return criticalRules
 }
 
 export default pruneNonCriticalCssLauncher

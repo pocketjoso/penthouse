@@ -153,13 +153,7 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
   // promise so we can handle errors and reject,
   // instead of throwing what would otherwise be uncaught errors in node process
   return new Promise(async (resolve, reject) => {
-    const killTimeout = setTimeout(() => {
-      reject(
-        new Error('Penthouse timed out after ' + timeoutWait / 1000 + 's. ')
-      )
-    }, timeoutWait)
     const cleanupAndExit = ({ returnValue, error }) => {
-      clearTimeout(killTimeout)
       if (error) {
         reject(error)
       } else {
