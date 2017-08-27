@@ -124,4 +124,36 @@ describe('extra tests for penthouse node module', function () {
       done(err)
     })
   })
+
+  it('should keep chromium browser instance open, if requested', function (done) {
+    penthouse(({url: page1FileUrl, css: page1cssPath, unstableKeepBrowserAlive: true}))
+    .then(() => {
+      // wait a bit to ensure Chrome doesn't just take time to close
+      // we want to ensure it stays open
+      setTimeout(() => {
+        const ps = spawn('ps', ['aux'])
+        //  bit fragile to match across platforms..
+        const grep = spawn('egrep', ['-i', '/[c]hrom(e|ium) --(render|disable-background)'])
+        ps.stdout.on('data', data => grep.stdin.write(data))
+        ps.on('close', () => grep.stdin.end())
+        let chromiumStillRunning = false
+        grep.stdout.on('data', (data) => {
+          const result = data.toString()
+          if (result.length) {
+            chromiumStillRunning = result
+          }
+        })
+        grep.on('close', () => {
+          if (chromiumStillRunning) {
+            done()
+          } else {
+            done(new Error('Chromium did NOT keep running despite option telling it so'))
+          }
+        })
+      }, 1000)
+    })
+    .catch(err => {
+      done(err)
+    })
+  })
 })
