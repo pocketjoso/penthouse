@@ -100,7 +100,8 @@ describe('extra tests for penthouse node module', function () {
         // give chrome some time to shutdown
         setTimeout(() => {
           const ps = spawn('ps', ['aux'])
-          const grep = spawn('grep', ['[C]hromium --type=renderer --disable-background-timer'])
+          //  bit fragile to match across platforms..
+          const grep = spawn('egrep', ['-i', '/[c]hrom(e|ium) --(render|disable-background)'])
           ps.stdout.on('data', data => grep.stdin.write(data))
           ps.on('close', () => grep.stdin.end())
           let chromiumStillRunning = false
@@ -132,7 +133,8 @@ describe('extra tests for penthouse node module', function () {
       // we want to ensure it stays open
       setTimeout(() => {
         const ps = spawn('ps', ['aux'])
-        const grep = spawn('grep', ['[C]hromium --type=renderer --disable-background-timer'])
+        //  bit fragile to match across platforms..
+        const grep = spawn('egrep', ['-i', '/[c]hrom(e|ium) --(render|disable-background)'])
         ps.stdout.on('data', data => grep.stdin.write(data))
         ps.on('close', () => grep.stdin.end())
         let chromiumStillRunning = false
