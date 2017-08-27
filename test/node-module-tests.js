@@ -6,6 +6,8 @@ import { describe, it } from 'global-mocha'
 import path from 'path'
 import penthouse from '../lib/'
 import chai from 'chai'
+import {spawn} from 'child_process'
+
 chai.should() // binds globally on Object
 
 // becasuse dont want to fail tests on white space differences
@@ -20,6 +22,7 @@ describe('extra tests for penthouse node module', function () {
   var page1FileUrl = staticServerFileUrl('page1.html')
   var page1cssPath = path.join(__dirname, 'static-server', 'page1.css')
 
+  this.timeout(6000)
   // module handles both callback (legacy), and promise
   it('module invocation should return promise', function (done) {
     var originalCss = read(page1cssPath).toString()
@@ -75,6 +78,48 @@ describe('extra tests for penthouse node module', function () {
         return
       }
       done(new Error('did not throw any error, which was expected'))
+    })
+  })
+
+  it('error should handle parallell jobs, sharing one browser instance, closing afterwards', function (done) {
+    // currently breaks if testing with more than one url at the time
+    const urls = [page1FileUrl, page1FileUrl]
+    const promises = urls.map(url => {
+      return penthouse(({url, css: page1cssPath}))
+    })
+    Promise.all(promises)
+    .then(results => {
+      const hasErrors = results.find(result => {
+        return result.error || !result.length
+      })
+      if (hasErrors) {
+        done(new Error('some result had errors: ' + hasErrors))
+      } else {
+        // give chrome some time to shutdown
+        setTimeout(() => {
+          const ps = spawn('ps', ['aux'])
+          const grep = spawn('grep', ['[C]hromium --type=renderer --disable-background-timer'])
+          ps.stdout.on('data', data => grep.stdin.write(data))
+          ps.on('close', () => grep.stdin.end())
+          let chromiumStillRunning = false
+          grep.stdout.on('data', (data) => {
+            const result = data.toString()
+            if (result.length) {
+              chromiumStillRunning = result
+            }
+          })
+          grep.on('close', () => {
+            if (chromiumStillRunning) {
+              done(new Error('Chromium seems to not have shut down properly: ' + chromiumStillRunning))
+            } else {
+              done()
+            }
+          })
+        }, 1000)
+      }
+    })
+    .catch(err => {
+      done(err)
     })
   })
 })
