@@ -56,7 +56,8 @@ async function pruneNonCriticalCssLauncher ({
       debuglog('viewport set')
 
       if (blockJSRequests) {
-        await page.setJavaScriptEnabled(false)
+        // crashes..
+        // await page.setJavaScriptEnabled(false)
         await blockJsRequests(page)
         debuglog('blocking js requests')
       }
