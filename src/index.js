@@ -273,7 +273,7 @@ const m = (module.exports = function (options, callback) {
   return new Promise(async (resolve, reject) => {
     // still supporting legacy callback way of calling Penthouse
     const cleanupAndExit = ({ returnValue, error = null }) => {
-      if (browser) {
+      if (browser && !options.unstableKeepBrowserAlive) {
         if (_browserPagesOpen > 0) {
           debuglog('keeping browser open as _browserPagesOpen: ' + _browserPagesOpen)
         } else {

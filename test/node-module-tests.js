@@ -82,6 +82,8 @@ describe('extra tests for penthouse node module', function () {
   })
 
   it('error should handle parallell jobs, sharing one browser instance, closing afterwards', function (done) {
+    // reset from previous test
+    penthouse.DEBUG = false
     // currently breaks if testing with more than one url at the time
     const urls = [page1FileUrl, page1FileUrl]
     const promises = urls.map(url => {
@@ -117,6 +119,37 @@ describe('extra tests for penthouse node module', function () {
           })
         }, 1000)
       }
+    })
+    .catch(err => {
+      done(err)
+    })
+  })
+
+  it('should keep chromium browser instance open, if requested', function (done) {
+    penthouse(({url: page1FileUrl, css: page1cssPath, unstableKeepBrowserAlive: true}))
+    .then(() => {
+      // wait a bit to ensure Chrome doesn't just take time to close
+      // we want to ensure it stays open
+      setTimeout(() => {
+        const ps = spawn('ps', ['aux'])
+        const grep = spawn('grep', ['[C]hromium --type=renderer --disable-background-timer'])
+        ps.stdout.on('data', data => grep.stdin.write(data))
+        ps.on('close', () => grep.stdin.end())
+        let chromiumStillRunning = false
+        grep.stdout.on('data', (data) => {
+          const result = data.toString()
+          if (result.length) {
+            chromiumStillRunning = result
+          }
+        })
+        grep.on('close', () => {
+          if (chromiumStillRunning) {
+            done()
+          } else {
+            done(new Error('Chromium did NOT keep running despite option telling it so'))
+          }
+        })
+      }, 1000)
     })
     .catch(err => {
       done(err)
