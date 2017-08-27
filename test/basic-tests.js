@@ -139,12 +139,12 @@ describe('basic tests of penthouse functionality', function () {
       css: page1cssPath,
       timeout: 100
     })
-    .then(() => done(new Error('Did not get timeout error')))
+    .then(() => done(new Error('Got no timeout error')))
     .catch(err => {
       if (err && /Penthouse timed out/.test(err)) {
         done()
       } else {
-        done(new Error('Did not get timeout error'))
+        done(new Error('Did not get timeout error, got: ' + err))
       }
     })
   })
