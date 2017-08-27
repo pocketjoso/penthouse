@@ -26,52 +26,57 @@ async function pruneNonCriticalCssLauncher ({
   debuglog
 }) {
   return new Promise(async (resolve, reject) => {
+    debuglog('Penthouse core start')
     let page
-    setTimeout(() => {
+    let killTimeout
+    async function cleanupAndExit ({error, returnValue}) {
+      clearTimeout(killTimeout)
       if (page) {
-        // not waiting for, in case it's hung
-        page.close()
+        await page.close()
       }
-      reject(
-        new Error('Penthouse timed out after ' + timeout / 1000 + 's. ')
-      )
+      if (error) {
+        reject(error)
+        return
+      }
+      resolve(returnValue)
+    }
+    killTimeout = setTimeout(() => {
+      cleanupAndExit({error: new Error('Penthouse timed out after ' + timeout / 1000 + 's. ')})
     }, timeout)
 
-    debuglog('Penthouse core start')
+    try {
+      page = await browser.newPage()
+      debuglog('new page opened in browser')
 
-    page = await browser.newPage()
-    debuglog('new page opened in browser')
+      await page.setViewport({ width, height })
+      debuglog('viewport set')
 
-    await page.setViewport({ width, height })
-    debuglog('viewport set')
-
-    if (blockJSRequests) {
-      await blockJsRequests(page)
-      debuglog('blocking js requests')
-    }
-    page.on('console', msg => {
-      // pass through log messages
-      // - the ones sent by penthouse for debugging has 'debug: ' prefix.
-      if (/^debug: /.test(msg)) {
-        debuglog(msg.replace(/^debug: /, ''))
+      if (blockJSRequests) {
+        await blockJsRequests(page)
+        debuglog('blocking js requests')
       }
-    })
+      page.on('console', msg => {
+        // pass through log messages
+        // - the ones sent by penthouse for debugging has 'debug: ' prefix.
+        if (/^debug: /.test(msg)) {
+          debuglog(msg.replace(/^debug: /, ''))
+        }
+      })
 
-    await page.goto(url)
-    debuglog('page loaded')
+      await page.goto(url, {timeout})
+      debuglog('page loaded')
 
-    const criticalRules = await page.evaluate(pruneNonCriticalCss, {
-      astRules,
-      forceInclude,
-      renderWaitTime
-    })
+      const criticalRules = await page.evaluate(pruneNonCriticalCss, {
+        astRules,
+        forceInclude,
+        renderWaitTime
+      })
 
-    debuglog('GENERATION_DONE')
-
-    // cleanup
-    await page.close()
-
-    resolve(criticalRules)
+      debuglog('GENERATION_DONE')
+      cleanupAndExit({returnValue: criticalRules})
+    } catch (e) {
+      cleanupAndExit({error: e})
+    }
   })
 }
 
