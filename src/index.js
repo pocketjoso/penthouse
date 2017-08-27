@@ -99,27 +99,6 @@ const astFromCss = async function astFromCss (options, { debuglog, stdErr }) {
 }
 
 // const so not hoisted, so can get regeneratorRuntime inlined above, needed for Node 4
-const generateAstFromCssFile = async function generateAstFromCssFile (
-  options,
-  { debuglog, stdErr }
-) {
-  // read the css and parse the ast
-  // if errors, normalize css and try again
-  // only then pass css to penthouse
-  let css
-  try {
-    css = await readFilePromise(options.css, 'utf8')
-  } catch (e) {
-    throw e
-  }
-  stdErr += debuglog('opened css file')
-  return astFromCss(Object.assign({}, options, { cssString: css }), {
-    debuglog,
-    stdErr
-  })
-}
-
-// const so not hoisted, so can get regeneratorRuntime inlined above, needed for Node 4
 const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
   options,
   ast,
@@ -262,12 +241,13 @@ const m = (module.exports = function (options, callback) {
   }
 
   return new Promise(async (resolve, reject) => {
-    try {
-      let ast
-      if (options.cssString) {
-        ast = await astFromCss(options, logging)
-      } else {
-        ast = await generateAstFromCssFile(options, logging)
+    // support legacy mode of passing in css file path instead of string
+    if (!options.cssString && options.css) {
+      try {
+        const cssString = await readFilePromise(options.css, 'utf8')
+        options = Object.assign({}, options, { cssString })
+      } catch (err) {
+        debuglog('error reading css file: ' + options.css + ', error: ' + err)
       }
       const criticalCss = await generateCriticalCssWrapped(
         options,
