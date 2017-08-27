@@ -1,6 +1,7 @@
 'use strict'
 
 import generateScreenshots from 'css-compare-screenshots'
+import puppeteer from 'puppeteer'
 import { after, describe, it } from 'global-mocha'
 import path from 'path'
 import penthouse from '../lib'
@@ -34,7 +35,7 @@ describe('penthouse fault tolerant normalising css tests', function () {
   })
   this.timeout(20000)
 
-  it('should preserve escaped hex reference styles', function (done) {
+  it('should preserve escaped hex reference styles', async function (done) {
     // NOTE: the normalised CSS comes back with all quotes (for escaped hex refs only?)
     // as single quotes, regardless of what they were before.
     // This test will fail if the css uses double quotes (although false negative: still works)
@@ -50,8 +51,14 @@ describe('penthouse fault tolerant normalising css tests', function () {
       .replace(/'/g, '"')
     const expectedAst = normalisedCssAst(expected)
 
+    const browser = await puppeteer.launch({
+      ignoreHTTPSErrors: true,
+      args: ['--disable-setuid-sandbox', '--no-sandbox']
+    })
+
     var options = {
       css,
+      browser,
       debuglog: () => {}
     }
 
@@ -59,9 +66,11 @@ describe('penthouse fault tolerant normalising css tests', function () {
     .then(result => {
       const resultAst = normalisedCssAst(result)
       resultAst.should.eql(expectedAst)
+      browser.close()
       done()
     })
     .catch(err => {
+      browser.close()
       done(err)
     })
   })
