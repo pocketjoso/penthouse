@@ -3,7 +3,7 @@ import pruneNonCriticalCss from './browser-sandbox/pruneNonCriticalCss'
 async function blockJsRequests (page) {
   await page.setRequestInterceptionEnabled(true)
   page.on('request', interceptedRequest => {
-    if (interceptedRequest.url.endsWith('.js')) {
+    if (/\.js(\?.*)?$/.test(interceptedRequest.url)) {
       interceptedRequest.abort()
     } else {
       interceptedRequest.continue()
@@ -31,7 +31,7 @@ async function pruneNonCriticalCssLauncher ({
     debuglog('Penthouse core start')
     let page
     let killTimeout
-    async function cleanupAndExit ({error, returnValue}) {
+    async function cleanupAndExit ({ error, returnValue }) {
       if (_hasExited) {
         return
       }
@@ -52,7 +52,9 @@ async function pruneNonCriticalCssLauncher ({
       resolve(returnValue)
     }
     killTimeout = setTimeout(() => {
-      cleanupAndExit({error: new Error('Penthouse timed out after ' + timeout / 1000 + 's. ')})
+      cleanupAndExit({
+        error: new Error('Penthouse timed out after ' + timeout / 1000 + 's. ')
+      })
     }, timeout)
 
     try {
@@ -79,7 +81,7 @@ async function pruneNonCriticalCssLauncher ({
       // NOTE: have to set a timeout here,
       // even though we have our own timeout above,
       // just to override the default puppeteer timeout of 30s
-      await page.goto(url, {timeout})
+      await page.goto(url, { timeout })
       debuglog('page loaded')
 
       if (!page) {
@@ -93,9 +95,9 @@ async function pruneNonCriticalCssLauncher ({
       })
 
       debuglog('GENERATION_DONE')
-      cleanupAndExit({returnValue: criticalRules})
+      cleanupAndExit({ returnValue: criticalRules })
     } catch (e) {
-      cleanupAndExit({error: e})
+      cleanupAndExit({ error: e })
     }
   })
 }
