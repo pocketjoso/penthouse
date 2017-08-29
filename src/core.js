@@ -22,7 +22,7 @@ async function pruneNonCriticalCssLauncher ({
   timeout,
   renderWaitTime,
   blockJSRequests,
-  customPageHeaders = {},
+  customPageHeaders,
   debuglog
 }) {
   let _hasExited = false
@@ -61,6 +61,20 @@ async function pruneNonCriticalCssLauncher ({
       debuglog('viewport set')
 
       await page.setUserAgent(userAgent)
+
+      if (customPageHeaders) {
+        // Convert Object to the required Map
+        // NOTE: Puppeteer are changing this type back to Object,
+        // so this will be unnecessary in future
+        try {
+          const customPageHeadersMap = new Map(
+            Object.entries(customPageHeaders)
+          )
+          await page.setExtraHTTPHeaders(customPageHeadersMap)
+        } catch (e) {
+          debuglog('failed setting extra http headers: ' + e)
+        }
+      }
 
       if (blockJSRequests) {
         // crashes..
