@@ -60,6 +60,8 @@ async function pruneNonCriticalCssLauncher ({
       await page.setViewport({ width, height })
       debuglog('viewport set')
 
+      await page.setUserAgent(userAgent)
+
       if (blockJSRequests) {
         // crashes..
         // await page.setJavaScriptEnabled(false)
