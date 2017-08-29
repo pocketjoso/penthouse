@@ -22,7 +22,7 @@ async function pruneNonCriticalCssLauncher ({
   timeout,
   renderWaitTime,
   blockJSRequests,
-  customPageHeaders = {},
+  customPageHeaders,
   debuglog
 }) {
   let _hasExited = false
@@ -65,6 +65,14 @@ async function pruneNonCriticalCssLauncher ({
       debuglog('viewport set')
 
       await page.setUserAgent(userAgent)
+
+      if (customPageHeaders) {
+        try {
+          await page.setExtraHTTPHeaders(customPageHeaders)
+        } catch (e) {
+          debuglog('failed setting extra http headers: ' + e)
+        }
+      }
 
       if (blockJSRequests) {
         // crashes..
