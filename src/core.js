@@ -28,7 +28,7 @@ async function pruneNonCriticalCssLauncher ({
   let _hasExited = false
 
   return new Promise(async (resolve, reject) => {
-    debuglog('Penthouse core start (with timeout: ' + timeout)
+    debuglog('Penthouse core start')
     let page
     let killTimeout
     async function cleanupAndExit ({ error, returnValue }) {
