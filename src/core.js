@@ -77,7 +77,8 @@ async function pruneNonCriticalCssLauncher ({
       }
 
       if (blockJSRequests) {
-        // crashes..
+        // currently does not work together with page.evaluate calls:
+        // https://github.com/GoogleChrome/puppeteer/issues/562
         // await page.setJavaScriptEnabled(false)
         await blockJsRequests(page)
         debuglog('blocking js requests')
