@@ -138,7 +138,7 @@ const astFromCss = async function astFromCss (options, { debuglog, stdErr }) {
 const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
   options,
   ast,
-  { debuglog, stdErr, START_TIME }
+  { debuglog, stdErr, START_TIME, forceTryRestartBrowser }
 ) {
   const width = parseInt(options.width || DEFAULT_VIEWPORT_WIDTH, 10)
   const height = parseInt(options.height || DEFAULT_VIEWPORT_HEIGHT, 10)
@@ -205,6 +205,21 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         'remove browser page for generateCriticalCss after ERROR, now: ' +
           _browserPagesOpen
       )
+      if (!forceTryRestartBrowser && e.message.indexOf('not opened') > -1) {
+        debuglog('Chrominium unexpecedly not opened - restart')
+        // for some reason Chrominium is no longer opened;
+        // perhaps it crashed
+        browser = null
+        _browserLaunchPromise = null
+        await launchBrowserIfNeeded(debuglog)
+        // retry
+        return generateCriticalCssWrapped(options, ast, {
+          debuglog,
+          stdErr,
+          START_TIME,
+          forceTryRestartBrowser
+        })
+      }
       stdErr += e
       const err = new Error(stdErr)
       err.stderr = stdErr
