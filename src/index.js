@@ -28,15 +28,15 @@ const launchBrowserIfNeeded = async function (debuglog) {
   }
   if (!_browserLaunchPromise) {
     debuglog('no browser instance, launching new browser..')
-    _browserLaunchPromise = puppeteer.launch({
-      // headless: false,
-      ignoreHTTPSErrors: true,
-      args: ['--disable-setuid-sandbox', '--no-sandbox']
-    })
-    .then(browser => {
-      debuglog('new browser launched')
-      return browser
-    })
+    _browserLaunchPromise = puppeteer
+      .launch({
+        ignoreHTTPSErrors: true,
+        args: ['--disable-setuid-sandbox', '--no-sandbox']
+      })
+      .then(browser => {
+        debuglog('new browser launched')
+        return browser
+      })
   }
   browser = await _browserLaunchPromise
 }
@@ -106,7 +106,10 @@ const astFromCss = async function astFromCss (options, { debuglog, stdErr }) {
     debuglog('removing browser page for normalize, now: ' + _browserPagesOpen)
   } catch (e) {
     _browserPagesOpen--
-    debuglog('removing browser page for normalize after error, now: ' + _browserPagesOpen)
+    debuglog(
+      'removing browser page for normalize after error, now: ' +
+        _browserPagesOpen
+    )
     throw e
   }
 
@@ -171,7 +174,9 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
     let criticalAstRules
     try {
       _browserPagesOpen++
-      debuglog('adding browser page for generateCriticalCss, now: ' + _browserPagesOpen)
+      debuglog(
+        'adding browser page for generateCriticalCss, now: ' + _browserPagesOpen
+      )
       criticalAstRules = await generateCriticalCss({
         browser,
         url: options.url,
@@ -191,10 +196,15 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         debuglog
       })
       _browserPagesOpen--
-      debuglog('remove browser page for generateCriticalCss, now: ' + _browserPagesOpen)
+      debuglog(
+        'remove browser page for generateCriticalCss, now: ' + _browserPagesOpen
+      )
     } catch (e) {
       _browserPagesOpen--
-      debuglog('remove browser page for generateCriticalCss after ERROR, now: ' + _browserPagesOpen)
+      debuglog(
+        'remove browser page for generateCriticalCss after ERROR, now: ' +
+          _browserPagesOpen
+      )
       stdErr += e
       const err = new Error(stdErr)
       err.stderr = stdErr
@@ -279,7 +289,9 @@ const m = (module.exports = function (options, callback) {
     const cleanupAndExit = ({ returnValue, error = null }) => {
       if (browser && !options.unstableKeepBrowserAlive) {
         if (_browserPagesOpen > 0) {
-          debuglog('keeping browser open as _browserPagesOpen: ' + _browserPagesOpen)
+          debuglog(
+            'keeping browser open as _browserPagesOpen: ' + _browserPagesOpen
+          )
         } else {
           browser.close()
           browser = null
@@ -305,13 +317,13 @@ const m = (module.exports = function (options, callback) {
         options = Object.assign({}, options, { cssString })
       } catch (err) {
         debuglog('error reading css file: ' + options.css + ', error: ' + err)
-        cleanupAndExit({error: err})
+        cleanupAndExit({ error: err })
         return
       }
     }
     if (!options.cssString) {
       debuglog('Passed in css is empty')
-      cleanupAndExit({error: new Error('css should not be empty')})
+      cleanupAndExit({ error: new Error('css should not be empty') })
       return
     }
 
@@ -323,9 +335,9 @@ const m = (module.exports = function (options, callback) {
         ast,
         logging
       )
-      cleanupAndExit({returnValue: criticalCss})
+      cleanupAndExit({ returnValue: criticalCss })
     } catch (err) {
-      cleanupAndExit({error: err})
+      cleanupAndExit({ error: err })
     }
   })
 })
