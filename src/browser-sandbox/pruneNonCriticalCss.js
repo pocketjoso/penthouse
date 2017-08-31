@@ -8,7 +8,7 @@ export default function pruneNonCriticalCss ({
   console.log('debug: pruneNonCriticalCss')
   var h = window.innerHeight
   // TODO: bind with forceInclude argument instead
-  var matchesForceInclude = function (selector) {
+  function matchesForceInclude (selector) {
     return forceInclude.some(function (includeSelector) {
       if (includeSelector.type === 'RegExp') {
         const { source, flags } = includeSelector
@@ -39,7 +39,7 @@ export default function pruneNonCriticalCss ({
   // primarily because getBoundingClientRect() can be slow to query,
   // and some stylesheets have lots of generic selectors (like '.button', '.fa' etc)
   var isElementAboveFoldCache = []
-  var isElementAboveFold = function (element) {
+  function isElementAboveFold (element) {
     // no support for Array.find
     var matching = isElementAboveFoldCache.filter(c => c.element === element)
     var cached = matching && matching[0]
@@ -72,7 +72,7 @@ export default function pruneNonCriticalCss ({
     return aboveFold
   }
 
-  var isSelectorCritical = function (selector) {
+  function isSelectorCritical (selector) {
     if (matchesForceInclude(selector.trim())) {
       return true
     }
@@ -131,7 +131,7 @@ export default function pruneNonCriticalCss ({
     return aboveFold
   }
 
-  var isCssRuleCritical = function (rule) {
+  function isCssRuleCritical (rule) {
     if (rule.type === 'rule') {
       // check what, if any selectors are found above fold
       rule.selectors = rule.selectors.filter(isSelectorCritical)
@@ -171,18 +171,12 @@ export default function pruneNonCriticalCss ({
     return false
   }
 
-  var processCssRules = function (astRules) {
+  function processCssRules (astRules) {
     console.log('debug: processCssRules BEFORE')
     var criticalRules = astRules.filter(isCssRuleCritical)
     console.log('debug: processCssRules AFTER')
 
-    // we're done - call final function to exit outside of phantom evaluate scope
-
     return criticalRules
-    // window.callPhantom({
-    //   status: doneStatus,
-    //   rules: criticalRules
-    // })
   }
 
   // give some time (renderWaitTime) for sites like facebook that build their page dynamically,
