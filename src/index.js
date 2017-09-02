@@ -299,6 +299,18 @@ const m = (module.exports = function (options, callback) {
     START_TIME
   }
 
+  function exitHandler () {
+    if (browser && browser.close) {
+      debuglog('close browser before process exists..')
+      browser && browser.close && browser.close()
+      browser = null
+    }
+    process.exit(0)
+  }
+  process.on('exit', exitHandler)
+  process.on('SIGTERM', exitHandler)
+  process.on('SIGINT', exitHandler)
+
   return new Promise(async (resolve, reject) => {
     // still supporting legacy callback way of calling Penthouse
     const cleanupAndExit = ({ returnValue, error = null }) => {
