@@ -20,7 +20,7 @@ const DEFAULT_BLOCK_JS_REQUESTS = true
 let browser = null
 let _browserLaunchPromise = null
 // browser.pages is not implemented, so need to count myself to not close browser
-// until all pages are closed again
+// until all pages used by penthouse are closed (i.e. individual calls are done)
 let _browserPagesOpen = 0
 const launchBrowserIfNeeded = async function (debuglog) {
   if (browser) {
