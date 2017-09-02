@@ -181,7 +181,7 @@ export default function pruneNonCriticalCss ({
 
   function pollUntilTimePassed (start, timeToPass) {
     return new Promise(resolve => {
-      requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
         const timePassed = Date.now() - start
         if (timePassed >= timeToPass) {
           resolve()
