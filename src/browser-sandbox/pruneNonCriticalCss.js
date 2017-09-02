@@ -179,11 +179,29 @@ export default function pruneNonCriticalCss ({
     return criticalRules
   }
 
+  function pollUntilTimePassed (start, timeToPass) {
+    return new Promise(resolve => {
+      requestAnimationFrame(() => {
+        const timePassed = Date.now() - start
+        if (timePassed >= timeToPass) {
+          resolve()
+        } else {
+          resolve(pollUntilTimePassed(start, timeToPass))
+        }
+      })
+    })
+  }
+  // not using timeout because does not work with JS disabled
+  function sleep (time) {
+    const start = Date.now()
+    return pollUntilTimePassed(start, time)
+  }
+
   // give some time (renderWaitTime) for sites like facebook that build their page dynamically,
   // otherwise we can miss some selectors (and therefor rules)
   // --tradeoff here: if site is too slow with dynamic content,
   // it doesn't deserve to be in critical path.
-  return new Promise(resolve => setTimeout(resolve, renderWaitTime)).then(() =>
+  return new Promise(resolve => resolve(sleep(renderWaitTime))).then(() =>
     processCssRules(astRules)
   )
 }

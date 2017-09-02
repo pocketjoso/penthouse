@@ -77,9 +77,9 @@ async function pruneNonCriticalCssLauncher ({
       }
 
       if (blockJSRequests) {
-        // currently does not work together with page.evaluate calls:
-        // https://github.com/GoogleChrome/puppeteer/issues/562
-        // await page.setJavaScriptEnabled(false)
+        // NOTE: with JS disabled we cannot use JS timers inside page.evaluate
+        // (setTimeout, setInterval), however requestAnimationFrame works.
+        await page.setJavaScriptEnabled(false)
         await blockJsRequests(page)
         debuglog('blocking js requests')
       }
