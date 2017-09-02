@@ -7,3 +7,8 @@ html:after {
 .test💩 {
 	color: red;
 }
+.icon-github-6:before {
+  /* without any preformatting, puppetteer (0.10.2) hangs
+      on the content character on the next line */
+    content: '￿'; /* same as '\f042' */
+}

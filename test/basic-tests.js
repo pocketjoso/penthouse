@@ -113,7 +113,7 @@ describe('basic tests of penthouse functionality', function () {
     .catch(() => done())
   })
 
-  it('should not crash on special chars', function (done) {
+  it('should not crash or hang on special chars', function (done) {
     penthouse({
       url: page1FileUrl,
       css: path.join(__dirname, 'static-server', 'special-chars.css')
