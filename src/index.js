@@ -70,7 +70,8 @@ function prepareForceIncludeForSerialization (forceInclude = []) {
 }
 
 const astFromCss = async function astFromCss (options, { debuglog, stdErr }) {
-  const css = options.cssString
+  const css = options.cssString.replace(/￿/g, '\f042')
+
   let ast = cssAstFormatter.parse(css, { silent: true })
   const parsingErrors = ast.stylesheet.parsingErrors.filter(function (err) {
     // the forked version of the astParser used fixes these errors itself
