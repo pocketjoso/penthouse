@@ -1,10 +1,11 @@
-const cssAstFormatter = require('css-fork-pocketjoso')
-const embeddedbase64Remover = require('./embedded-base64-remover')
-const ffRemover = require('./unused-fontface-remover')
-const unusedKeyframeRemover = require('./unused-keyframe-remover')
 import apartment from 'apartment'
+import cssAstFormatter from 'css-fork-pocketjoso'
 
-module.exports = function postformatting ({
+import embeddedbase64Remover from './embedded-base64-remover'
+import ffRemover from './unused-fontface-remover'
+import unusedKeyframeRemover from './unused-keyframe-remover'
+
+export default function postformatting ({
   criticalAstRules,
   maxEmbeddedBase64Length,
   debuglog
