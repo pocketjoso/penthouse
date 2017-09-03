@@ -1,4 +1,5 @@
 import pruneNonCriticalCss from './browser-sandbox/pruneNonCriticalCss'
+import replacePageCss from './browser-sandbox/replacePageCss'
 import postformatting from './postformatting/'
 
 async function blockJsRequests (page) {
@@ -25,9 +26,14 @@ async function pruneNonCriticalCssLauncher ({
   blockJSRequests,
   customPageHeaders,
   maxEmbeddedBase64Length,
+  screenshots,
   debuglog
 }) {
   let _hasExited = false
+  const takeScreenshots = screenshots && screenshots.basePath
+  const screenshotExtension = takeScreenshots && screenshots.type === 'jpeg'
+    ? '.jpg'
+    : '.png'
 
   return new Promise(async (resolve, reject) => {
     debuglog('Penthouse core start')
@@ -104,6 +110,19 @@ async function pruneNonCriticalCssLauncher ({
         return
       }
 
+      // grab a "before" screenshot - of the page fully loaded, without JS
+      // TODO: could potentially do in parallel with the page.evaluate
+      if (takeScreenshots) {
+        debuglog('take before screenshot')
+        const beforePath =
+          screenshots.basePath + '-before' + screenshotExtension
+        await page.screenshot({
+          ...screenshots,
+          path: beforePath
+        })
+        debuglog('take before screenshot DONE: ' + beforePath)
+      }
+
       const criticalAstRules = await page.evaluate(pruneNonCriticalCss, {
         astRules,
         forceInclude,
@@ -117,6 +136,20 @@ async function pruneNonCriticalCssLauncher ({
         debuglog
       })
       debuglog('postformatting done')
+
+      if (takeScreenshots) {
+        debuglog('inline critical styles for after screenshot')
+        await page.evaluate(replacePageCss, {
+          css: formattedCss
+        })
+        debuglog('take after screenshot')
+        const afterPath = screenshots.basePath + '-after' + screenshotExtension
+        await page.screenshot({
+          ...screenshots,
+          path: afterPath
+        })
+        debuglog('take after screenshot DONE: ' + afterPath)
+      }
 
       cleanupAndExit({ returnValue: formattedCss })
     } catch (e) {
