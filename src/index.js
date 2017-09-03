@@ -14,6 +14,15 @@ const DEFAULT_USER_AGENT = 'Penthouse Critical Path CSS Generator'
 const DEFAULT_RENDER_WAIT_TIMEOUT = 100
 const DEFAULT_BLOCK_JS_REQUESTS = true
 
+function exitHandler () {
+  if (browser && browser.close) {
+    debuglog('close browser before process exists..')
+    browser && browser.close && browser.close()
+    browser = null
+  }
+  process.exit(0)
+}
+
 // shared between penthouse calls
 let browser = null
 let _browserLaunchPromise = null
@@ -162,6 +171,10 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
   // instead of throwing what would otherwise be uncaught errors in node process
   return new Promise(async (resolve, reject) => {
     const cleanupAndExit = ({ returnValue, error }) => {
+      process.removeListener('exit', exitHandler)
+      process.removeListener('SIGTERM', exitHandler)
+      process.removeListener('SIGINT', exitHandler)
+
       if (error) {
         reject(error)
       } else {
@@ -207,8 +220,8 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
           _browserPagesOpen
       )
       if (!forceTryRestartBrowser && e.message.indexOf('not opened') > -1) {
-        debuglog('Chrominium unexpecedly not opened - restart')
-        // for some reason Chrominium is no longer opened;
+        console.log('Chromium unexpecedly not opened - restart')
+        // for some reason Chromium is no longer opened;
         // perhaps it crashed
         browser = null
         _browserLaunchPromise = null
@@ -264,14 +277,6 @@ const m = (module.exports = function (options, callback) {
     START_TIME
   }
 
-  function exitHandler () {
-    if (browser && browser.close) {
-      debuglog('close browser before process exists..')
-      browser && browser.close && browser.close()
-      browser = null
-    }
-    process.exit(0)
-  }
   process.on('exit', exitHandler)
   process.on('SIGTERM', exitHandler)
   process.on('SIGINT', exitHandler)
