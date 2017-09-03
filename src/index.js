@@ -16,7 +16,6 @@ const DEFAULT_BLOCK_JS_REQUESTS = true
 
 function exitHandler () {
   if (browser && browser.close) {
-    debuglog('close browser before process exists..')
     browser && browser.close && browser.close()
     browser = null
   }
