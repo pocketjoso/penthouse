@@ -188,6 +188,7 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         timeout: timeoutWait,
         blockJSRequests: options.blockJSRequests || DEFAULT_BLOCK_JS_REQUESTS,
         customPageHeaders: options.customPageHeaders,
+        screenshots: options.screenshots,
         // postformatting
         maxEmbeddedBase64Length: typeof options.maxEmbeddedBase64Length ===
           'number'
