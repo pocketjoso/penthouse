@@ -60,6 +60,13 @@ penthouse({
     },
     customPageHeaders: {
       'Accept-Encoding': 'identity' // add if getting compression errors like 'Data corrupted'
+    },
+    screenshots: {
+      // turned off by default
+      // basePath: 'homepage', // absolute or relative; excluding file extension
+      // type: 'jpeg', // jpeg or png, png default
+      // quality: 20 // only applies for jpeg type
+      // -> these settings will produce homepage-before.jpg and homepage-after.jpg
     }
 })
 .then(criticalCss => {
