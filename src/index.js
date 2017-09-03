@@ -1,12 +1,10 @@
 import fs from 'fs'
-import apartment from 'apartment'
 import cssAstFormatter from 'css-fork-pocketjoso'
 import puppeteer from 'puppeteer'
 
 import generateCriticalCss from './core'
 import normalizeCss from './normalize-css'
 import nonMatchingMediaQueryRemover from './non-matching-media-query-remover'
-import postformatting from './postformatting/'
 
 const DEFAULT_VIEWPORT_WIDTH = 1300 // px
 const DEFAULT_VIEWPORT_HEIGHT = 900 // px
@@ -172,28 +170,29 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
     }
 
     stdErr += debuglog('call generateCriticalCssWrapped')
-    let criticalAstRules
+    let formattedCss
     try {
       _browserPagesOpen++
       debuglog(
         'adding browser page for generateCriticalCss, now: ' + _browserPagesOpen
       )
-      criticalAstRules = await generateCriticalCss({
+      formattedCss = await generateCriticalCss({
         browser,
         url: options.url,
         astRules,
         width,
         height,
         forceInclude,
-        // TODO: make use of again
         userAgent: options.userAgent || DEFAULT_USER_AGENT,
         renderWaitTime: options.renderWaitTime || DEFAULT_RENDER_WAIT_TIMEOUT,
         timeout: timeoutWait,
         blockJSRequests: options.blockJSRequests || DEFAULT_BLOCK_JS_REQUESTS,
-        // TODO: make use of again
-        // object, needs to be stringified
-        // JSON.stringify(options.customPageHeaders || {}),
         customPageHeaders: options.customPageHeaders,
+        // postformatting
+        maxEmbeddedBase64Length: typeof options.maxEmbeddedBase64Length ===
+          'number'
+          ? options.maxEmbeddedBase64Length
+          : DEFAULT_MAX_EMBEDDED_BASE64_LENGTH,
         debuglog
       })
       _browserPagesOpen--
@@ -227,26 +226,7 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
       cleanupAndExit({ error: err })
       return
     }
-
-    stdErr += debuglog('generateCriticalCss done, now postformat')
-    let formattedCss
-    try {
-      formattedCss = postformatting(
-        criticalAstRules,
-        {
-          maxEmbeddedBase64Length: typeof options.maxEmbeddedBase64Length ===
-            'number'
-            ? options.maxEmbeddedBase64Length
-            : DEFAULT_MAX_EMBEDDED_BASE64_LENGTH
-        },
-        m.DEBUG,
-        START_TIME
-      )
-    } catch (e) {
-      cleanupAndExit({ error: e })
-      return
-    }
-
+    stdErr += debuglog('generateCriticalCss done')
     if (formattedCss.trim().length === 0) {
       // TODO: this error should surface to user
       stdErr += debuglog(
@@ -256,24 +236,7 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
       return
     }
 
-    // remove irrelevant css properties
-    try {
-      const cleanedCss = apartment(formattedCss, {
-        properties: [
-          '(.*)transition(.*)',
-          'cursor',
-          'pointer-events',
-          '(-webkit-)?tap-highlight-color',
-          '(.*)user-select'
-        ],
-        // TODO: move into pruneNonCriticalCss script
-        selectors: ['::(-moz-)?selection']
-      })
-      cleanupAndExit({ returnValue: cleanedCss })
-      return
-    } catch (e) {
-      cleanupAndExit({ error: e })
-    }
+    cleanupAndExit({ returnValue: formattedCss })
   })
 }
 

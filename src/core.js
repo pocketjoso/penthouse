@@ -1,4 +1,5 @@
 import pruneNonCriticalCss from './browser-sandbox/pruneNonCriticalCss'
+import postformatting from './postformatting/'
 
 async function blockJsRequests (page) {
   await page.setRequestInterceptionEnabled(true)
@@ -23,6 +24,7 @@ async function pruneNonCriticalCssLauncher ({
   renderWaitTime,
   blockJSRequests,
   customPageHeaders,
+  maxEmbeddedBase64Length,
   debuglog
 }) {
   let _hasExited = false
@@ -101,14 +103,22 @@ async function pruneNonCriticalCssLauncher ({
         // in case we timed out
         return
       }
-      const criticalRules = await page.evaluate(pruneNonCriticalCss, {
+
+      const criticalAstRules = await page.evaluate(pruneNonCriticalCss, {
         astRules,
         forceInclude,
         renderWaitTime
       })
+      debuglog('generateCriticalCss done, now postformat')
 
-      debuglog('GENERATION_DONE')
-      cleanupAndExit({ returnValue: criticalRules })
+      const formattedCss = postformatting({
+        criticalAstRules,
+        maxEmbeddedBase64Length,
+        debuglog
+      })
+      debuglog('postformatting done')
+
+      cleanupAndExit({ returnValue: formattedCss })
     } catch (e) {
       cleanupAndExit({ error: e })
     }

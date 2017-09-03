@@ -201,7 +201,8 @@ export default function pruneNonCriticalCss ({
   // otherwise we can miss some selectors (and therefor rules)
   // --tradeoff here: if site is too slow with dynamic content,
   // it doesn't deserve to be in critical path.
-  return new Promise(resolve => resolve(sleep(renderWaitTime))).then(() =>
-    processCssRules(astRules)
-  )
+  return new Promise(resolve => resolve(sleep(renderWaitTime))).then(() => {
+    console.log('debug: waited for renderWaitTime: ' + renderWaitTime)
+    return processCssRules(astRules)
+  })
 }
