@@ -1,6 +1,5 @@
 'use strict'
 
-import generateScreenshots from 'css-compare-screenshots'
 import puppeteer from 'puppeteer'
 import { after, describe, it } from 'global-mocha'
 import path from 'path'
@@ -31,7 +30,7 @@ function staticServerFileUrl (file) {
 
 describe('penthouse fault tolerant normalising css tests', function () {
   after(function () {
-    rimraf.sync(SCREENSHOT_DIST.replace(/\/$/, ''))
+    rimraf.sync(SCREENSHOT_DIST + '*')
   })
   this.timeout(20000)
 
@@ -78,23 +77,18 @@ describe('penthouse fault tolerant normalising css tests', function () {
   it('should generate same layout for yeoman with css errors', function (done) {
     const screenshotFilename = 'yeoman'
     penthouse.DEBUG = false
-    console.log('get critical css..')
+    console.log('get critical css and screenshots..')
     penthouse({
       url: staticServerFileUrl('yeoman.html'),
       css: path.join(STATIC_SERVER_PATH, 'yeoman-full--invalid.css'),
       width: 800,
-      height: 450
-    })
-    .then(result => {
-      console.log('generate screenshots..')
-      return generateScreenshots({
-        url: path.join(__dirname, 'static-server', 'yeoman.html'),
-        css: result,
-        width: 800,
-        height: 450,
-        dist: SCREENSHOT_DIST,
-        fileName: screenshotFilename
-      })
+      height: 450,
+      // for testing
+      screenshots: {
+        basePath: path.join(SCREENSHOT_DIST, screenshotFilename),
+        type: 'jpeg',
+        quality: 20
+      }
     })
     .then(function () {
       console.log('compare screenshots..')
