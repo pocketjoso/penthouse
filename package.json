@@ -24,6 +24,7 @@
     "lint": "standard \"src/**/*.js\"",
     "test": "mocha --compilers js:babel-core/register test/core-tests",
     "test-all": "mocha --compilers js:babel-core/register",
+    "postinstall": "node -p 'require(\"./check.js\")()'",
     "precommit": "lint-staged",
     "prepublish": "npm run lint && npm run transpile && cp src/phantomjs/config.json lib/phantomjs/",
     "transpile": "babel -d lib src/"
@@ -36,6 +37,7 @@
   },
   "dependencies": {
     "apartment": "^1.1.1",
+    "chalk": "^2.1.0",
     "css-fork-pocketjoso": "^2.2.1",
     "css-mediaquery": "^0.1.2",
     "jsesc": "^1.0.0",
@@ -70,6 +72,7 @@
     "tool"
   ],
   "files": [
+    "check.js",
     "lib/**/*.js",
     "lib/phantomjs/config.json"
   ],
