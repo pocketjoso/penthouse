@@ -45,6 +45,7 @@ const launchBrowserIfNeeded = async function (debuglog) {
       })
   }
   browser = await _browserLaunchPromise
+  _browserLaunchPromise = null
 }
 
 function readFilePromise (filepath, encoding) {
@@ -219,7 +220,17 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
           _browserPagesOpen
       )
       if (!forceTryRestartBrowser && e.message.indexOf('not opened') > -1) {
-        console.log('Chromium unexpecedly not opened - restart')
+        console.error(
+          'Chromium unexpecedly not opened - crashed? ' +
+            '\n_browserPagesOpen: ' +
+            _browserPagesOpen +
+            1 +
+            '\nurl: ' +
+            options.url +
+            '\nastRules: ' +
+            astRules.length
+        )
+        console.log('restarting chrome after crash')
         // for some reason Chromium is no longer opened;
         // perhaps it crashed
         browser = null
