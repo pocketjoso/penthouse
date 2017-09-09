@@ -2,15 +2,18 @@ import pruneNonCriticalCss from './browser-sandbox/pruneNonCriticalCss'
 import replacePageCss from './browser-sandbox/replacePageCss'
 import postformatting from './postformatting/'
 
+function blockinterceptedRequests (interceptedRequest) {
+  const isJsRequest = /\.js(\?.*)?$/.test(interceptedRequest.url)
+  if (isJsRequest) {
+    interceptedRequest.abort()
+  } else {
+    interceptedRequest.continue()
+  }
+}
+
 async function blockJsRequests (page) {
   await page.setRequestInterceptionEnabled(true)
-  page.on('request', interceptedRequest => {
-    if (/\.js(\?.*)?$/.test(interceptedRequest.url)) {
-      interceptedRequest.abort()
-    } else {
-      interceptedRequest.continue()
-    }
-  })
+  page.on('request', blockinterceptedRequests)
 }
 
 async function pruneNonCriticalCssLauncher ({
