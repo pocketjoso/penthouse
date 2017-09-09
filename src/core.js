@@ -2,15 +2,18 @@ import pruneNonCriticalCss from './browser-sandbox/pruneNonCriticalCss'
 import replacePageCss from './browser-sandbox/replacePageCss'
 import postformatting from './postformatting/'
 
+function blockinterceptedRequests (interceptedRequest) {
+  const isJsRequest = /\.js(\?.*)?$/.test(interceptedRequest.url)
+  if (isJsRequest) {
+    interceptedRequest.abort()
+  } else {
+    interceptedRequest.continue()
+  }
+}
+
 async function blockJsRequests (page) {
   await page.setRequestInterceptionEnabled(true)
-  page.on('request', interceptedRequest => {
-    if (/\.js(\?.*)?$/.test(interceptedRequest.url)) {
-      interceptedRequest.abort()
-    } else {
-      interceptedRequest.continue()
-    }
-  })
+  page.on('request', blockinterceptedRequests)
 }
 
 async function pruneNonCriticalCssLauncher ({
@@ -47,6 +50,15 @@ async function pruneNonCriticalCssLauncher ({
 
       clearTimeout(killTimeout)
       if (page) {
+        if (blockJSRequests) {
+          // page request listener will continue to emit interceptedRequest
+          // even after page.close, but now the continue/abort calls will throw
+          // and error that cannot be caught.
+          // issue on github:
+          // https://github.com/GoogleChrome/puppeteer/issues/695
+          // does not work
+          // page.removeListener('request', blockinterceptedRequests)
+        }
         await page.close()
       }
       if (error) {
