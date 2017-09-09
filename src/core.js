@@ -114,8 +114,9 @@ async function pruneNonCriticalCssLauncher ({
       // NOTE: have to set a timeout here,
       // even though we have our own timeout above,
       // just to override the default puppeteer timeout of 30s
+      debuglog('page load start')
       await page.goto(url, { timeout })
-      debuglog('page loaded')
+      debuglog('page load DONE')
 
       if (!page) {
         // in case we timed out
