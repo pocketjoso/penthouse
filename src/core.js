@@ -75,7 +75,7 @@ async function pruneNonCriticalCssLauncher ({
 
       if (customPageHeaders) {
         try {
-          await page.setExtraHTTPHeaders(customPageHeadersMap)
+          await page.setExtraHTTPHeaders(customPageHeaders)
         } catch (e) {
           debuglog('failed setting extra http headers: ' + e)
         }
