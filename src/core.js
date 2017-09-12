@@ -50,15 +50,6 @@ async function pruneNonCriticalCssLauncher ({
 
       clearTimeout(killTimeout)
       if (page) {
-        if (blockJSRequests) {
-          // page request listener will continue to emit interceptedRequest
-          // even after page.close, but now the continue/abort calls will throw
-          // and error that cannot be caught.
-          // issue on github:
-          // https://github.com/GoogleChrome/puppeteer/issues/695
-          // does not work
-          // page.removeListener('request', blockinterceptedRequests)
-        }
         await page.close()
       }
       if (error) {
