@@ -50,7 +50,7 @@ async function pruneNonCriticalCssLauncher ({
 
       clearTimeout(killTimeout)
       if (page) {
-        await page.close()
+        page.close()
       }
       if (error) {
         reject(error)
