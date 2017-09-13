@@ -18,7 +18,7 @@
   "license": "MIT",
   "main": "./lib/index.js",
   "engines": {
-    "node": ">=7.10.0"
+    "node": ">=6.4.0"
   },
   "scripts": {
     "lint": "standard \"src/**/*.js\"",
@@ -75,7 +75,7 @@
         "env",
         {
           "targets": {
-            "node": 7.1
+            "node": 6.4
           }
         }
       ]
