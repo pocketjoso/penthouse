@@ -34,11 +34,15 @@ const launchBrowserIfNeeded = async function (debuglog) {
   }
   if (!_browserLaunchPromise) {
     debuglog('no browser instance, launching new browser..')
-    _browserLaunchPromise = puppeteer
-      .launch({
+    let launchOptions = {
         ignoreHTTPSErrors: true,
         args: ['--disable-setuid-sandbox', '--no-sandbox']
-      })
+    };
+    if (PUPPETEER_EXECUTABLE_PATH) {
+        launchOptions.executablePath = PUPPETEER_EXECUTABLE_PATH
+    }
+    _browserLaunchPromise = puppeteer
+      .launch(launchOptions)
       .then(browser => {
         debuglog('new browser launched')
         return browser
@@ -267,6 +271,7 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
 const m = (module.exports = function (options, callback) {
   // init logging and debug output
   normalizeCss.DEBUG = m.DEBUG
+  const PUPPETEER_EXECUTABLE_PATH = m.PUPPETEER_EXECUTABLE_PATH
   const START_TIME = Date.now()
   const debuglog = function (msg, isError) {
     if (m.DEBUG) {
