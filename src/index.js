@@ -48,6 +48,16 @@ const launchBrowserIfNeeded = async function (debuglog) {
   _browserLaunchPromise = null
 }
 
+async function browserIsRunning () {
+  try {
+    // will throw 'Not opened' error if browser is not running
+    await browser.version()
+    return true
+  } catch (e) {
+    return false
+  }
+}
+
 function readFilePromise (filepath, encoding) {
   return new Promise((resolve, reject) => {
     fs.readFile(filepath, encoding, (err, content) => {
@@ -219,12 +229,11 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         'remove browser page for generateCriticalCss after ERROR, now: ' +
           _browserPagesOpen
       )
-      if (!forceTryRestartBrowser && e.message.indexOf('not opened') > -1) {
+      if (!forceTryRestartBrowser && !await browserIsRunning()) {
         console.error(
           'Chromium unexpecedly not opened - crashed? ' +
             '\n_browserPagesOpen: ' +
-            _browserPagesOpen +
-            1 +
+            (_browserPagesOpen + 1) +
             '\nurl: ' +
             options.url +
             '\nastRules: ' +
@@ -237,12 +246,15 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         _browserLaunchPromise = null
         await launchBrowserIfNeeded(debuglog)
         // retry
-        return generateCriticalCssWrapped(options, ast, {
-          debuglog,
-          stdErr,
-          START_TIME,
-          forceTryRestartBrowser
-        })
+        resolve(
+          generateCriticalCssWrapped(options, ast, {
+            debuglog,
+            stdErr,
+            START_TIME,
+            forceTryRestartBrowser
+          })
+        )
+        return
       }
       stdErr += e
       const err = new Error(stdErr)
