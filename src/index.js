@@ -239,12 +239,16 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
             '\nastRules: ' +
             astRules.length
         )
-        console.log('restarting chrome after crash')
         // for some reason Chromium is no longer opened;
         // perhaps it crashed
-        browser = null
-        _browserLaunchPromise = null
-        await launchBrowserIfNeeded(debuglog)
+        if (_browserLaunchPromise) {
+          // in this case the browser is already restarting
+          await _browserLaunchPromise
+        } else {
+          console.log('restarting chrome after crash')
+          browser = null
+          await launchBrowserIfNeeded(debuglog)
+        }
         // retry
         resolve(
           generateCriticalCssWrapped(options, ast, {
