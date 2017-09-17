@@ -321,6 +321,7 @@ const m = (module.exports = function (options, callback) {
 
       if (callback) {
         callback(error, returnValue)
+        return
       }
       if (error) {
         reject(error)
