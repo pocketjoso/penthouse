@@ -8,19 +8,16 @@
 
 ## About
 
-Penthouse is a tool generating critical path CSS for your web pages and web apps in order to speed up page rendering. Supply the tool with your site's full CSS, and the page you want to create the critical CSS for, and it will return all the CSS needed to render the above the fold content of the page. Read more about critical path css [here](http://www.phpied.com/css-and-the-critical-path/).
+Penthouse the original critical path css generator, helping you out to speed up page rendering for your websites. Supply your site's full CSS and the page you want to create the critical CSS for, and Penthouse will return the critical CSS needed to perfectly render the above the fold content of the page. Read more about critical path css [here](http://www.phpied.com/css-and-the-critical-path/).
 
-The process is automatic and the generated CSS is production ready as is. If you run into problems however, check out the [Problems section](#problems-with-generated-css) further down on this page.
+The process is automatic and the generated CSS is production ready as is. Behind the scenes Penthouse is using [puppeteer](https://github.com/GoogleChrome/puppeteer) to generate the critical css via the chromium:headless.
 
 ## Usage
 
 Penthouse can be used:
 
 * [as a Node module](#as-a-node-module)
-* [as a Grunt task](https://github.com/fatso83/grunt-penthouse)
-* as a Gulp task (just require Node module straight from your script)
 * via [the online version](#online-version)
-* [from the command line](#from-command-line)
 
 ### As a Node module
 
@@ -36,14 +33,10 @@ but if you prefer you can also pass in a traditional node-style `callback`
 function as the second argument.
 
 ```js
-const penthouse = require('penthouse'),
-    path = require('path'),
-    fs = require('fs'),
-    __basedir = './';
-
 penthouse({
     url: 'http://google.com',       // can also use file:/// protocol for local files
-    css: path.join(__basedir + 'static/main.css'),
+    cssString: 'body { color; red }', // the original css to extract critcial css from
+    // css: 'pathTo/main.css',      // path to original css file on disk
     // OPTIONAL params
     width: 1300,                    // viewport width
     height: 900,                    // viewport height
@@ -84,11 +77,6 @@ The Penthouse Node module can also be used in Gulp.
 
 <https://jonassebastianohlsson.com/criticalpathcssgenerator/>
 
-### From command line
-
-The command line version is no longer supported. Either use the [Node module](#as-a-node-module), or download the last
-supported command line version and follow the instructions in the README there: [v.0.3.6](https://github.com/pocketjoso/penthouse/releases/tag/v0.3.6).
-
 ## Troubleshooting
 
 ### Not working on Linux
@@ -121,8 +109,3 @@ Solution: Ensure all elements you want styled in the critical css appears in the
 #### Special glyphs not showing/showing incorrectly
 
 Problems with special characters like &#8594; after converting? Make sure you use the correct hexadecimal format in your CSS. You can always get this format from your browser console, by entering '&#8594;'`.charCodeAt(0).toString(16)` (answer for this arrow glyph is `2192`). When using hexadecimal format in CSS it needs to be prepended with a backslash, like so: `\2192` (f.e. `content: '\2192';`)
-
-### Other problems
-
-#### Penthouse errors
-Check that the filepath to the repo you are running Penthouse from does not contain any unusual characters - they are [known to cause problems](https://github.com/pocketjoso/penthouse/issues/156#issuecomment-299729664).
