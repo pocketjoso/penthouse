@@ -1,10 +1,10 @@
 'use strict'
 
-import generateScreenshots from 'css-compare-screenshots'
+import puppeteer from 'puppeteer'
 import { after, describe, it } from 'global-mocha'
 import path from 'path'
 import penthouse from '../lib'
-import normalizeCss from '../lib/normalize-css-module'
+import normalizeCss from '../lib/normalize-css'
 import rimraf from 'rimraf'
 
 import compareScreenshots from './util/compareScreenshots'
@@ -24,73 +24,81 @@ function normalisedCssAst (cssString) {
   // this is relevant for the extra closing brace test(s)
   return css.parse(css.stringify(css.parse(cssString, { silent: true }), { compress: true }))
 }
+function staticServerFileUrl (file) {
+  return 'file://' + path.join(__dirname, 'static-server', file)
+}
 
 describe('penthouse fault tolerant normalising css tests', function () {
   after(function () {
-    rimraf.sync(SCREENSHOT_DIST.replace(/\/$/, ''))
+    rimraf.sync(SCREENSHOT_DIST + '*')
   })
   this.timeout(20000)
 
-  it('should preserve escaped hex reference styles', function (done) {
+  it('should preserve escaped hex reference styles', async function (done) {
     // NOTE: the normalised CSS comes back with all quotes (for escaped hex refs only?)
     // as single quotes, regardless of what they were before.
     // This test will fail if the css uses double quotes (although false negative: still works)
     const cssPath = path.join(STATIC_SERVER_PATH, 'escaped-hex-reference-in-invalid.css')
-    const expected = fs.readFileSync(cssPath, 'utf8').replace('{ invalid }', '')
+    const css = fs.readFileSync(cssPath, 'utf8')
+
+    // because too lazy to create separate 'original' and 'expected' stylesheets (• -> \u2022)
+    const expected = css
+      .replace('{ invalid }', '')
+      .replace(/(['"])•(['"])/g, `$1\\2022$2`)
+      // chrome now turns all quotes into double quotes
+      // so match here
+      .replace(/'/g, '"')
+    const expectedAst = normalisedCssAst(expected)
+
+    const browser = await puppeteer.launch({
+      ignoreHTTPSErrors: true,
+      args: ['--disable-setuid-sandbox', '--no-sandbox']
+    })
 
     var options = {
-      url: path.join(STATIC_SERVER_PATH, 'page1.html'),
-      css: cssPath
+      css,
+      browser,
+      debuglog: () => {}
     }
 
-    normalizeCss(options,
-    function (err, result) {
-      if (err) {
-        done(err)
-      }
-      const resultAst = normalisedCssAst(
-        // because Chrome returns single quotes
-        result.replace(/"/g, '\'')
-      )
-      const expectedAst = normalisedCssAst(
-        // because too lazy to create separate 'original' and 'expected' stylesheets (• -> \u2022)
-        expected.replace(/['"]•['"]/g, '\'\\2022\'')
-      )
+    normalizeCss(options)
+    .then(result => {
+      const resultAst = normalisedCssAst(result)
       resultAst.should.eql(expectedAst)
+      browser.close()
       done()
+    })
+    .catch(err => {
+      browser.close()
+      done(err)
     })
   })
 
   it('should generate same layout for yeoman with css errors', function (done) {
     const screenshotFilename = 'yeoman'
     penthouse.DEBUG = false
-    console.log('get critical css..')
+    console.log('get critical css and screenshots..')
     penthouse({
-      url: path.join(STATIC_SERVER_PATH, 'yeoman.html'),
+      url: staticServerFileUrl('yeoman.html'),
       css: path.join(STATIC_SERVER_PATH, 'yeoman-full--invalid.css'),
       width: 800,
-      height: 450
-    }, function (err, result) {
-      if (err) {
-        done(err)
+      height: 450,
+      // for testing
+      screenshots: {
+        basePath: path.join(SCREENSHOT_DIST, screenshotFilename),
+        type: 'jpeg',
+        quality: 20
       }
-      console.log('generate screenshots..')
-      generateScreenshots({
-        url: path.join(__dirname, 'static-server', 'yeoman.html'),
-        css: result,
-        width: 800,
-        height: 450,
-        dist: SCREENSHOT_DIST,
-        fileName: screenshotFilename
-      }).then(function () {
-        console.log('compare screenshots..')
-        return compareScreenshots(
-          `${SCREENSHOT_DIST + screenshotFilename}-before.jpg`,
-          `${SCREENSHOT_DIST + screenshotFilename}-after.jpg`
-        )
-      }).then(done)
-        .catch(done)
     })
+    .then(function () {
+      console.log('compare screenshots..')
+      return compareScreenshots(
+        `${SCREENSHOT_DIST + screenshotFilename}-before.jpg`,
+        `${SCREENSHOT_DIST + screenshotFilename}-after.jpg`
+      )
+    })
+    .then(() => done())
+    .catch(done)
   })
 
   // NOTE: the functionality for handling extra closing brace errors is in

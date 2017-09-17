@@ -1,35 +1,62 @@
-/*
- * Node module wrapper for the PhantomJS script
- */
+import fs from 'fs'
+import cssAstFormatter from 'css-fork-pocketjoso'
+import puppeteer from 'puppeteer'
 
-'use strict'
-require('regenerator-runtime/runtime') // support Node 4
-
-const fs = require('fs')
-const tmp = require('tmp')
-const path = require('path')
-const spawn = require('child_process').spawn
-const phantomjs = require('phantomjs-prebuilt')
-const phantomJsBinPath = phantomjs.path
-const apartment = require('apartment')
-const cssAstFormatter = require('css-fork-pocketjoso')
-const osTmpdir = require('os-tmpdir')
-const postformatting = require('./postformatting/')
-const normalizeCss = require('./normalize-css-module')
-
-// for phantomjs
-const configString =
-  '--config=' + path.join(__dirname, 'phantomjs', 'config.json')
-const script = path.join(__dirname, 'phantomjs', 'core.js')
+import generateCriticalCss from './core'
+import normalizeCss from './normalize-css'
+import nonMatchingMediaQueryRemover from './non-matching-media-query-remover'
 
 const DEFAULT_VIEWPORT_WIDTH = 1300 // px
 const DEFAULT_VIEWPORT_HEIGHT = 900 // px
 const DEFAULT_TIMEOUT = 30000 // ms
 const DEFAULT_MAX_EMBEDDED_BASE64_LENGTH = 1000 // chars
 const DEFAULT_USER_AGENT = 'Penthouse Critical Path CSS Generator'
-const TMP_DIR = osTmpdir()
 const DEFAULT_RENDER_WAIT_TIMEOUT = 100
 const DEFAULT_BLOCK_JS_REQUESTS = true
+
+function exitHandler () {
+  if (browser && browser.close) {
+    browser && browser.close && browser.close()
+    browser = null
+  }
+  process.exit(0)
+}
+
+// shared between penthouse calls
+let browser = null
+let _browserLaunchPromise = null
+// browser.pages is not implemented, so need to count myself to not close browser
+// until all pages used by penthouse are closed (i.e. individual calls are done)
+let _browserPagesOpen = 0
+const launchBrowserIfNeeded = async function (debuglog) {
+  if (browser) {
+    return
+  }
+  if (!_browserLaunchPromise) {
+    debuglog('no browser instance, launching new browser..')
+    _browserLaunchPromise = puppeteer
+      .launch({
+        ignoreHTTPSErrors: true,
+        args: ['--disable-setuid-sandbox', '--no-sandbox']
+      })
+      .then(browser => {
+        debuglog('new browser launched')
+        return browser
+      })
+  }
+  browser = await _browserLaunchPromise
+  _browserLaunchPromise = null
+}
+
+async function browserIsRunning () {
+  try {
+    // will throw 'Not opened' error if browser is not running
+    await browser.version()
+    return true
+  } catch (e) {
+    return false
+  }
+}
 
 function readFilePromise (filepath, encoding) {
   return new Promise((resolve, reject) => {
@@ -42,82 +69,25 @@ function readFilePromise (filepath, encoding) {
   })
 }
 
-const toPhantomJsOptions = function (maybeOptionsHash) {
-  if (typeof maybeOptionsHash !== 'object') {
-    return []
-  }
-  return Object.keys(maybeOptionsHash).map(function (optName) {
-    return '--' + optName + '=' + maybeOptionsHash[optName]
-  })
-}
-
-function penthouseScriptArgs (options, astFilename) {
+function prepareForceIncludeForSerialization (forceInclude = []) {
   // need to annotate forceInclude values to allow RegExp to pass through JSON serialization
-  const forceInclude = (options.forceInclude || [])
-    .map(function (forceIncludeValue) {
-      if (
-        typeof forceIncludeValue === 'object' &&
-        forceIncludeValue.constructor.name === 'RegExp'
-      ) {
-        return {
-          type: 'RegExp',
-          source: forceIncludeValue.source,
-          flags: forceIncludeValue.flags
-        }
+  return forceInclude.map(function (forceIncludeValue) {
+    if (
+      typeof forceIncludeValue === 'object' &&
+      forceIncludeValue.constructor.name === 'RegExp'
+    ) {
+      return {
+        type: 'RegExp',
+        source: forceIncludeValue.source,
+        flags: forceIncludeValue.flags
       }
-      return { value: forceIncludeValue }
-    })
-  // TODO: should just stringify the whole thing and parse inside, rather than doing like this,
-  // since the command line util no longer used
-  return [
-    options.url || '',
-    astFilename,
-    options.width || DEFAULT_VIEWPORT_WIDTH,
-    options.height || DEFAULT_VIEWPORT_HEIGHT,
-    JSON.stringify(forceInclude), // stringify to maintain array
-    options.userAgent || DEFAULT_USER_AGENT,
-    options.renderWaitTime || DEFAULT_RENDER_WAIT_TIMEOUT,
-    typeof options.blockJSRequests !== 'undefined'
-      ? options.blockJSRequests
-      : DEFAULT_BLOCK_JS_REQUESTS,
-    // object, needs to be stringified
-    JSON.stringify(options.customPageHeaders || {}),
-    m.DEBUG
-  ]
-}
-
-function writeToTmpFile (string) {
-  return new Promise((resolve, reject) => {
-    tmp.file({ dir: TMP_DIR }, (err, path, fd, cleanupCallback) => {
-      if (err) {
-        return reject(err)
-      }
-
-      fs.writeFile(path, string, err => {
-        if (err) {
-          return reject(err)
-        }
-        resolve({ path, cleanupCallback })
-      })
-    })
+    }
+    return { value: forceIncludeValue }
   })
 }
 
-// const so not hoisted, so can get regeneratorRuntime inlined above, needed for Node 4
-const generateAstFromCssFile = async function generateAstFromCssFile (
-  options,
-  { debuglog, stdErr }
-) {
-  // read the css and parse the ast
-  // if errors, normalize css and try again
-  // only then pass css to penthouse
-  let css
-  try {
-    css = await readFilePromise(options.css, 'utf8')
-  } catch (e) {
-    throw e
-  }
-  stdErr += debuglog('opened css file')
+const astFromCss = async function astFromCss (options, { debuglog, stdErr }) {
+  const css = options.cssString.replace(/￿/g, '\f042')
 
   let ast = cssAstFormatter.parse(css, { silent: true })
   const parsingErrors = ast.stylesheet.parsingErrors.filter(function (err) {
@@ -133,192 +103,180 @@ const generateAstFromCssFile = async function generateAstFromCssFile (
   // NOTE: only informing about first error, even if there were more than one.
   const parsingErrorMessage = parsingErrors[0].message
   if (options.strict === true) {
-    throw parsingErrorMessage
+    // TODO: filename will be 'undefined', could enhance this error message
+    throw new Error(parsingErrorMessage)
   }
 
   stdErr += debuglog(
     "Failed ast formatting css '" + parsingErrorMessage + "': "
   )
-  return new Promise((resolve, reject) => {
-    normalizeCss(
-      {
-        url: options.url || '',
-        css: options.css || '',
-        userAgent: options.userAgent || DEFAULT_USER_AGENT,
-        timeout: options.timeout,
-        debug: m.DEBUG
-      },
-      function (err, normalizedCss) {
-        if (err) {
-          reject(err)
-          return
-        }
-        stdErr += debuglog(
-          'normalized css: ' +
-            (normalizedCss ? normalizedCss.length : typeof normalizedCss)
-        )
-        if (!normalizedCss) {
-          reject(
-            new Error(
-              "Failed to normalize CSS errors. Run Penthouse with 'strict: true' option to see these css errors."
-            )
-          )
-          return
-        }
-        ast = cssAstFormatter.parse(normalizedCss, { silent: true })
-        stdErr += debuglog('parsed normalised css into ast')
-        const parsingErrors = ast.stylesheet.parsingErrors.filter(function (
-          err
-        ) {
-          // the forked version of the astParser used fixes these errors itself
-          return err.reason !== 'Extra closing brace'
-        })
-        if (parsingErrors.length > 0) {
-          stdErr += debuglog('..with parsingErrors: ' + parsingErrors[0].reason)
-        }
-        resolve(ast)
-      }
+
+  let normalizedCss
+  try {
+    _browserPagesOpen++
+    debuglog('adding browser page for normalize, now: ' + _browserPagesOpen)
+    normalizedCss = await normalizeCss({
+      css,
+      browser,
+      debuglog
+    })
+    _browserPagesOpen--
+    debuglog('removing browser page for normalize, now: ' + _browserPagesOpen)
+  } catch (e) {
+    _browserPagesOpen--
+    debuglog(
+      'removing browser page for normalize after error, now: ' +
+        _browserPagesOpen
     )
+    throw e
+  }
+
+  stdErr += debuglog(
+    'normalized css: ' +
+      (normalizedCss ? normalizedCss.length : typeof normalizedCss)
+  )
+  if (!normalizedCss) {
+    throw new Error(
+      "Failed to normalize CSS errors. Run Penthouse with 'strict: true' option to see these css errors."
+    )
+  }
+  ast = cssAstFormatter.parse(normalizedCss, { silent: true })
+  stdErr += debuglog('parsed normalised css into ast')
+  const finalParsingErrors = ast.stylesheet.parsingErrors.filter(function (err) {
+    // the forked version of the astParser used fixes these errors itself
+    return err.reason !== 'Extra closing brace'
   })
+  if (finalParsingErrors.length > 0) {
+    stdErr += debuglog('..with parsingErrors: ' + finalParsingErrors[0].reason)
+  }
+  return ast
 }
 
 // const so not hoisted, so can get regeneratorRuntime inlined above, needed for Node 4
-const generateCriticalCss = async function generateCriticalCss (
+const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
   options,
   ast,
-  { debuglog, stdErr, START_TIME }
+  { debuglog, stdErr, START_TIME, forceTryRestartBrowser }
 ) {
+  const width = parseInt(options.width || DEFAULT_VIEWPORT_WIDTH, 10)
+  const height = parseInt(options.height || DEFAULT_VIEWPORT_HEIGHT, 10)
   const timeoutWait = options.timeout || DEFAULT_TIMEOUT
-  let debuggingHelp = ''
-  let stdOut = ''
 
-  const {
-    path: astFilePath,
-    cleanupCallback: astFileCleanupCallback
-  } = await writeToTmpFile(JSON.stringify(ast))
+  // first strip out non matching media queries
+  const astRules = nonMatchingMediaQueryRemover(
+    ast.stylesheet.rules,
+    width,
+    height
+  )
+  stdErr += debuglog('stripped out non matching media queries')
 
-  const scriptArgs = penthouseScriptArgs(options, astFilePath)
-  const phantomJsArgs = [
-    configString,
-    ...toPhantomJsOptions(options.phantomJsOptions),
-    script,
-    ...scriptArgs
-  ]
+  // always forceInclude '*', 'html', and 'body' selectors
+  const forceInclude = prepareForceIncludeForSerialization(
+    [{ value: '*' }, { value: 'html' }, { value: 'body' }].concat(
+      options.forceInclude || []
+    )
+  )
 
-  const cp = spawn(phantomJsBinPath, phantomJsArgs)
-
-  return new Promise((resolve, reject) => {
-    // Errors arise before the process starts
-    cp.on('error', function (err) {
-      debuggingHelp += 'Error executing penthouse using ' + phantomJsBinPath
-      debuggingHelp += err.stack
-      err.debug = debuggingHelp
-      reject(err)
-      // remove the tmp file we created
-      // library would clean up after process ends, but this is better for long living proccesses
-      astFileCleanupCallback()
-    })
-
-    cp.stdout.on('data', function (data) {
-      stdOut += data
-    })
-
-    cp.stderr.on('data', function (data) {
-      stdErr += debuglog(String(data)) || data
-    })
-
-    cp.on('close', function (code) {
-      if (code !== 0) {
-        debuggingHelp += 'PhantomJS process closed with code ' + code
-      }
-    })
-
-    // kill after timeout
-    const killTimeout = setTimeout(function () {
-      const msg = 'Penthouse timed out after ' + timeoutWait / 1000 + 's. '
-      debuggingHelp += msg
-      stdErr += msg
-      cp.kill('SIGTERM')
-    }, timeoutWait)
-
-    cp.on('exit', function (code) {
-      if (code === 0) {
-        stdErr += debuglog('recevied (good) exit signal; process stdOut')
-        let formattedCss
-        try {
-          formattedCss = postformatting(
-            stdOut,
-            {
-              maxEmbeddedBase64Length: typeof options.maxEmbeddedBase64Length ===
-                'number'
-                ? options.maxEmbeddedBase64Length
-                : DEFAULT_MAX_EMBEDDED_BASE64_LENGTH
-            },
-            m.DEBUG,
-            START_TIME
-          )
-        } catch (e) {
-          reject(e)
-          return
-        }
-
-        if (formattedCss.trim().length === 0) {
-          // TODO: this error should surface to user
-          stdErr += debuglog(
-            'Note: Generated critical css was empty for URL: ' + options.url
-          )
-          resolve(formattedCss)
-          return
-        }
-
-        // remove irrelevant css properties
-        try {
-          const cleanedCss = apartment(formattedCss, {
-            properties: [
-              '(.*)transition(.*)',
-              'cursor',
-              'pointer-events',
-              '(-webkit-)?tap-highlight-color',
-              '(.*)user-select'
-            ],
-            // TODO: move into core phantomjs script
-            selectors: ['::(-moz-)?selection']
-          })
-          resolve(cleanedCss)
-        } catch (e) {
-          reject(e)
-          return
-        }
-      } else {
-        debuggingHelp += 'PhantomJS process exited with code ' + code
-        const err = new Error(stdErr + stdOut)
-        err.code = code
-        err.debug = debuggingHelp
-        err.stdout = stdOut
-        err.stderr = stdErr
-        reject(err)
-      }
-      // we're done here - clean up
-      clearTimeout(killTimeout)
-      // can't rely on that the parent process will be terminated any time soon,
-      // need to rm listeners and kill child process manually
+  // promise so we can handle errors and reject,
+  // instead of throwing what would otherwise be uncaught errors in node process
+  return new Promise(async (resolve, reject) => {
+    const cleanupAndExit = ({ returnValue, error }) => {
       process.removeListener('exit', exitHandler)
-      process.removeListener('SIGTERM', sigtermHandler)
-      // remove the tmp file we created
-      // library would clean up after process ends, but this is better for long living proccesses
-      astFileCleanupCallback()
-      cp.kill('SIGTERM')
-    })
+      process.removeListener('SIGTERM', exitHandler)
+      process.removeListener('SIGINT', exitHandler)
 
-    function exitHandler () {
-      cp.kill('SIGTERM')
+      if (error) {
+        reject(error)
+      } else {
+        resolve(returnValue)
+      }
     }
-    function sigtermHandler () {
-      cp.kill('SIGTERM')
-      process.exit(0)
+
+    stdErr += debuglog('call generateCriticalCssWrapped')
+    let formattedCss
+    try {
+      _browserPagesOpen++
+      debuglog(
+        'adding browser page for generateCriticalCss, now: ' + _browserPagesOpen
+      )
+      formattedCss = await generateCriticalCss({
+        browser,
+        url: options.url,
+        astRules,
+        width,
+        height,
+        forceInclude,
+        userAgent: options.userAgent || DEFAULT_USER_AGENT,
+        renderWaitTime: options.renderWaitTime || DEFAULT_RENDER_WAIT_TIMEOUT,
+        timeout: timeoutWait,
+        blockJSRequests: options.blockJSRequests || DEFAULT_BLOCK_JS_REQUESTS,
+        customPageHeaders: options.customPageHeaders,
+        screenshots: options.screenshots,
+        // postformatting
+        maxEmbeddedBase64Length: typeof options.maxEmbeddedBase64Length ===
+          'number'
+          ? options.maxEmbeddedBase64Length
+          : DEFAULT_MAX_EMBEDDED_BASE64_LENGTH,
+        debuglog
+      })
+      _browserPagesOpen--
+      debuglog(
+        'remove browser page for generateCriticalCss, now: ' + _browserPagesOpen
+      )
+    } catch (e) {
+      _browserPagesOpen--
+      debuglog(
+        'remove browser page for generateCriticalCss after ERROR, now: ' +
+          _browserPagesOpen
+      )
+      if (!forceTryRestartBrowser && !await browserIsRunning()) {
+        console.error(
+          'Chromium unexpecedly not opened - crashed? ' +
+            '\n_browserPagesOpen: ' +
+            (_browserPagesOpen + 1) +
+            '\nurl: ' +
+            options.url +
+            '\nastRules: ' +
+            astRules.length
+        )
+        // for some reason Chromium is no longer opened;
+        // perhaps it crashed
+        if (_browserLaunchPromise) {
+          // in this case the browser is already restarting
+          await _browserLaunchPromise
+        } else {
+          console.log('restarting chrome after crash')
+          browser = null
+          await launchBrowserIfNeeded(debuglog)
+        }
+        // retry
+        resolve(
+          generateCriticalCssWrapped(options, ast, {
+            debuglog,
+            stdErr,
+            START_TIME,
+            forceTryRestartBrowser
+          })
+        )
+        return
+      }
+      stdErr += e
+      const err = new Error(stdErr)
+      err.stderr = stdErr
+      cleanupAndExit({ error: err })
+      return
     }
-    process.on('exit', exitHandler)
-    process.on('SIGTERM', sigtermHandler)
+    stdErr += debuglog('generateCriticalCss done')
+    if (formattedCss.trim().length === 0) {
+      // TODO: this error should surface to user
+      stdErr += debuglog(
+        'Note: Generated critical css was empty for URL: ' + options.url
+      )
+      cleanupAndExit({ returnValue: '' })
+      return
+    }
+
+    cleanupAndExit({ returnValue: formattedCss })
   })
 }
 
@@ -345,19 +303,65 @@ const m = (module.exports = function (options, callback) {
     START_TIME
   }
 
-  return generateAstFromCssFile(options, logging)
-    .then(ast => generateCriticalCss(options, ast, logging))
-    .then(criticalCss => {
-      if (callback) {
-        callback(null, criticalCss)
+  process.on('exit', exitHandler)
+  process.on('SIGTERM', exitHandler)
+  process.on('SIGINT', exitHandler)
+
+  return new Promise(async (resolve, reject) => {
+    // still supporting legacy callback way of calling Penthouse
+    const cleanupAndExit = ({ returnValue, error = null }) => {
+      if (browser && !options.unstableKeepBrowserAlive) {
+        if (_browserPagesOpen > 0) {
+          debuglog(
+            'keeping browser open as _browserPagesOpen: ' + _browserPagesOpen
+          )
+        } else {
+          browser.close()
+          browser = null
+          _browserLaunchPromise = null
+          debuglog('closed browser')
+        }
       }
-      return criticalCss
-    })
-    .catch(err => {
+
       if (callback) {
-        callback(err)
+        callback(error, returnValue)
         return
       }
-      throw err
-    })
+      if (error) {
+        reject(error)
+      } else {
+        resolve(returnValue)
+      }
+    }
+
+    // support legacy mode of passing in css file path instead of string
+    if (!options.cssString && options.css) {
+      try {
+        const cssString = await readFilePromise(options.css, 'utf8')
+        options = Object.assign({}, options, { cssString })
+      } catch (err) {
+        debuglog('error reading css file: ' + options.css + ', error: ' + err)
+        cleanupAndExit({ error: err })
+        return
+      }
+    }
+    if (!options.cssString) {
+      debuglog('Passed in css is empty')
+      cleanupAndExit({ error: new Error('css should not be empty') })
+      return
+    }
+
+    await launchBrowserIfNeeded(debuglog)
+    try {
+      const ast = await astFromCss(options, logging)
+      const criticalCss = await generateCriticalCssWrapped(
+        options,
+        ast,
+        logging
+      )
+      cleanupAndExit({ returnValue: criticalCss })
+    } catch (err) {
+      cleanupAndExit({ error: err })
+    }
+  })
 })

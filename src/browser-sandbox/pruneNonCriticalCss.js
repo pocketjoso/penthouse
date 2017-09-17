@@ -1,137 +1,23 @@
-/* eslint-env phantomjs */
-'use strict'
-
-var fs = require('fs')
-// phantom js related
-var system = require('system')
-var webpage = require('webpage')
-
-var nonMatchingMediaQueryRemover = require('./non-matching-media-query-remover')
-
-var GENERATION_DONE = 'GENERATION_DONE'
-
-var stdout = system.stdout // for using this as a file
-var page // initialised in prepareNewPage
-
-var args = system.args
-if (args.length < 4) {
-  errorlog('Not enough arguments.')
-  phantomExit(1)
-}
-
-var criticalCssOptions = {
-  url: encodeURI(args[1]),
-  ast: args[2],
-  width: args[3],
-  height: args[4],
-  // always forceInclude '*', 'html', and 'body' selectors
-  forceInclude: [{ value: '*' }, { value: 'html' }, { value: 'body' }].concat(
-    JSON.parse(args[5]) || []
-  ),
-  userAgent: args[6],
-  renderWaitTime: parseInt(args[7], 10),
-  blockJSRequests: args[8],
-  customPageHeaders: JSON.parse(args[9]) || {},
-  debugMode: args[10] === 'true'
-}
-
-function debuglog (msg, isError) {
-  if (criticalCssOptions.debugMode) {
-    system.stderr.write((isError ? 'ERR: ' : '') + msg)
-  }
-}
-
-// monkey patch for directing errors to stderr
-// https://github.com/ariya/phantomjs/issues/10150#issuecomment-28707859
-function errorlog (msg) {
-  if (criticalCssOptions.debugMode) {
-    debuglog(msg, true)
-  } else {
-    system.stderr.write(msg)
-  }
-}
-
-function prepareNewPage () {
-  debuglog('prepareNewPage')
-  page = webpage.create()
-  // don't confuse analytics more than necessary when visiting websites
-  page.settings.userAgent = criticalCssOptions.userAgent
-  page.customHeaders = criticalCssOptions.customPageHeaders
-
-  /* prevent page JS errors from being output to final CSS */
-  page.onError = function () {
-    // do nothing
-  }
-
-  page.onConsoleMessage = function (msg) {
-    // filter out console messages from the page
-    // - the ones sent by penthouse for debugging has 'debug: ' prefix.
-    if (/^debug: /.test(msg)) {
-      debuglog(msg.replace(/^debug: /, ''))
-    }
-  }
-
-  page.onResourceRequested = function (requestData, request) {
-    if (
-      criticalCssOptions.blockJSRequests !== 'false' &&
-      /\.js(\?.*)?$/.test(requestData.url)
-    ) {
-      request.abort()
-    }
-  }
-
-  page.onResourceError = function (resourceError) {
-    page.reason = resourceError.errorString
-    page.reason_url = resourceError.url // jshint ignore: line
-  }
-  page.onCallback = function (callbackObject) {
-    if (callbackObject.status === GENERATION_DONE) {
-      debuglog('GENERATION_DONE')
-      returnCssFromAstRules(callbackObject.rules)
-    }
-  }
-}
-
-function returnCssFromAstRules (criticalRules) {
-  debuglog('returnCssFromAstRules')
-  try {
-    if (criticalRules && criticalRules.length > 0) {
-      stdout.write(JSON.stringify(criticalRules))
-      debuglog('finalCss: write - DONE!')
-      phantomExit(0)
-    } else {
-      // No css. Warning will be raised later in process.
-      // for consisteny, still generate output (will be empty)
-      stdout.write([JSON.stringify([])])
-      phantomExit(0)
-    }
-  } catch (ex) {
-    errorlog('error in returnCssFromAstRules: ' + ex)
-    phantomExit(1)
-  }
-}
-
-// discard stdout from phantom exit
-function phantomExit (code) {
-  if (page) {
-    page.close()
-  }
-  setTimeout(function () {
-    phantom.exit(code)
-  }, 0)
-}
-
-// called inside a sandboxed environment inside phantomjs - no outside references
-// arguments and return value must be primitives
-// @see http://phantomjs.org/api/webpage/method/evaluate.html
-function pruneNonCriticalCss (
+// executed inside sandboxed browser environment,
+// no access to scrope outside of function
+export default function pruneNonCriticalCss ({
   astRules,
   forceInclude,
-  renderWaitTime,
-  doneStatus
-) {
+  renderWaitTime
+}) {
   console.log('debug: pruneNonCriticalCss')
   var h = window.innerHeight
+  // TODO: bind with forceInclude argument instead
+  function matchesForceInclude (selector) {
+    return forceInclude.some(function (includeSelector) {
+      if (includeSelector.type === 'RegExp') {
+        const { source, flags } = includeSelector
+        const re = new RegExp(source, flags)
+        return re.test(selector)
+      }
+      return includeSelector.value === selector
+    })
+  }
 
   var psuedoSelectorsToKeep = [
     ':before',
@@ -153,7 +39,7 @@ function pruneNonCriticalCss (
   // primarily because getBoundingClientRect() can be slow to query,
   // and some stylesheets have lots of generic selectors (like '.button', '.fa' etc)
   var isElementAboveFoldCache = []
-  var isElementAboveFold = function (element) {
+  function isElementAboveFold (element) {
     // no support for Array.find
     var matching = isElementAboveFoldCache.filter(c => c.element === element)
     var cached = matching && matching[0]
@@ -186,18 +72,7 @@ function pruneNonCriticalCss (
     return aboveFold
   }
 
-  var matchesForceInclude = function (selector) {
-    return forceInclude.some(function (includeSelector) {
-      if (includeSelector.type === 'RegExp') {
-        const { source, flags } = includeSelector
-        const re = new RegExp(source, flags)
-        return re.test(selector)
-      }
-      return includeSelector.value === selector
-    })
-  }
-
-  var isSelectorCritical = function (selector) {
+  function isSelectorCritical (selector) {
     if (matchesForceInclude(selector.trim())) {
       return true
     }
@@ -256,7 +131,7 @@ function pruneNonCriticalCss (
     return aboveFold
   }
 
-  var isCssRuleCritical = function (rule) {
+  function isCssRuleCritical (rule) {
     if (rule.type === 'rule') {
       // check what, if any selectors are found above fold
       rule.selectors = rule.selectors.filter(isSelectorCritical)
@@ -296,79 +171,38 @@ function pruneNonCriticalCss (
     return false
   }
 
-  var processCssRules = function () {
+  function processCssRules (astRules) {
     console.log('debug: processCssRules BEFORE')
     var criticalRules = astRules.filter(isCssRuleCritical)
     console.log('debug: processCssRules AFTER')
 
-    // we're done - call final function to exit outside of phantom evaluate scope
-    window.callPhantom({
-      status: doneStatus,
-      rules: criticalRules
+    return criticalRules
+  }
+
+  function pollUntilTimePassed (start, timeToPass) {
+    return new Promise(resolve => {
+      window.requestAnimationFrame(() => {
+        const timePassed = Date.now() - start
+        if (timePassed >= timeToPass) {
+          resolve()
+        } else {
+          resolve(pollUntilTimePassed(start, timeToPass))
+        }
+      })
     })
+  }
+  // not using timeout because does not work with JS disabled
+  function sleep (time) {
+    const start = Date.now()
+    return pollUntilTimePassed(start, time)
   }
 
   // give some time (renderWaitTime) for sites like facebook that build their page dynamically,
   // otherwise we can miss some selectors (and therefor rules)
   // --tradeoff here: if site is too slow with dynamic content,
   // it doesn't deserve to be in critical path.
-  setTimeout(processCssRules, renderWaitTime)
-}
-
-/*
- * Tests each selector in css file at specified resolution,
- * to see if any such elements appears above the fold on the page
- * calls callPhantom when done, with an updated AST rules list
- *
- * @param options.url the url as a string
- * @param options.ast the css as an AST object
- * @param options.width the width of viewport
- * @param options.height the height of viewport
- --------------------------------------------------------- */
-function getCriticalPathCss (options) {
-  debuglog('getCriticalPathCss')
-  prepareNewPage()
-  page.viewportSize = {
-    width: options.width,
-    height: options.height
-  }
-  // first strip out non matching media queries
-  var astRules = nonMatchingMediaQueryRemover(
-    options.ast.stylesheet.rules,
-    options.width,
-    options.height
-  )
-  debuglog('stripped out non matching media queries')
-
-  page.open(options.url, function (status) {
-    if (status === 'success') {
-      debuglog('page opened')
-      page.evaluate(
-        pruneNonCriticalCss,
-        astRules,
-        options.forceInclude,
-        options.renderWaitTime,
-        GENERATION_DONE
-      )
-    } else {
-      errorlog("Error opening url '" + page.reason_url + "': " + page.reason) // jshint ignore: line
-      phantomExit(1)
-    }
+  return new Promise(resolve => resolve(sleep(renderWaitTime))).then(() => {
+    console.log('debug: waited for renderWaitTime: ' + renderWaitTime)
+    return processCssRules(astRules)
   })
 }
-
-debuglog('Penthouse core start')
-var ast
-try {
-  var f = fs.open(criticalCssOptions.ast, 'r')
-  ast = f.read()
-  debuglog('opened ast from file')
-  ast = JSON.parse(ast)
-  debuglog('parsed ast from json')
-} catch (e) {
-  errorlog(e)
-  phantomExit(1)
-}
-
-criticalCssOptions.ast = ast
-getCriticalPathCss(criticalCssOptions)
