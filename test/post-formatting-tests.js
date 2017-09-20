@@ -3,6 +3,7 @@
 import css from 'css-fork-pocketjoso'
 import { describe, it } from 'global-mocha'
 import path from 'path'
+import penthouse from '../lib/'
 import { readFileSync as read } from 'fs'
 import normaliseCssAst from './util/normaliseCssAst'
 import chai from 'chai'
@@ -12,6 +13,10 @@ import ffRemover from '../lib/postformatting/unused-fontface-remover'
 import unusedKeyframeRemover from '../lib/postformatting/unused-keyframe-remover'
 import embeddedbase64Remover from '../lib/postformatting/embedded-base64-remover'
 import nonMatchingMediaQueryRemover from '../lib/non-matching-media-query-remover'
+
+function staticServerFileUrl (file) {
+  return 'file://' + path.join(__dirname, 'static-server', file)
+}
 
 process.setMaxListeners(0)
 
@@ -74,5 +79,32 @@ describe('penthouse post formatting tests', function () {
     } catch (ex) {
       done(ex)
     }
+  })
+
+  it('should not remove transitions but still remove cursor from css', function (done) {
+    var fullCssFilePath = path.join(__dirname, 'static-server', 'transition-full.css')
+    var expectedCssFilePath = path.join(__dirname, 'static-server', 'transition-crit--expected.css')
+    var expectedCss = read(expectedCssFilePath).toString()
+
+    penthouse({
+      url: staticServerFileUrl('transition.html'),
+      css: fullCssFilePath,
+      width: 800,
+      height: 450,
+      propertiesToRemove: [
+        'cursor',
+        'pointer-events',
+        '(-webkit-)?tap-highlight-color',
+        '(.*)user-select'
+      ]
+    })
+      .then(result => {
+        var resultAst = normaliseCssAst(result)
+        var expectedAst = normaliseCssAst(expectedCss)
+
+        resultAst.should.eql(expectedAst)
+        done()
+      })
+      .catch(done)
   })
 })

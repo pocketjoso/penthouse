@@ -7,6 +7,7 @@ import unusedKeyframeRemover from './unused-keyframe-remover'
 
 export default function postformatting ({
   criticalAstRules,
+  propertiesToRemove,
   maxEmbeddedBase64Length,
   debuglog
 }) {
@@ -29,15 +30,10 @@ export default function postformatting ({
   finalCss = ffRemover(finalCss)
   debuglog('postformatting: ffRemover')
 
+  debuglog('postformatting: propertiesToRemove')
   // remove irrelevant css properties
   finalCss = apartment(finalCss, {
-    properties: [
-      '(.*)transition(.*)',
-      'cursor',
-      'pointer-events',
-      '(-webkit-)?tap-highlight-color',
-      '(.*)user-select'
-    ],
+    properties: propertiesToRemove,
     // TODO: move into pruneNonCriticalCss script
     selectors: ['::(-moz-)?selection']
   })

@@ -24,19 +24,19 @@ async function pruneNonCriticalCssLauncher ({
   height,
   forceInclude,
   userAgent,
-  timeout,
   renderWaitTime,
+  timeout,
   blockJSRequests,
   customPageHeaders,
-  maxEmbeddedBase64Length,
   screenshots,
+  propertiesToRemove,
+  maxEmbeddedBase64Length,
   debuglog
 }) {
   let _hasExited = false
   const takeScreenshots = screenshots && screenshots.basePath
-  const screenshotExtension = takeScreenshots && screenshots.type === 'jpeg'
-    ? '.jpg'
-    : '.png'
+  const screenshotExtension =
+    takeScreenshots && screenshots.type === 'jpeg' ? '.jpg' : '.png'
 
   return new Promise(async (resolve, reject) => {
     debuglog('Penthouse core start')
@@ -134,6 +134,7 @@ async function pruneNonCriticalCssLauncher ({
 
       const formattedCss = postformatting({
         criticalAstRules,
+        propertiesToRemove,
         maxEmbeddedBase64Length,
         debuglog
       })

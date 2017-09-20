@@ -13,6 +13,13 @@ const DEFAULT_MAX_EMBEDDED_BASE64_LENGTH = 1000 // chars
 const DEFAULT_USER_AGENT = 'Penthouse Critical Path CSS Generator'
 const DEFAULT_RENDER_WAIT_TIMEOUT = 100
 const DEFAULT_BLOCK_JS_REQUESTS = true
+const DEFAULT_PROPERTIES_TO_REMOVE = [
+  '(.*)transition(.*)',
+  'cursor',
+  'pointer-events',
+  '(-webkit-)?tap-highlight-color',
+  '(.*)user-select'
+]
 
 function exitHandler () {
   if (browser && browser.close) {
@@ -162,6 +169,9 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
   const height = parseInt(options.height || DEFAULT_VIEWPORT_HEIGHT, 10)
   const timeoutWait = options.timeout || DEFAULT_TIMEOUT
 
+  // Merge properties with default ones
+  const propertiesToRemove =
+    options.propertiesToRemove || DEFAULT_PROPERTIES_TO_REMOVE
   // first strip out non matching media queries
   const astRules = nonMatchingMediaQueryRemover(
     ast.stylesheet.rules,
@@ -213,10 +223,11 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         customPageHeaders: options.customPageHeaders,
         screenshots: options.screenshots,
         // postformatting
-        maxEmbeddedBase64Length: typeof options.maxEmbeddedBase64Length ===
-          'number'
-          ? options.maxEmbeddedBase64Length
-          : DEFAULT_MAX_EMBEDDED_BASE64_LENGTH,
+        propertiesToRemove,
+        maxEmbeddedBase64Length:
+          typeof options.maxEmbeddedBase64Length === 'number'
+            ? options.maxEmbeddedBase64Length
+            : DEFAULT_MAX_EMBEDDED_BASE64_LENGTH,
         debuglog
       })
       _browserPagesOpen--
