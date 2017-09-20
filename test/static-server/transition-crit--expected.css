@@ -1,0 +1,10 @@
+body {
+    font-size: 12px;
+}
+
+.iamWithTransition {
+    color: #000;
+    font-weight: 400;
+    -webkit-transition: .6s ease-in-out left;
+    transition: .6s ease-in-out left;
+}
