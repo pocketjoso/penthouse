@@ -40,9 +40,16 @@ penthouse({
     // OPTIONAL params
     width: 1300,                    // viewport width
     height: 900,                    // viewport height
-    forceInclude: [
+    forceInclude: [ // selectors to keep
       '.keepMeEvenIfNotSeenInDom',
       /^\.regexWorksToo/
+    ],
+    propertiesToRemove: [
+      '(.*)transition(.*)',
+      'cursor',
+      'pointer-events',
+      '(-webkit-)?tap-highlight-color',
+      '(.*)user-select'
     ],
     timeout: 30000,                 // ms; abort critical CSS generation after this timeout
     strict: false,                  // set to true to throw on CSS errors (will run faster if no errors)
