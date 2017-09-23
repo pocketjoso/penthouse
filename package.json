@@ -39,7 +39,7 @@
     "css-fork-pocketjoso": "^2.2.1",
     "css-mediaquery": "^0.1.2",
     "jsesc": "^1.0.0",
-    "puppeteer": "GoogleChrome/puppeteer"
+    "puppeteer": "^0.11.0"
   },
   "devDependencies": {
     "babel-cli": "^6.24.1",
