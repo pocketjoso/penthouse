@@ -2,9 +2,9 @@
 
 > Critical Path CSS Generator
 
-[![NPM version](https://badge.fury.io/js/penthouse.svg)](http://badge.fury.io/js/penthouse)
-[![Build Status](https://travis-ci.org/pocketjoso/penthouse.svg?branch=master)](https://travis-ci.org/pocketjoso/penthouse)
-[![Downloads](https://img.shields.io/npm/dm/penthouse.svg?style=flat)](https://www.npmjs.com/package/penthouse)
+[![NPM version][npm-image]](npm-url)
+[![Build Status][travis-image]][travis-url]
+[![Downloads][dlcounter-image]][npm-url]
 
 ## About
 
@@ -115,3 +115,11 @@ Solution: Ensure all elements you want styled in the critical css appears in the
 #### Special glyphs not showing/showing incorrectly
 
 Problems with special characters like &#8594; after converting? Make sure you use the correct hexadecimal format in your CSS. You can always get this format from your browser console, by entering '&#8594;'`.charCodeAt(0).toString(16)` (answer for this arrow glyph is `2192`). When using hexadecimal format in CSS it needs to be prepended with a backslash, like so: `\2192` (f.e. `content: '\2192';`)
+
+[npm-image]: https://badge.fury.io/js/penthouse.svg
+[npm-url]: https://npmjs.org/package/penthouse
+
+[travis-url]: https://travis-ci.org/pocketjoso/penthouse
+[travis-image]: https://secure.travis-ci.org/pocketjoso/penthouse.svg?branch=master
+
+[dlcounter-image]: https://img.shields.io/npm/dm/penthouse.svg?style=flat
