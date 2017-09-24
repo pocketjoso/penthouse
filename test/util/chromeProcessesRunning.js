@@ -10,7 +10,7 @@ function grepProcessByPattern (pattern) {
     grep.stdout.on('data', (data) => {
       const result = data.toString()
       if (result.length) {
-        matchingProcesses = result
+        matchingProcesses = result.split('\n').filter(i => !!i)
       }
     })
     grep.on('close', () => {
