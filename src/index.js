@@ -23,7 +23,7 @@ const DEFAULT_PROPERTIES_TO_REMOVE = [
 
 function exitHandler () {
   if (browser && browser.close) {
-    browser && browser.close && browser.close()
+    browser.close()
     browser = null
   }
   process.exit(0)
@@ -224,10 +224,10 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         screenshots: options.screenshots,
         // postformatting
         propertiesToRemove,
-        maxEmbeddedBase64Length:
-          typeof options.maxEmbeddedBase64Length === 'number'
-            ? options.maxEmbeddedBase64Length
-            : DEFAULT_MAX_EMBEDDED_BASE64_LENGTH,
+        maxEmbeddedBase64Length: typeof options.maxEmbeddedBase64Length ===
+          'number'
+          ? options.maxEmbeddedBase64Length
+          : DEFAULT_MAX_EMBEDDED_BASE64_LENGTH,
         debuglog
       })
       _browserPagesOpen--
