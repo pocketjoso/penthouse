@@ -1,21 +1,35 @@
 import {spawn} from 'child_process'
 
-export default function chromeProcessesRunning () {
+function grepProcessByPattern (pattern) {
   return new Promise(resolve => {
     const ps = spawn('ps', ['aux'])
-    //  bit fragile to match across platforms..
-    const grep = spawn('egrep', ['-i', '/[c]hrom(e|ium) --(render|disable-background)'])
+    const grep = spawn('egrep', ['-i', pattern])
     ps.stdout.on('data', data => grep.stdin.write(data))
     ps.on('close', () => grep.stdin.end())
-    let chromiumStillRunning = false
+    let matchingProcesses = false
     grep.stdout.on('data', (data) => {
       const result = data.toString()
       if (result.length) {
-        chromiumStillRunning = result
+        matchingProcesses = result
       }
     })
     grep.on('close', () => {
-      resolve(chromiumStillRunning)
+      resolve(matchingProcesses)
     })
+  })
+}
+
+export default function chromeProcessesRunning () {
+  return Promise.all([
+    // bit fragile to match across platforms..
+    // also fragile relying on ~internal chrome headless process arguments to
+    // distinguish between browser and page instances
+    grepProcessByPattern('/[c]hrom(e|ium) --disable-background'),
+    grepProcessByPattern('/[c]hrom(e|ium) --type=renderer')
+  ]).then(([browsers, pages]) => {
+    return {
+      browsers,
+      pages
+    }
   })
 }

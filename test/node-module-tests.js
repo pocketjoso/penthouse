@@ -101,9 +101,9 @@ describe('extra tests for penthouse node module', function () {
         // NOTE: this test assumes no other chrome processes are running in this environment
         setTimeout(() => {
           chromeProcessesRunning()
-          .then(chromiumStillRunning => {
-            if (chromiumStillRunning) {
-              done(new Error('Chromium seems to not have shut down properly: ' + chromiumStillRunning))
+          .then(({browsers, pages}) => {
+            if (browsers || pages) {
+              done(new Error('Chromium seems to not have shut down properly: ' + {browsers, pages}))
             } else {
               done()
             }
@@ -124,8 +124,8 @@ describe('extra tests for penthouse node module', function () {
       // NOTE: this test assumes no other chrome processes are running in this environment
       setTimeout(() => {
         chromeProcessesRunning()
-        .then(chromiumStillRunning => {
-          if (chromiumStillRunning) {
+        .then(({browsers, pages}) => {
+          if (browsers) {
             done()
           } else {
             done(new Error('Chromium did NOT keep running despite option telling it so'))
