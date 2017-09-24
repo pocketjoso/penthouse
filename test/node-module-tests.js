@@ -18,6 +18,26 @@ function staticServerFileUrl (file) {
   return 'file://' + path.join(__dirname, 'static-server', file)
 }
 
+function chromeProcessesRunning () {
+  return new Promise(resolve => {
+    const ps = spawn('ps', ['aux'])
+    //  bit fragile to match across platforms..
+    const grep = spawn('egrep', ['-i', '/[c]hrom(e|ium) --(render|disable-background)'])
+    ps.stdout.on('data', data => grep.stdin.write(data))
+    ps.on('close', () => grep.stdin.end())
+    let chromiumStillRunning = false
+    grep.stdout.on('data', (data) => {
+      const result = data.toString()
+      if (result.length) {
+        chromiumStillRunning = result
+      }
+    })
+    grep.on('close', () => {
+      resolve(chromiumStillRunning)
+    })
+  })
+}
+
 describe('extra tests for penthouse node module', function () {
   var page1FileUrl = staticServerFileUrl('page1.html')
   var page1cssPath = path.join(__dirname, 'static-server', 'page1.css')
@@ -97,20 +117,10 @@ describe('extra tests for penthouse node module', function () {
         done(new Error('some result had errors: ' + hasErrors))
       } else {
         // give chrome some time to shutdown
+        // NOTE: this test assumes no other chrome processes are running in this environment
         setTimeout(() => {
-          const ps = spawn('ps', ['aux'])
-          //  bit fragile to match across platforms..
-          const grep = spawn('egrep', ['-i', '/[c]hrom(e|ium) --(render|disable-background)'])
-          ps.stdout.on('data', data => grep.stdin.write(data))
-          ps.on('close', () => grep.stdin.end())
-          let chromiumStillRunning = false
-          grep.stdout.on('data', (data) => {
-            const result = data.toString()
-            if (result.length) {
-              chromiumStillRunning = result
-            }
-          })
-          grep.on('close', () => {
+          chromeProcessesRunning()
+          .then(chromiumStillRunning => {
             if (chromiumStillRunning) {
               done(new Error('Chromium seems to not have shut down properly: ' + chromiumStillRunning))
             } else {
@@ -130,20 +140,10 @@ describe('extra tests for penthouse node module', function () {
     .then(() => {
       // wait a bit to ensure Chrome doesn't just take time to close
       // we want to ensure it stays open
+      // NOTE: this test assumes no other chrome processes are running in this environment
       setTimeout(() => {
-        const ps = spawn('ps', ['aux'])
-        //  bit fragile to match across platforms..
-        const grep = spawn('egrep', ['-i', '/[c]hrom(e|ium) --(render|disable-background)'])
-        ps.stdout.on('data', data => grep.stdin.write(data))
-        ps.on('close', () => grep.stdin.end())
-        let chromiumStillRunning = false
-        grep.stdout.on('data', (data) => {
-          const result = data.toString()
-          if (result.length) {
-            chromiumStillRunning = result
-          }
-        })
-        grep.on('close', () => {
+        chromeProcessesRunning()
+        .then(chromiumStillRunning => {
           if (chromiumStillRunning) {
             done()
           } else {
