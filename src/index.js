@@ -219,7 +219,10 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         userAgent: options.userAgent || DEFAULT_USER_AGENT,
         renderWaitTime: options.renderWaitTime || DEFAULT_RENDER_WAIT_TIMEOUT,
         timeout: timeoutWait,
-        blockJSRequests: options.blockJSRequests || DEFAULT_BLOCK_JS_REQUESTS,
+        blockJSRequests: typeof options.blockJSRequests !==
+          'undefined'
+          ? options.blockJSRequests
+          : DEFAULT_BLOCK_JS_REQUESTS,
         customPageHeaders: options.customPageHeaders,
         screenshots: options.screenshots,
         // postformatting
