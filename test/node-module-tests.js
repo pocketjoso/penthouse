@@ -101,9 +101,9 @@ describe('extra tests for penthouse node module', function () {
         // NOTE: this test assumes no other chrome processes are running in this environment
         setTimeout(() => {
           chromeProcessesRunning()
-          .then(chromiumStillRunning => {
-            if (chromiumStillRunning) {
-              done(new Error('Chromium seems to not have shut down properly: ' + chromiumStillRunning))
+          .then(({browsers, pages}) => {
+            if (browsers || pages) {
+              done(new Error('Chromium seems to not have shut down properly: ' + {browsers, pages}))
             } else {
               done()
             }
@@ -124,8 +124,8 @@ describe('extra tests for penthouse node module', function () {
       // NOTE: this test assumes no other chrome processes are running in this environment
       setTimeout(() => {
         chromeProcessesRunning()
-        .then(chromiumStillRunning => {
-          if (chromiumStillRunning) {
+        .then(({browsers, pages}) => {
+          if (browsers) {
             done()
           } else {
             done(new Error('Chromium did NOT keep running despite option telling it so'))
@@ -135,6 +135,31 @@ describe('extra tests for penthouse node module', function () {
     })
     .catch(err => {
       done(err)
+    })
+  })
+
+  it('should close browser page even if page execution errored, in unstableKeepBrowserAlive mode', function (done) {
+    penthouse.DEBUG = true
+    penthouse({
+      url: 'http://localhost.does.not.exist',
+      css: page1cssPath,
+      unstableKeepBrowserAlive: true
+    })
+    .catch(err => {
+      // NOTE: this test assumes no other chrome processes are running in this environment
+      setTimeout(() => {
+        chromeProcessesRunning()
+        .then(({browsers, pages}) => {
+          // chrome browser opens with an empty page (tab),
+          // which we are just ignoring for now -
+          // did the _extra_ page we opened close, or are we left with 2?
+          if (pages && pages.length > 1) {
+            done(new Error('Chromium seems to not have closed the page we opened, kept nr of pages: ' + pages.length))
+          } else {
+            done()
+          }
+        })
+      }, 1000)
     })
   })
 })
