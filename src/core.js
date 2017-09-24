@@ -35,8 +35,9 @@ async function pruneNonCriticalCssLauncher ({
 }) {
   let _hasExited = false
   const takeScreenshots = screenshots && screenshots.basePath
-  const screenshotExtension =
-    takeScreenshots && screenshots.type === 'jpeg' ? '.jpg' : '.png'
+  const screenshotExtension = takeScreenshots && screenshots.type === 'jpeg'
+    ? '.jpg'
+    : '.png'
 
   return new Promise(async (resolve, reject) => {
     debuglog('Penthouse core start')
@@ -51,7 +52,7 @@ async function pruneNonCriticalCssLauncher ({
       clearTimeout(killTimeout)
       // page.close will error if page/browser has already been closed;
       // try to avoid
-      if (page && !(error && error.toString().indexOf('Target closed' > -1))) {
+      if (page && !(error && error.toString().indexOf('Target closed') > -1)) {
         // must await here, otherwise will receive errors if closing
         // browser before page is properly closed
         await page.close()
