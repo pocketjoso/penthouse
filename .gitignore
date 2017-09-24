@@ -3,3 +3,4 @@
 /npm-debug.log
 .DS_STORE
 /lib/
+test-puppeteer.js
