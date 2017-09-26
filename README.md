@@ -8,7 +8,7 @@
 
 ## About
 
-Penthouse the original critical path css generator, helping you out to speed up page rendering for your websites. Supply your site's full CSS and the page you want to create the critical CSS for, and Penthouse will return the critical CSS needed to perfectly render the above the fold content of the page. Read more about critical path css [here](http://www.phpied.com/css-and-the-critical-path/).
+Penthouse is the original critical path css generator, helping you out to speed up page rendering for your websites. Supply your site's full CSS and the page you want to create the critical CSS for, and Penthouse will return the critical CSS needed to perfectly render the above the fold content of the page. Read more about critical path css [here](http://www.phpied.com/css-and-the-critical-path/).
 
 The process is automatic and the generated CSS is production ready as is. Behind the scenes Penthouse is using [puppeteer](https://github.com/GoogleChrome/puppeteer) to generate the critical css via the chromium:headless.
 
