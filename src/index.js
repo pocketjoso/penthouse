@@ -176,7 +176,8 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
   const astRules = nonMatchingMediaQueryRemover(
     ast.stylesheet.rules,
     width,
-    height
+    height,
+    options.keepLargerMediaQueries
   )
   stdErr += debuglog('stripped out non matching media queries')
 
@@ -219,8 +220,7 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         userAgent: options.userAgent || DEFAULT_USER_AGENT,
         renderWaitTime: options.renderWaitTime || DEFAULT_RENDER_WAIT_TIMEOUT,
         timeout: timeoutWait,
-        blockJSRequests: typeof options.blockJSRequests !==
-          'undefined'
+        blockJSRequests: typeof options.blockJSRequests !== 'undefined'
           ? options.blockJSRequests
           : DEFAULT_BLOCK_JS_REQUESTS,
         customPageHeaders: options.customPageHeaders,
