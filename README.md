@@ -37,9 +37,11 @@ penthouse({
     url: 'http://google.com',       // can also use file:/// protocol for local files
     cssString: 'body { color; red }', // the original css to extract critcial css from
     // css: 'pathTo/main.css',      // path to original css file on disk
+
     // OPTIONAL params
     width: 1300,                    // viewport width
     height: 900,                    // viewport height
+    keepLargerMediaQueries: false,  // when true, will not filter out larger media queries
     forceInclude: [ // selectors to keep
       '.keepMeEvenIfNotSeenInDom',
       /^\.regexWorksToo/
