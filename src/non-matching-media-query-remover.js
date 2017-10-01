@@ -1,9 +1,12 @@
 'use strict'
 
 var cssMediaQuery = require('css-mediaquery')
-// only filter out: print, min-width > width and min-height > height
 
-function _isMatchingMediaQuery (rule, matchConfig) {
+// only filters out:
+//  - @print
+//  - min-width > width OR min-height > height
+// and the latter only if !keepLargerMediaQueries (which is the default)
+function _isMatchingMediaQuery (rule, matchConfig, keepLargerMediaQueries) {
   if (rule.type !== 'media') {
     // ignore (keep) all non media query rules
     return true
@@ -19,6 +22,9 @@ function _isMatchingMediaQuery (rule, matchConfig) {
   var keep = mediaAST.some(function (mq) {
     if (mq.type === 'print') {
       return false
+    }
+    if (keepLargerMediaQueries) {
+      return true
     }
     // f.e. @media all {}
     // go for false positives over false negatives,
@@ -40,14 +46,19 @@ function _isMatchingMediaQuery (rule, matchConfig) {
   return keep
 }
 
-function nonMatchingMediaQueryRemover (rules, width, height) {
+function nonMatchingMediaQueryRemover (
+  rules,
+  width,
+  height,
+  keepLargerMediaQueries
+) {
   var matchConfig = {
     type: 'screen',
     width: width + 'px',
     height: height + 'px'
   }
   return rules.filter(function (rule) {
-    return _isMatchingMediaQuery(rule, matchConfig)
+    return _isMatchingMediaQuery(rule, matchConfig, keepLargerMediaQueries)
   })
 }
 

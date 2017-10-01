@@ -62,6 +62,16 @@ describe('penthouse post formatting tests', function () {
     done()
   })
 
+  it('should keep larger media queries when keepLargerMediaQueries is true', function (done) {
+    const originalCss = read(path.join(__dirname, 'static-server', 'non-matching-mq--remove.css'), 'utf8')
+
+    const smallViewportRules = nonMatchingMediaQueryRemover(css.parse(originalCss).stylesheet.rules, 600, 600, true)
+    // a bit fragile: the file currently contains 6 rules:
+    // 1 print (remove), and 5 larger media queries (keep, with this setting)
+    smallViewportRules.should.have.length(5)
+    done()
+  })
+
   it('should only keep @keyframe rules used in critical css', function (done) {
     const originalCss = read(path.join(__dirname, 'static-server', 'unused-keyframes.css'), 'utf8')
     const expextedCss = read(path.join(__dirname, 'static-server', 'unused-keyframes--expected.css'), 'utf8')
