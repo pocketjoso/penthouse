@@ -17,5 +17,7 @@ cache:
     - node_modules
 install:
   - yarn install
+before_script:  
+  - 'if [ "$NODE6" = "true" ]; then npm build --cwd node_modules/puppeteer; fi'
 script:
   - yarn run test-all
