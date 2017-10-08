@@ -1,6 +1,8 @@
 language: node_js
 node_js:
-    - "7.10"
+    - "6.4"
+    - "7"
+    - "8"
 dist: trusty
 addons:
   apt:
@@ -15,5 +17,7 @@ cache:
     - node_modules
 install:
   - yarn install
+before_script:  
+  - 'if [ "$NODE6" = "true" ]; then npm build --cwd node_modules/puppeteer; fi'
 script:
   - yarn run test-all
