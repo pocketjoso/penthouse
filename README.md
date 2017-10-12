@@ -58,7 +58,7 @@ penthouse({
     maxEmbeddedBase64Length: 1000,  // characters; strip out inline base64 encoded resources larger than this
     userAgent: 'Penthouse Critical Path CSS Generator', // specify which user agent string when loading the page
     renderWaitTime: 100,            // ms; render wait timeout before CSS processing starts (default: 100)
-    blockJSRequests: true          // set to false to load (external) JS (default: true)
+    blockJSRequests: true,          // set to false to load (external) JS (default: true)
     customPageHeaders: {
       'Accept-Encoding': 'identity' // add if getting compression errors like 'Data corrupted'
     },
