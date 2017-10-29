@@ -43,6 +43,9 @@ const launchBrowserIfNeeded = async function (debuglog) {
     debuglog('no browser instance, launching new browser..')
     _browserLaunchPromise = puppeteer
       .launch({
+        // seems better for detecting (critical) page load then default 'load' event,
+        // for spammy pages that keep on sending (non critcal) requests
+        waitUntil: 'networkidle2',
         ignoreHTTPSErrors: true,
         args: ['--disable-setuid-sandbox', '--no-sandbox']
       })
@@ -220,6 +223,7 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         userAgent: options.userAgent || DEFAULT_USER_AGENT,
         renderWaitTime: options.renderWaitTime || DEFAULT_RENDER_WAIT_TIMEOUT,
         timeout: timeoutWait,
+        pageLoadSkipTimeout: options.pageLoadSkipTimeout,
         blockJSRequests: typeof options.blockJSRequests !== 'undefined'
           ? options.blockJSRequests
           : DEFAULT_BLOCK_JS_REQUESTS,

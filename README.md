@@ -54,6 +54,7 @@ penthouse({
       '(.*)user-select'
     ],
     timeout: 30000,                 // ms; abort critical CSS generation after this timeout
+    pageLoadSkipTimeout: 0,         // ms; stop waiting for page load after this timeout (for sites with broken page load event timings)
     strict: false,                  // set to true to throw on CSS errors (will run faster if no errors)
     maxEmbeddedBase64Length: 1000,  // characters; strip out inline base64 encoded resources larger than this
     userAgent: 'Penthouse Critical Path CSS Generator', // specify which user agent string when loading the page

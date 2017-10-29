@@ -26,6 +26,7 @@ async function pruneNonCriticalCssLauncher ({
   userAgent,
   renderWaitTime,
   timeout,
+  pageLoadSkipTimeout,
   blockJSRequests,
   customPageHeaders,
   screenshots,
@@ -101,11 +102,32 @@ async function pruneNonCriticalCssLauncher ({
         }
       })
 
-      // NOTE: have to set a timeout here,
-      // even though we have our own timeout above,
-      // just to override the default puppeteer timeout of 30s
       debuglog('page load start')
-      await page.goto(url, { timeout })
+      // set a higher number than the timeout option, in order to make
+      // puppeteers timeout _never_ happen
+      const loadPagePromise = page.goto(url, { timeout: timeout + 1000 })
+      if (pageLoadSkipTimeout) {
+        await Promise.race([
+          loadPagePromise,
+          new Promise(resolve => {
+            // instead we manually _about_ page load after X time,
+            // in order to deal with spammy pages that keep sending non-critical requests
+            // (tracking etc), which would otherwise never load.
+            // With JS disabled it just shouldn't take that many seconds to load what's needed
+            // for critical viewport.
+            setTimeout(() => {
+              debuglog(
+                'page load waiting ABORTED after ' +
+                  pageLoadSkipTimeout / 1000 +
+                  's. '
+              )
+              resolve()
+            }, pageLoadSkipTimeout)
+          })
+        ])
+      } else {
+        await loadPagePromise
+      }
       debuglog('page load DONE')
 
       if (!page) {
