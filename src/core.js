@@ -104,13 +104,13 @@ async function pruneNonCriticalCssLauncher ({
 
       debuglog('page load start')
       // set a higher number than the timeout option, in order to make
-      // puppeteers timeout _never_ happen
+      // puppeteer’s timeout _never_ happen
       const loadPagePromise = page.goto(url, { timeout: timeout + 1000 })
       if (pageLoadSkipTimeout) {
         await Promise.race([
           loadPagePromise,
           new Promise(resolve => {
-            // instead we manually _about_ page load after X time,
+            // instead we manually _abort_ page load after X time,
             // in order to deal with spammy pages that keep sending non-critical requests
             // (tracking etc), which would otherwise never load.
             // With JS disabled it just shouldn't take that many seconds to load what's needed
