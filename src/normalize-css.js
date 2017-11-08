@@ -54,7 +54,7 @@ async function normalizeCssLauncher ({ browser, css, debuglog }) {
 
   page.on('console', msg => {
     // pass through log messages
-    if (typeof msg === "object" && msg.hasOwnProperty('text')) {
+    if (typeof msg === 'object' && msg.hasOwnProperty('text')) {
       debuglog(msg.text.replace(/^debug: /, ''))
     } else {
       debuglog(msg.replace(/^debug: /, ''))
