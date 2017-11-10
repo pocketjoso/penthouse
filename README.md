@@ -2,7 +2,7 @@
 
 > Critical Path CSS Generator
 
-[![NPM version][npm-image]](npm-url)
+[![NPM version][npm-image]][npm-url]
 [![Build Status][travis-image]][travis-url]
 [![Downloads][dlcounter-image]][npm-url]
 
