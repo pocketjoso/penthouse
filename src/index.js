@@ -35,9 +35,12 @@ let _browserLaunchPromise = null
 // browser.pages is not implemented, so need to count myself to not close browser
 // until all pages used by penthouse are closed (i.e. individual calls are done)
 let _browserPagesOpen = 0
-const launchBrowserIfNeeded = async function (debuglog) {
+const launchBrowserIfNeeded = async function (options, debuglog) {
   if (browser) {
     return
+  }
+  if (options.puppeteer && typeof options.puppeteer.getBrowser === 'function') {
+    _browserLaunchPromise = Promise.resolve(options.puppeteer.getBrowser())
   }
   if (!_browserLaunchPromise) {
     debuglog('no browser instance, launching new browser..')
@@ -224,17 +227,18 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         renderWaitTime: options.renderWaitTime || DEFAULT_RENDER_WAIT_TIMEOUT,
         timeout: timeoutWait,
         pageLoadSkipTimeout: options.pageLoadSkipTimeout,
-        blockJSRequests: typeof options.blockJSRequests !== 'undefined'
-          ? options.blockJSRequests
-          : DEFAULT_BLOCK_JS_REQUESTS,
+        blockJSRequests:
+          typeof options.blockJSRequests !== 'undefined'
+            ? options.blockJSRequests
+            : DEFAULT_BLOCK_JS_REQUESTS,
         customPageHeaders: options.customPageHeaders,
         screenshots: options.screenshots,
         // postformatting
         propertiesToRemove,
-        maxEmbeddedBase64Length: typeof options.maxEmbeddedBase64Length ===
-          'number'
-          ? options.maxEmbeddedBase64Length
-          : DEFAULT_MAX_EMBEDDED_BASE64_LENGTH,
+        maxEmbeddedBase64Length:
+          typeof options.maxEmbeddedBase64Length === 'number'
+            ? options.maxEmbeddedBase64Length
+            : DEFAULT_MAX_EMBEDDED_BASE64_LENGTH,
         debuglog
       })
       _browserPagesOpen--
@@ -265,7 +269,7 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         } else {
           console.log('restarting chrome after crash')
           browser = null
-          await launchBrowserIfNeeded(debuglog)
+          await launchBrowserIfNeeded(options, debuglog)
         }
         // retry
         resolve(
@@ -369,7 +373,7 @@ const m = (module.exports = function (options, callback) {
       return
     }
 
-    await launchBrowserIfNeeded(debuglog)
+    await launchBrowserIfNeeded(options, debuglog)
     try {
       const ast = await astFromCss(options, logging)
       const criticalCss = await generateCriticalCssWrapped(
