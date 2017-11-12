@@ -6,25 +6,26 @@ var cssMediaQuery = require('css-mediaquery')
 //  - @print
 //  - min-width > width OR min-height > height
 // and the latter only if !keepLargerMediaQueries (which is the default)
-function _isMatchingMediaQuery (rule, matchConfig, keepLargerMediaQueries) {
+function _isMatchingMediaQuery (rule, matchConfig) {
   if (rule.type !== 'media') {
     // ignore (keep) all non media query rules
     return true
   }
 
-  var mediaAST
+  let mediaAST
   try {
     mediaAST = cssMediaQuery.parse(rule.media)
   } catch (e) {
     // cant parse, most likely browser cant either
     return false
   }
+
   var keep = mediaAST.some(function (mq) {
-    if (mq.type === 'print') {
+    if (
+      (!mq.inverse && mq.type === 'print') ||
+      (mq.inverse && mq.type === 'screen')
+    ) {
       return false
-    }
-    if (keepLargerMediaQueries) {
-      return true
     }
     // f.e. @media all {}
     // go for false positives over false negatives,
@@ -35,7 +36,9 @@ function _isMatchingMediaQuery (rule, matchConfig, keepLargerMediaQueries) {
     return mq.expressions.some(function (expression) {
       if (expression.modifier === 'min') {
         return cssMediaQuery.match(
-          '(min-' + expression.feature + ':' + expression.value + ')',
+          mq.inverse
+            ? 'not '
+            : '' + '(min-' + expression.feature + ':' + expression.value + ')',
           matchConfig
         )
       } else {
@@ -54,11 +57,12 @@ function nonMatchingMediaQueryRemover (
 ) {
   var matchConfig = {
     type: 'screen',
-    width: width + 'px',
-    height: height + 'px'
+    width: (keepLargerMediaQueries ? 9999999999 : width) + 'px',
+    height: (keepLargerMediaQueries ? 9999999999 : height) + 'px'
   }
   return rules.filter(function (rule) {
-    return _isMatchingMediaQuery(rule, matchConfig, keepLargerMediaQueries)
+    const isMatching = _isMatchingMediaQuery(rule, matchConfig)
+    return isMatching
   })
 }
 

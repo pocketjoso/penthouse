@@ -79,10 +79,9 @@ describe('penthouse post formatting tests', function () {
       `@media print {
         body { color: red }
       }`,
-      // Incorrect: to handle
-      // `@media not screen {
-      //   body { color: red }
-      // }`,
+      `@media not screen {
+        body { color: red }
+      }`
     ]
     const mediaToRemoveUnlessLarge = [
       `@media (min-width: 1500px) {
