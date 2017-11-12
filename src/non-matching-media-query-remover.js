@@ -21,9 +21,13 @@ function _isMatchingMediaQuery (rule, matchConfig) {
   }
 
   var keep = mediaAST.some(function (mq) {
+    // not sure why css-mediaquery library sometimes flags the inverse as type,
+    // rather than the inverse field, but for our purposes we want to treat
+    // them the same.
+    const isInverse = mq.inverse || mq.type === 'not'
     if (
-      (!mq.inverse && mq.type === 'print') ||
-      (mq.inverse && mq.type === 'screen')
+      (!isInverse && mq.type === 'print') ||
+      (isInverse && mq.type === 'screen')
     ) {
       return false
     }
@@ -33,14 +37,10 @@ function _isMatchingMediaQuery (rule, matchConfig) {
     if (mq.expressions.length === 0) {
       return true
     }
-    return mq.expressions.some(function (expression) {
-      if (expression.modifier === 'min') {
-        return cssMediaQuery.match(
-          mq.inverse
-            ? 'not '
-            : '' + '(min-' + expression.feature + ':' + expression.value + ')',
-          matchConfig
-        )
+    return mq.expressions.some(function ({ modifier, feature, value }) {
+      if (modifier === 'min') {
+        const constructedQuery = `${isInverse ? 'not ' : ''}(min-${feature}: ${value})`
+        return cssMediaQuery.match(constructedQuery, matchConfig)
       } else {
         return true
       }

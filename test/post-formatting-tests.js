@@ -73,7 +73,8 @@ describe('penthouse post formatting tests', function () {
     ]
     const mediaToRemoveAlways = [
       `@media print {}`,
-      `@media not screen {}`
+      `@media not screen {}`,
+      `@media not (min-width: 1px) {}`
     ]
     const mediaToRemoveUnlessLarge = [
       `@media (min-width: 1500px) {}`,
