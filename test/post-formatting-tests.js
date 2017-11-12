@@ -67,37 +67,21 @@ describe('penthouse post formatting tests', function () {
 
   it('should remove non matching media queries', function (done) {
     const mediaToAlwaysKeep = [
-      `@media all {
-        body { color: red }
-      }`,
+      `@media all {}`,
       // going for false positives over false negatives
-      `@media oiasjdoiasd {
-        body { color: red }
-      }`
+      `@media oiasjdoiasd {}`
     ]
     const mediaToRemoveAlways = [
-      `@media print {
-        body { color: red }
-      }`,
-      `@media not screen {
-        body { color: red }
-      }`
+      `@media print {}`,
+      `@media not screen {}`
     ]
     const mediaToRemoveUnlessLarge = [
-      `@media (min-width: 1500px) {
-        body { color: red }
-      }`,
-      `@media screen and (min-width: 93.75em) {
-        body { color: red }
-      }`,
-      `@media screen and (min-width: 93.75rem) {
-        body { color: red }
-      }`
+      `@media (min-width: 1500px) {}`,
+      `@media screen and (min-width: 93.75em) {}`,
+      `@media screen and (min-width: 93.75rem) {}`
     ]
     const mediaToRemoveUnlessKeepLarge = [
-      `@media (min-width: 99999px) {
-        body { color: red }
-      }`
+      `@media (min-width: 99999px) {}`
     ]
 
     // test default settings
