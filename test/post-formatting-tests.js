@@ -18,6 +18,19 @@ function staticServerFileUrl (file) {
   return 'file://' + path.join(__dirname, 'static-server', file)
 }
 
+function testMediaQueryRemoval (tests, width, height, keepLargerMediaQueries) {
+  return [].concat(...tests.map(({rules, remove}) => {
+    return rules.map(ruleCss => {
+      const matchingRules = nonMatchingMediaQueryRemover(css.parse(ruleCss).stylesheet.rules, width, height, keepLargerMediaQueries)
+      if (remove && matchingRules.length) {
+        return `❌ media query should have been removed: \n${ruleCss}`
+      } else if (!remove && !matchingRules.length) {
+        return `❌ media query should have been kept: \n${ruleCss}`
+      }
+    }).filter(Boolean)
+  }))
+}
+
 process.setMaxListeners(0)
 
 describe('penthouse post formatting tests', function () {
@@ -53,22 +66,99 @@ describe('penthouse post formatting tests', function () {
   })
 
   it('should remove non matching media queries', function (done) {
-    const originalCss = read(path.join(__dirname, 'static-server', 'non-matching-mq--remove.css'), 'utf8')
-    const defaultViewportRules = nonMatchingMediaQueryRemover(css.parse(originalCss).stylesheet.rules, 1300, 900)
-    defaultViewportRules.should.have.length(1)
+    const mediaToAlwaysKeep = [
+      `@media all {
+        body { color: red }
+      }`,
+      // going for false positives over false negatives
+      `@media oiasjdoiasd {
+        body { color: red }
+      }`
+    ]
+    const mediaToRemoveAlways = [
+      `@media print {
+        body { color: red }
+      }`,
+      // Incorrect: to handle
+      // `@media not screen {
+      //   body { color: red }
+      // }`,
+    ]
+    const mediaToRemoveUnlessLarge = [
+      `@media (min-width: 1500px) {
+        body { color: red }
+      }`,
+      `@media screen and (min-width: 93.75em) {
+        body { color: red }
+      }`,
+      `@media screen and (min-width: 93.75rem) {
+        body { color: red }
+      }`
+    ]
+    const mediaToRemoveUnlessKeepLarge = [
+      `@media (min-width: 99999px) {
+        body { color: red }
+      }`
+    ]
 
-    const smallViewportRules = nonMatchingMediaQueryRemover(css.parse(originalCss).stylesheet.rules, 600, 600)
-    smallViewportRules.should.have.length(0)
-    done()
-  })
+    // test default settings
+    const defaultTest = [
+      {
+        rules: [
+          ...mediaToRemoveAlways,
+          ...mediaToRemoveUnlessLarge,
+          ...mediaToRemoveUnlessKeepLarge
+        ],
+        remove: true
+      },
+      {
+        rules: mediaToAlwaysKeep,
+        remove: false
+      }
+    ]
+    const defaultErrors = testMediaQueryRemoval(defaultTest, 1300, 900)
+    if (defaultErrors.length) {
+      done(new Error('defaultErrors:\n' + defaultErrors.join('\n')))
+      return
+    }
 
-  it('should keep larger media queries when keepLargerMediaQueries is true', function (done) {
-    const originalCss = read(path.join(__dirname, 'static-server', 'non-matching-mq--remove.css'), 'utf8')
+    // test larger screen size settings
+    const largeTest = [
+      {
+        rules: [
+          ...mediaToRemoveAlways,
+          ...mediaToRemoveUnlessKeepLarge
+        ],
+        remove: true
+      },
+      {
+        rules: [...mediaToRemoveUnlessLarge, ...mediaToAlwaysKeep],
+        remove: false
+      }
+    ]
+    const largeErrors = testMediaQueryRemoval(largeTest, 1600, 1200)
+    if (largeErrors.length) {
+      done(new Error('largeErrors:\n' + largeErrors.join('\n')))
+      return
+    }
 
-    const smallViewportRules = nonMatchingMediaQueryRemover(css.parse(originalCss).stylesheet.rules, 600, 600, true)
-    // a bit fragile: the file currently contains 6 rules:
-    // 1 print (remove), and 5 larger media queries (keep, with this setting)
-    smallViewportRules.should.have.length(5)
+    // test keepLargeMediaQueries - to be moved
+    const keepLargeMediaQueriesTest = [
+      {
+        rules: mediaToRemoveAlways,
+        remove: true
+      },
+      {
+        rules: [...mediaToRemoveUnlessLarge, ...mediaToRemoveUnlessKeepLarge, ...mediaToAlwaysKeep],
+        remove: false
+      }
+    ]
+    let keepLargeMediaQueriesErrors = testMediaQueryRemoval(keepLargeMediaQueriesTest, 1300, 900, true)
+    if (keepLargeMediaQueriesErrors.length) {
+      done(new Error('keepLargeMediaQueriesErrors:\n' + keepLargeMediaQueriesErrors.join('\n')))
+      return
+    }
+
     done()
   })
 
