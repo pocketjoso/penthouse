@@ -69,6 +69,9 @@ penthouse({
       // type: 'jpeg', // jpeg or png, png default
       // quality: 20 // only applies for jpeg type
       // -> these settings will produce homepage-before.jpg and homepage-after.jpg
+    },
+    puppeteer: {
+      getBrowser: undefined,        // A function that resolves with a puppeteer browser to use instead of launching a new browser session
     }
 })
 .then(criticalCss => {
