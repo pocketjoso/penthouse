@@ -266,7 +266,7 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         if (_browserLaunchPromise) {
           // in this case the browser is already restarting
           await _browserLaunchPromise
-        } else {
+        } else if (!(options.puppeteer && options.puppeteer.getBrowser)) {
           console.log('restarting chrome after crash')
           browser = null
           await launchBrowserIfNeeded({}, debuglog)
