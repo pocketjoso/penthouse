@@ -12,7 +12,7 @@ function blockinterceptedRequests (interceptedRequest) {
 }
 
 async function blockJsRequests (page) {
-  await page.setRequestInterceptionEnabled(true)
+  await page.setRequestInterception(true)
   page.on('request', blockinterceptedRequests)
 }
 
@@ -36,9 +36,8 @@ async function pruneNonCriticalCssLauncher ({
 }) {
   let _hasExited = false
   const takeScreenshots = screenshots && screenshots.basePath
-  const screenshotExtension = takeScreenshots && screenshots.type === 'jpeg'
-    ? '.jpg'
-    : '.png'
+  const screenshotExtension =
+    takeScreenshots && screenshots.type === 'jpeg' ? '.jpg' : '.png'
 
   return new Promise(async (resolve, reject) => {
     debuglog('Penthouse core start')
