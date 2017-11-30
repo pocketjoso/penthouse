@@ -302,14 +302,13 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
   })
 }
 
-const m = (module.exports = function (options, callback) {
+module.exports = function (options, callback) {
   // init logging and debug output
-  normalizeCss.DEBUG = m.DEBUG
   const debuglogger = debug('penthouse')
   const debuglog = function (msg, isError) {
     if (isError) {
-      console.error(errMsg)
-      return errMsg
+      console.error(msg)
+      return msg
     }
     debuglogger(msg)
   }
@@ -385,4 +384,4 @@ const m = (module.exports = function (options, callback) {
       cleanupAndExit({ error: err })
     }
   })
-})
+}
