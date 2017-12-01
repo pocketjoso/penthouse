@@ -40,7 +40,7 @@
     "css-mediaquery": "^0.1.2",
     "debug": "^3.1.0",
     "jsesc": "^1.0.0",
-    "puppeteer": "^0.13.0"
+    "puppeteer": "0.12"
   },
   "devDependencies": {
     "babel-cli": "^6.24.1",
