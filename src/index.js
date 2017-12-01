@@ -1,6 +1,7 @@
 import fs from 'fs'
 import cssAstFormatter from 'css-fork-pocketjoso'
 import puppeteer from 'puppeteer'
+import debug from 'debug'
 
 import generateCriticalCss from './core'
 import normalizeCss from './normalize-css'
@@ -169,7 +170,7 @@ const astFromCss = async function astFromCss (options, { debuglog, stdErr }) {
 const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
   options,
   ast,
-  { debuglog, stdErr, START_TIME, forceTryRestartBrowser }
+  { debuglog, stdErr, forceTryRestartBrowser }
 ) {
   const width = parseInt(options.width || DEFAULT_VIEWPORT_WIDTH, 10)
   const height = parseInt(options.height || DEFAULT_VIEWPORT_HEIGHT, 10)
@@ -276,7 +277,6 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
           generateCriticalCssWrapped(options, ast, {
             debuglog,
             stdErr,
-            START_TIME,
             forceTryRestartBrowser
           })
         )
@@ -302,27 +302,20 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
   })
 }
 
-const m = (module.exports = function (options, callback) {
+module.exports = function (options, callback) {
   // init logging and debug output
-  normalizeCss.DEBUG = m.DEBUG
-  const START_TIME = Date.now()
+  const debuglogger = debug('penthouse')
   const debuglog = function (msg, isError) {
-    if (m.DEBUG) {
-      const errMsg =
-        'time: ' +
-        (Date.now() - START_TIME) +
-        ' | ' +
-        (isError ? 'ERR: ' : '') +
-        msg
-      console.error(errMsg)
-      return errMsg
+    if (isError) {
+      console.error(msg)
+      return msg
     }
-    return ''
+    debuglogger(msg)
   }
+
   const logging = {
     debuglog,
-    stdErr: '',
-    START_TIME
+    stdErr: ''
   }
 
   process.on('exit', exitHandler)
@@ -391,4 +384,4 @@ const m = (module.exports = function (options, callback) {
       cleanupAndExit({ error: err })
     }
   })
-})
+}
