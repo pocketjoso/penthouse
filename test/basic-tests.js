@@ -23,8 +23,7 @@ describe('basic tests of penthouse functionality', function () {
   var page1cssPath = path.join(__dirname, 'static-server', 'page1.css'),
     originalCss = read(page1cssPath).toString()
 
-  // some of these tests take quite a while,
-  // as we're starting up phantomjs for each
+  // some of these tests take quite a while
   this.timeout(10000)
 
   it('should return css', function (done) {
