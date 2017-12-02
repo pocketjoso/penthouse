@@ -3,7 +3,14 @@
         "node": true,
         "es6": true
     },
+    "extends": [
+        "prettier",
+        "standard"
+    ],
     "rules": {
-        "semi": "never"
+        "standard/computed-property-even-spacing": 0,
+        "operator-linebreak": 0,
+        "prefer-promise-reject-errors": 0,
+        "no-mixed-operators": 0
     }
 }
