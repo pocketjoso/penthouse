@@ -98,10 +98,11 @@ async function pruneNonCriticalCssLauncher ({
         debuglog('blocking js requests')
       }
       page.on('console', msg => {
+        const text = msg.text || msg
         // pass through log messages
         // - the ones sent by penthouse for debugging has 'debug: ' prefix.
-        if (/^debug: /.test(msg)) {
-          debuglog(msg.replace(/^debug: /, ''))
+        if (/^debug: /.test(text)) {
+          debuglog(text.replace(/^debug: /, ''))
         }
       })
 
