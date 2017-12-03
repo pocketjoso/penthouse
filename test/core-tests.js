@@ -51,6 +51,7 @@ describe('penthouse core tests', function () {
       resultAst.should.eql(expectedAst)
       done()
     })
+    .catch(done)
   })
 
   it('should remove :hover, :active, etc rules - always', function (done) {
@@ -85,6 +86,7 @@ describe('penthouse core tests', function () {
       resultAst.should.eql(expectedAst)
       done()
     })
+    .catch(done)
   })
 
   /*	- Case 1: @-rule with CSS properties inside [REMAIN]
