@@ -36,7 +36,6 @@ describe('penthouse core tests', function () {
     })
     .catch(done)
   })
-
   it('should keep :before, :after, :visited rules (because el above fold)', function (done) {
     var pusedoRemainCssFilePath = path.join(__dirname, 'static-server', 'psuedo--remain.css'),
       pusedoRemainCss = read(pusedoRemainCssFilePath).toString()
@@ -146,10 +145,12 @@ describe('penthouse core tests', function () {
       resultAst.should.eql(expectedAst)
       done()
     })
+    .catch(done)
   })
 
   /* Case 4: @-rule with full CSS (rules) inside [REMOVE]
    - @media print|speech|arual
+   (removed via non-matching-media-query-remover in preformatting tests
    */
   it('should remove case 4 @-rules (@media print|speech)', function (done) {
     var atRuleCase4RemoveCssFilePath = path.join(__dirname, 'static-server', 'at-rule-case-4--remove.css')
@@ -200,6 +201,7 @@ describe('penthouse core tests', function () {
       resultAst.should.eql(expectedAst)
       done()
     })
+    .catch(done)
   })
 
   // non essential
