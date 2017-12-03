@@ -152,7 +152,7 @@ async function pruneNonCriticalCssLauncher ({
         debuglog('take before screenshot DONE: ' + beforePath)
       }
 
-      const criticalAstRules = await page.evaluate(pruneNonCriticalCss, {
+      const astRulesCritical = await page.evaluate(pruneNonCriticalCss, {
         astRules,
         forceInclude,
         renderWaitTime
@@ -160,10 +160,9 @@ async function pruneNonCriticalCssLauncher ({
       debuglog('generateCriticalCss done, now postformat')
 
       const formattedCss = postformatting({
-        criticalAstRules,
+        astRulesCritical,
         propertiesToRemove,
-        maxEmbeddedBase64Length,
-        debuglog
+        maxEmbeddedBase64Length
       })
       debuglog('postformatting done')
 

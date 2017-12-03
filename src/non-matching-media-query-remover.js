@@ -1,20 +1,22 @@
-'use strict'
+import cssMediaQuery from 'css-mediaquery'
+import debug from 'debug'
 
-var cssMediaQuery = require('css-mediaquery')
+const debuglog = debug('penthouse:preformatting:nonMatchingMediaQueryRemover')
 
 // only filters out:
 //  - @print
 //  - min-width > width OR min-height > height
 // and the latter only if !keepLargerMediaQueries (which is the default)
 function _isMatchingMediaQuery (rule, matchConfig) {
-  if (rule.type !== 'media') {
+  if (rule.type !== 'Atrule' || rule.name !== 'media') {
     // ignore (keep) all non media query rules
     return true
   }
 
+  // TODO: use the media query parsing from css-tree instead
   let mediaAST
   try {
-    mediaAST = cssMediaQuery.parse(rule.media)
+    mediaAST = cssMediaQuery.parse(rule.prelude.value)
   } catch (e) {
     // cant parse, most likely browser cant either
     return false
@@ -46,6 +48,9 @@ function _isMatchingMediaQuery (rule, matchConfig) {
       }
     })
   })
+  if (!keep) {
+    debuglog('DROP: ' + `(${rule.prelude.value}), `)
+  }
   return keep
 }
 
@@ -55,15 +60,19 @@ function nonMatchingMediaQueryRemover (
   height,
   keepLargerMediaQueries
 ) {
-  var matchConfig = {
+  debuglog('BEFORE')
+  const matchConfig = {
     type: 'screen',
     width: (keepLargerMediaQueries ? 9999999999 : width) + 'px',
     height: (keepLargerMediaQueries ? 9999999999 : height) + 'px'
   }
-  return rules.filter(function (rule) {
+  debuglog('matchConfig: ' + JSON.stringify(matchConfig, null, 2))
+  const filtered = rules.filter(function (rule) {
     const isMatching = _isMatchingMediaQuery(rule, matchConfig)
     return isMatching
   })
+  debuglog('AFTER')
+  return filtered
 }
 
 if (typeof module !== 'undefined') {

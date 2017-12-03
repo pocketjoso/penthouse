@@ -73,13 +73,8 @@ export default function pruneNonCriticalCss ({
   }
 
   function isSelectorCritical (selector) {
+    // console.log('debug: isSelectorCritical: ' + selector)
     if (matchesForceInclude(selector.trim())) {
-      return true
-    }
-
-    // Case 3: @-rule with full CSS (rules) inside [REMAIN]
-    // @viewport, @-ms-viewport. AST parser classifies these as "regular" rules
-    if (/^@/.test(selector)) {
       return true
     }
 
@@ -132,19 +127,24 @@ export default function pruneNonCriticalCss ({
   }
 
   function isCssRuleCritical (rule) {
-    if (rule.type === 'rule') {
+    if (rule.type === 'Rule') {
       // check what, if any selectors are found above fold
-      rule.selectors = rule.selectors.filter(isSelectorCritical)
-      return rule.selectors.length > 0
+      const selectors = rule.prelude.value.split(',')
+      // filter out the ones that are not critical
+      const criticalSelectors = selectors.filter(isSelectorCritical)
+      // mutating the rule here
+      rule.prelude.value = criticalSelectors.join(',')
+      return criticalSelectors.length > 0
     }
     /* ==@-rule handling== */
     /* - Case 0 : Non nested @-rule [REMAIN]
      (@charset, @import, @namespace)
      */
     if (
-      rule.type === 'charset' ||
-      rule.type === 'import' ||
-      rule.type === 'namespace'
+      rule.type === 'Atrule' &&
+      (rule.name === 'charset' ||
+        rule.name === 'import' ||
+        rule.name === 'namespace')
     ) {
       return true
     }
@@ -152,20 +152,28 @@ export default function pruneNonCriticalCss ({
     /* Case 1: @-rule with CSS properties inside [REMAIN]
       @font-face, @keyframes - keep here, but remove later in code, unless it is used.
     */
-    if (rule.type === 'font-face' || rule.type === 'keyframes') {
+    if (
+      rule.type === 'Atrule' &&
+      (rule.name === 'font-face' ||
+        rule.name === 'keyframes' ||
+        rule.name === 'viewport' ||
+        rule.name === '-ms-viewport')
+    ) {
       return true
     }
 
     /* Case 3: @-rule with full CSS (rules) inside [REMAIN]
     */
     if (
+      rule.type === 'Atrule' &&
       // non matching media queries are stripped out in non-matching-media-query-remover.js
-      rule.type === 'media' ||
-      rule.type === 'document' ||
-      rule.type === 'supports'
+      (rule.name === 'media' ||
+        rule.name === 'document' ||
+        rule.name === '-moz-document' ||
+        rule.name === 'supports')
     ) {
-      rule.rules = rule.rules.filter(isCssRuleCritical)
-      return rule.rules.length > 0
+      rule.block.children = rule.block.children.filter(isCssRuleCritical)
+      return rule.block.children.length > 0
     }
 
     return false
@@ -175,7 +183,6 @@ export default function pruneNonCriticalCss ({
     console.log('debug: processCssRules BEFORE')
     var criticalRules = astRules.filter(isCssRuleCritical)
     console.log('debug: processCssRules AFTER')
-
     return criticalRules
   }
 

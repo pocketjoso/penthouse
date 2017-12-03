@@ -1,10 +1,9 @@
 import fs from 'fs'
-import cssAstFormatter from 'css-fork-pocketjoso'
+import csstree from 'css-tree'
 import puppeteer from 'puppeteer'
 import debug from 'debug'
 
 import generateCriticalCss from './core'
-import normalizeCss from './normalize-css'
 import nonMatchingMediaQueryRemover from './non-matching-media-query-remover'
 
 const DEFAULT_VIEWPORT_WIDTH = 1300 // px
@@ -101,68 +100,23 @@ function prepareForceIncludeForSerialization (forceInclude = []) {
 }
 
 const astFromCss = async function astFromCss (options, { debuglog, stdErr }) {
+  // breaks puppeteer
   const css = options.cssString.replace(/￿/g, '\f042')
 
-  let ast = cssAstFormatter.parse(css, { silent: true })
-  const parsingErrors = ast.stylesheet.parsingErrors.filter(function (err) {
-    // the forked version of the astParser used fixes these errors itself
-    return err.reason !== 'Extra closing brace'
+  let parsingErrors = []
+  let ast = csstree.parse(css, {
+    parseRulePrelude: false,
+    parseAtrulePrelude: false,
+    parseValue: false,
+    onParseError: error => parsingErrors.push(error.formattedMessage)
   })
-  if (parsingErrors.length === 0) {
-    stdErr += debuglog('parsed ast (without errors)')
-    return ast
-  }
 
-  // had breaking parsing errors
-  // NOTE: only informing about first error, even if there were more than one.
-  const parsingErrorMessage = parsingErrors[0].message
-  if (options.strict === true) {
-    // TODO: filename will be 'undefined', could enhance this error message
+  if (parsingErrors.length && options.strict === true) {
+    // NOTE: only informing about first error, even if there were more than one.
+    const parsingErrorMessage = parsingErrors[0]
     throw new Error(parsingErrorMessage)
   }
-
-  stdErr += debuglog(
-    "Failed ast formatting css '" + parsingErrorMessage + "': "
-  )
-
-  let normalizedCss
-  try {
-    _browserPagesOpen++
-    debuglog('adding browser page for normalize, now: ' + _browserPagesOpen)
-    normalizedCss = await normalizeCss({
-      css,
-      browser,
-      debuglog
-    })
-    _browserPagesOpen--
-    debuglog('removing browser page for normalize, now: ' + _browserPagesOpen)
-  } catch (e) {
-    _browserPagesOpen--
-    debuglog(
-      'removing browser page for normalize after error, now: ' +
-        _browserPagesOpen
-    )
-    throw e
-  }
-
-  stdErr += debuglog(
-    'normalized css: ' +
-      (normalizedCss ? normalizedCss.length : typeof normalizedCss)
-  )
-  if (!normalizedCss) {
-    throw new Error(
-      "Failed to normalize CSS errors. Run Penthouse with 'strict: true' option to see these css errors."
-    )
-  }
-  ast = cssAstFormatter.parse(normalizedCss, { silent: true })
-  stdErr += debuglog('parsed normalised css into ast')
-  const finalParsingErrors = ast.stylesheet.parsingErrors.filter(function (err) {
-    // the forked version of the astParser used fixes these errors itself
-    return err.reason !== 'Extra closing brace'
-  })
-  if (finalParsingErrors.length > 0) {
-    stdErr += debuglog('..with parsingErrors: ' + finalParsingErrors[0].reason)
-  }
+  stdErr += debuglog(`parsed ast (with ${parsingErrors.length} errors)`)
   return ast
 }
 
@@ -175,13 +129,17 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
   const width = parseInt(options.width || DEFAULT_VIEWPORT_WIDTH, 10)
   const height = parseInt(options.height || DEFAULT_VIEWPORT_HEIGHT, 10)
   const timeoutWait = options.timeout || DEFAULT_TIMEOUT
-
   // Merge properties with default ones
   const propertiesToRemove =
     options.propertiesToRemove || DEFAULT_PROPERTIES_TO_REMOVE
+
+  // turn into JS Array so we can traverse more easily
+  // possibly reverse this for performance gains
+  let astRules = csstree.toPlainObject(ast).children
+
   // first strip out non matching media queries
-  const astRules = nonMatchingMediaQueryRemover(
-    ast.stylesheet.rules,
+  astRules = nonMatchingMediaQueryRemover(
+    astRules,
     width,
     height,
     options.keepLargerMediaQueries
@@ -228,18 +186,17 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         renderWaitTime: options.renderWaitTime || DEFAULT_RENDER_WAIT_TIMEOUT,
         timeout: timeoutWait,
         pageLoadSkipTimeout: options.pageLoadSkipTimeout,
-        blockJSRequests:
-          typeof options.blockJSRequests !== 'undefined'
-            ? options.blockJSRequests
-            : DEFAULT_BLOCK_JS_REQUESTS,
+        blockJSRequests: typeof options.blockJSRequests !== 'undefined'
+          ? options.blockJSRequests
+          : DEFAULT_BLOCK_JS_REQUESTS,
         customPageHeaders: options.customPageHeaders,
         screenshots: options.screenshots,
         // postformatting
         propertiesToRemove,
-        maxEmbeddedBase64Length:
-          typeof options.maxEmbeddedBase64Length === 'number'
-            ? options.maxEmbeddedBase64Length
-            : DEFAULT_MAX_EMBEDDED_BASE64_LENGTH,
+        maxEmbeddedBase64Length: typeof options.maxEmbeddedBase64Length ===
+          'number'
+          ? options.maxEmbeddedBase64Length
+          : DEFAULT_MAX_EMBEDDED_BASE64_LENGTH,
         debuglog
       })
       _browserPagesOpen--
