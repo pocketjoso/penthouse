@@ -9,6 +9,12 @@
     opacity: 0;
   }
 }
+@viewport {
+   width: device-width;
+}
+@media screen and (max-width:400px) {
+   @-ms-viewport { width: 320px; }
+}
 html {
 	font-family: 'Lato web';
   animation: fade-in;
