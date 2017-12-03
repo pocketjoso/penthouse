@@ -110,13 +110,18 @@ const astFromCss = async function astFromCss (options, { debuglog, stdErr }) {
     parseValue: false,
     onParseError: error => parsingErrors.push(error.formattedMessage)
   })
+  debuglog(`parsed ast (with ${parsingErrors.length} errors)`)
 
   if (parsingErrors.length && options.strict === true) {
     // NOTE: only informing about first error, even if there were more than one.
     const parsingErrorMessage = parsingErrors[0]
-    throw new Error(parsingErrorMessage)
+    throw new Error(
+      `AST parser (css-tree) found ${parsingErrors.length} errors in CSS.
+    Breaking because in strict mode.
+    The first error was:
+    ` + parsingErrorMessage
+    )
   }
-  stdErr += debuglog(`parsed ast (with ${parsingErrors.length} errors)`)
   return ast
 }
 
