@@ -966,7 +966,7 @@ css-mediaquery@^0.1.2:
   version "0.1.2"
   resolved "https://registry.yarnpkg.com/css-mediaquery/-/css-mediaquery-0.1.2.tgz#6a2c37344928618631c54bd33cedd301da18bea0"
 
-css-tree@^1.0.0-alpha.26:
+css-tree@1.0.0-alpha.26:
   version "1.0.0-alpha.26"
   resolved "https://registry.npmjs.org/css-tree/-/css-tree-1.0.0-alpha.26.tgz#690bee3458fb5b6b7000553983c8c30876da0b3e"
   dependencies:
