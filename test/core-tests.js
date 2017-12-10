@@ -36,6 +36,24 @@ describe('penthouse core tests', function () {
     })
     .catch(done)
   })
+
+  it('should remove non critical selectors from individual rules', function (done) {
+    var testFixtureCss = read(path.join(__dirname, 'static-server', 'rm-non-critical-selectors.css')).toString()
+    var expected = read(path.join(__dirname, 'static-server', 'rm-non-critical-selectors--expected.css')).toString()
+
+    penthouse({
+      url: page1FileUrl,
+      cssString: testFixtureCss
+    })
+    .then(result => {
+      var resultAst = normaliseCssAst(result)
+      var expectedAst = normaliseCssAst(expected)
+      resultAst.should.eql(expectedAst)
+      done()
+    })
+    .catch(done)
+  })
+
   it('should keep :before, :after, :visited rules (because el above fold)', function (done) {
     var pusedoRemainCssFilePath = path.join(__dirname, 'static-server', 'psuedo--remain.css'),
       pusedoRemainCss = read(pusedoRemainCssFilePath).toString()

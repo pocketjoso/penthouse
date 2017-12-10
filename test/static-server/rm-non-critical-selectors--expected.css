@@ -1,0 +1,12 @@
+#box1 {
+  color: red;
+}
+#box2 {
+  color: red;
+}
+@media all {
+  #box21,
+  #box22 {
+    color: red;
+  }
+}

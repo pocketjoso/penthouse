@@ -1,0 +1,15 @@
+#box1,
+.nonCriticalSelector {
+  color: red;
+}
+.nonCriticalSelector,
+#box2 {
+  color: red;
+}
+@media all {
+  #box21,
+  .nonCriticalSelector,
+  #box22 {
+    color: red;
+  }
+}
