@@ -1,6 +1,7 @@
 'use strict'
 
 import css from 'css-fork-pocketjoso'
+import puppeteer from 'puppeteer'
 import { readFileSync as read } from 'fs'
 import { describe, it } from 'global-mocha'
 import path from 'path'
@@ -120,7 +121,7 @@ describe('extra tests for penthouse node module', function () {
       css: page1cssPath,
       unstableKeepBrowserAlive: true
     })
-    .catch(err => {
+    .catch(() => {
       // NOTE: this test assumes no other chrome processes are running in this environment
       setTimeout(() => {
         chromeProcessesRunning()
@@ -136,5 +137,34 @@ describe('extra tests for penthouse node module', function () {
         })
       }, 1000)
     })
+  })
+
+  it('should use the browser given in options', function (done) {
+    let newPageCalled = false
+
+    puppeteer.launch()
+    .then((browser) => {
+      // Spy on browser.newPage method to check if it's called
+      let originalNewPage = browser.newPage
+      browser.newPage = (...args) => {
+        newPageCalled = true
+        return originalNewPage.call(browser, args)
+      }
+      return penthouse({
+        url: page1FileUrl,
+        css: page1cssPath,
+        puppeteer: {
+          getBrowser: () => browser
+        }
+      })
+    })
+    .then(() => {
+      if (!newPageCalled) {
+        done(new Error('Did not use the browser passed in options'))
+      } else {
+        done()
+      }
+    })
+    .catch(done)
   })
 })
