@@ -1,9 +1,21 @@
+import fs from 'fs'
 import debug from 'debug'
 import pruneNonCriticalCss from './browser-sandbox/pruneNonCriticalCss'
 import replacePageCss from './browser-sandbox/replacePageCss'
 import postformatting from './postformatting/'
 
 const debuglog = debug('penthouse:core')
+
+const CSSTREE_DIST_PATH = require.resolve('css-tree/dist/csstree')
+
+const cssTreeContentPromise = new Promise(resolve => {
+  fs.readFile(CSSTREE_DIST_PATH, 'utf8', (err, content) => {
+    if (err) {
+      throw err
+    }
+    resolve(content)
+  })
+})
 
 function blockinterceptedRequests (interceptedRequest) {
   const isJsRequest = /\.js(\?.*)?$/.test(interceptedRequest.url)
@@ -142,6 +154,11 @@ async function pruneNonCriticalCssLauncher ({
         // in case we timed out
         return
       }
+
+      await cssTreeContentPromise.then(content => {
+        page.evaluate(content)
+      })
+      debuglog('added css-tree library to page')
 
       // grab a "before" screenshot - of the page fully loaded, without JS
       // TODO: could potentially do in parallel with the page.evaluate

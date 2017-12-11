@@ -105,7 +105,6 @@ const astFromCss = async function astFromCss (options, { debuglog, stdErr }) {
 
   let parsingErrors = []
   let ast = csstree.parse(css, {
-    parseRulePrelude: false,
     parseAtrulePrelude: false,
     parseValue: false,
     onParseError: error => parsingErrors.push(error.formattedMessage)

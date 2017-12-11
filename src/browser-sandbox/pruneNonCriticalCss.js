@@ -126,15 +126,54 @@ export default function pruneNonCriticalCss ({
     return aboveFold
   }
 
+  function translateSelectorObjectToString (selectorObject) {
+    var parsedSelector = window.csstree.fromPlainObject(selectorObject)
+    var selectorString = window.csstree.translate(parsedSelector)
+    return selectorString
+  }
+
+  function translateSelectorListRuleToStrings (selectorListRuleObject) {
+    return selectorListRuleObject.prelude.children.map(
+      translateSelectorObjectToString
+    )
+  }
+
+  function isCssSelectorRuleCritical (rule) {
+    // check what, if any selectors are found above fold
+    let selectors = []
+    if (rule.prelude.type === 'SelectorList') {
+      selectors = translateSelectorListRuleToStrings(rule)
+    }
+    if (selectors.length === 0) {
+      return false
+    }
+
+    // filter out the ones that are not critical
+    const criticalSelectorsMeta = selectors.map((selector, index) => {
+      return {
+        toKeep: isSelectorCritical(selector)
+      }
+    })
+    const criticalSelectorsLength = criticalSelectorsMeta.filter(s => s.toKeep)
+      .length
+    const keepRule = criticalSelectorsLength > 0
+    if (keepRule && criticalSelectorsLength < selectors.length) {
+      // NOTE: mutating the rule here
+      const selectorListFiltered = rule.prelude.children.filter(
+        (rule, index) => {
+          return criticalSelectorsMeta[index].toKeep
+        }
+      )
+      rule.prelude.children = selectorListFiltered
+    }
+
+    return keepRule
+  }
+
   function isCssRuleCritical (rule) {
     if (rule.type === 'Rule') {
-      // check what, if any selectors are found above fold
-      const selectors = rule.prelude.value.split(',')
-      // filter out the ones that are not critical
-      const criticalSelectors = selectors.filter(isSelectorCritical)
-      // mutating the rule here
-      rule.prelude.value = criticalSelectors.join(',')
-      return criticalSelectors.length > 0
+      // NOTE: isCssSelectorRuleCritical mutates the rule
+      return isCssSelectorRuleCritical(rule)
     }
     /* ==@-rule handling== */
     /* - Case 0 : Non nested @-rule [REMAIN]
