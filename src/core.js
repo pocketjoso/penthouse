@@ -109,6 +109,7 @@ async function pruneNonCriticalCssLauncher ({
       debuglog('page load start')
       // set a higher number than the timeout option, in order to make
       // puppeteer’s timeout _never_ happen
+      let waitingForPageLoad = true
       const loadPagePromise = page.goto(url, { timeout: timeout + 1000 })
       if (pageLoadSkipTimeout) {
         await Promise.race([
@@ -120,18 +121,21 @@ async function pruneNonCriticalCssLauncher ({
             // With JS disabled it just shouldn't take that many seconds to load what's needed
             // for critical viewport.
             setTimeout(() => {
-              debuglog(
-                'page load waiting ABORTED after ' +
-                  pageLoadSkipTimeout / 1000 +
-                  's. '
-              )
-              resolve()
+              if (waitingForPageLoad) {
+                debuglog(
+                  'page load waiting ABORTED after ' +
+                    pageLoadSkipTimeout / 1000 +
+                    's. '
+                )
+                resolve()
+              }
             }, pageLoadSkipTimeout)
           })
         ])
       } else {
         await loadPagePromise
       }
+      waitingForPageLoad = false
       debuglog('page load DONE')
 
       if (!page) {
