@@ -311,6 +311,7 @@ module.exports = function (options, callback) {
       return msg
     }
     debuglogger(msg)
+    return ''
   }
 
   const logging = {
