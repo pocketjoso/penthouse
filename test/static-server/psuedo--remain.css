@@ -2,7 +2,8 @@
   color: #aaa;
 }
 
-div::before, div::after {
+div::before,
+div::after {
 	content: 'some extra content here';
 }
 div ::-moz-focus-inner{

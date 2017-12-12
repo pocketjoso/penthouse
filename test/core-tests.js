@@ -17,6 +17,9 @@ function staticServerFileUrl (file) {
 describe('penthouse core tests', function () {
   var page1FileUrl = staticServerFileUrl('page1.html')
 
+  // some of these tests take longer than default timeout
+  this.timeout(10000)
+
   it('should match exactly the css in the yeoman test', function (done) {
     var yeomanFullCssFilePath = path.join(__dirname, 'static-server', 'yeoman-full.css'),
       yeomanExpectedCssFilePath = path.join(__dirname, 'static-server', 'yeoman-medium--expected.css'),
@@ -37,6 +40,23 @@ describe('penthouse core tests', function () {
     .catch(done)
   })
 
+  it('should remove non critical selectors from individual rules', function (done) {
+    var testFixtureCss = read(path.join(__dirname, 'static-server', 'rm-non-critical-selectors.css')).toString()
+    var expected = read(path.join(__dirname, 'static-server', 'rm-non-critical-selectors--expected.css')).toString()
+
+    penthouse({
+      url: page1FileUrl,
+      cssString: testFixtureCss
+    })
+    .then(result => {
+      var resultAst = normaliseCssAst(result)
+      var expectedAst = normaliseCssAst(expected)
+      resultAst.should.eql(expectedAst)
+      done()
+    })
+    .catch(done)
+  })
+
   it('should keep :before, :after, :visited rules (because el above fold)', function (done) {
     var pusedoRemainCssFilePath = path.join(__dirname, 'static-server', 'psuedo--remain.css'),
       pusedoRemainCss = read(pusedoRemainCssFilePath).toString()
@@ -51,6 +71,7 @@ describe('penthouse core tests', function () {
       resultAst.should.eql(expectedAst)
       done()
     })
+    .catch(done)
   })
 
   it('should remove :hover, :active, etc rules - always', function (done) {
@@ -85,6 +106,7 @@ describe('penthouse core tests', function () {
       resultAst.should.eql(expectedAst)
       done()
     })
+    .catch(done)
   })
 
   /*	- Case 1: @-rule with CSS properties inside [REMAIN]
@@ -144,10 +166,12 @@ describe('penthouse core tests', function () {
       resultAst.should.eql(expectedAst)
       done()
     })
+    .catch(done)
   })
 
   /* Case 4: @-rule with full CSS (rules) inside [REMOVE]
    - @media print|speech|arual
+   (removed via non-matching-media-query-remover in preformatting tests
    */
   it('should remove case 4 @-rules (@media print|speech)', function (done) {
     var atRuleCase4RemoveCssFilePath = path.join(__dirname, 'static-server', 'at-rule-case-4--remove.css')
@@ -198,6 +222,7 @@ describe('penthouse core tests', function () {
       resultAst.should.eql(expectedAst)
       done()
     })
+    .catch(done)
   })
 
   // non essential

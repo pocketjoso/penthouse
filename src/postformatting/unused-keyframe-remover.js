@@ -1,25 +1,22 @@
-'use strict'
+import debug from 'debug'
+const debuglog = debug('penthouse:postformatting:unused-keyframe-remover')
 
 function getAllKeyframes (rules) {
   const matches = []
   function handleRule (rule) {
-    if (rule.type === 'rule') {
-      // mutation to fix this problem in the ast,
-      // can cause crashes when stringifying it later otherwise.
-      // NOTE: would be better to move this code to
-      // separate function, but since we're already looping through the ast here...
-      rule.declarations = rule.declarations || []
-
-      rule.declarations.forEach(function (props) {
+    if (rule.type === 'Rule') {
+      rule.block.children.forEach(function (possibleDeclaration) {
         if (
-          props.property === 'animation' ||
-          props.property === 'animation-name'
+          possibleDeclaration.property === 'animation' ||
+          possibleDeclaration.property === 'animation-name'
         ) {
-          matches.push(props.value.split(' ')[0])
+          const keyframeName = possibleDeclaration.value.value.split(' ')[0]
+          debuglog('found used keyframe animation: ' + keyframeName)
+          matches.push(keyframeName)
         }
       })
-    } else if (rule.type === 'media') {
-      ;(rule.rules || []).forEach(handleRule)
+    } else if (rule.type === 'Atrule' && rule.name === 'media') {
+      rule.block.children.forEach(handleRule)
     }
   }
   rules.forEach(handleRule)
@@ -27,19 +24,30 @@ function getAllKeyframes (rules) {
 }
 
 function unusedKeyframeRemover (rules) {
+  debuglog('getAllAnimationKeyframes')
   const usedKeyFrames = getAllKeyframes(rules)
+  debuglog(
+    'getAllAnimationKeyframes AFTER, usedKeyFrames: ' + usedKeyFrames.length
+  )
 
   function filterUnusedKeyframeRule (rule) {
-    if (rule.type === 'media') {
-      // mutating the original object..
-      rule.rules = rule.rules.filter(filterUnusedKeyframeRule)
-      return rule.rules.length > 0
+    if (rule.type !== 'Atrule') {
+      return true
     }
-    if (rule.type !== 'keyframes') {
+    if (rule.name === 'media') {
+      // mutating the original object..
+      rule.block.children = rule.block.children.filter(filterUnusedKeyframeRule)
+      return rule.block.children.length > 0
+    }
+    if (!/^(-webkit-)?keyframes/.test(rule.name)) {
       return true
     }
     // remove unnused keyframes rules
-    return usedKeyFrames.indexOf(rule.name) !== -1
+    const keep = usedKeyFrames.indexOf(rule.prelude.value) !== -1
+    if (!keep) {
+      debuglog('drop non critical keyframe: ' + rule.prelude.value)
+    }
+    return keep
   }
 
   // remove all unknown keyframes

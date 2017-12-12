@@ -1,6 +1,7 @@
 'use strict'
 
 import css from 'css-fork-pocketjoso'
+import puppeteer from 'puppeteer'
 import { readFileSync as read } from 'fs'
 import { describe, it } from 'global-mocha'
 import path from 'path'
@@ -60,31 +61,7 @@ describe('extra tests for penthouse node module', function () {
     })
   })
 
-  it('error should contain debug info in debug mode', function (done) {
-    penthouse.DEBUG = true
-    penthouse({
-      url: 'http://localhost.does.not.exist',
-      css: page1cssPath
-    })
-    .catch(err => {
-      if (err) {
-        // err should have format like:
-        // time: 0 | opened css file
-        // time: 2 | parsed ast (without errors)
-        if (/^Error: time: /.test(err)) {
-          done()
-        } else {
-          done(err)
-        }
-        return
-      }
-      done(new Error('did not throw any error, which was expected'))
-    })
-  })
-
   it('error should handle parallell jobs, sharing one browser instance, closing afterwards', function (done) {
-    // reset from previous test
-    penthouse.DEBUG = false
     const urls = [page1FileUrl, page1FileUrl, page1FileUrl]
     const promises = urls.map(url => {
       return penthouse(({url, css: page1cssPath}))
@@ -139,13 +116,12 @@ describe('extra tests for penthouse node module', function () {
   })
 
   it('should close browser page even if page execution errored, in unstableKeepBrowserAlive mode', function (done) {
-    penthouse.DEBUG = true
     penthouse({
       url: 'http://localhost.does.not.exist',
       css: page1cssPath,
       unstableKeepBrowserAlive: true
     })
-    .catch(err => {
+    .catch(() => {
       // NOTE: this test assumes no other chrome processes are running in this environment
       setTimeout(() => {
         chromeProcessesRunning()
@@ -161,5 +137,34 @@ describe('extra tests for penthouse node module', function () {
         })
       }, 1000)
     })
+  })
+
+  it('should use the browser given in options', function (done) {
+    let newPageCalled = false
+
+    puppeteer.launch()
+    .then((browser) => {
+      // Spy on browser.newPage method to check if it's called
+      let originalNewPage = browser.newPage
+      browser.newPage = (...args) => {
+        newPageCalled = true
+        return originalNewPage.call(browser, args)
+      }
+      return penthouse({
+        url: page1FileUrl,
+        css: page1cssPath,
+        puppeteer: {
+          getBrowser: () => browser
+        }
+      })
+    })
+    .then(() => {
+      if (!newPageCalled) {
+        done(new Error('Did not use the browser passed in options'))
+      } else {
+        done()
+      }
+    })
+    .catch(done)
   })
 })

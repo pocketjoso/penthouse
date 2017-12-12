@@ -5,7 +5,6 @@ import { describe, it } from 'global-mocha'
 import path from 'path'
 import penthouse from '../lib/'
 import { readFileSync as read } from 'fs'
-import puppeteer from 'puppeteer'
 import chai from 'chai'
 chai.should() // binds globally on Object
 
@@ -23,7 +22,7 @@ describe('basic tests of penthouse functionality', function () {
   var page1cssPath = path.join(__dirname, 'static-server', 'page1.css'),
     originalCss = read(page1cssPath).toString()
 
-  // some of these tests take quite a while
+  // some of these tests take longer than default timeout
   this.timeout(10000)
 
   it('should return css', function (done) {
@@ -147,34 +146,5 @@ describe('basic tests of penthouse functionality', function () {
         done(new Error('Did not get timeout error, got: ' + err))
       }
     })
-  })
-
-  it('should use the browser given in options', function (done) {
-    let newPageCalled = false;
-
-    puppeteer.launch()
-    .then((browser) => {
-      // Spy on browser.newPage method to check if it's called
-      let originalNewPage = browser.newPage;
-      browser.newPage = (...args) => {
-        newPageCalled = true;
-        return originalNewPage.call(browser, args);
-      };
-      return penthouse({
-        url: page1FileUrl,
-        css: page1cssPath,
-        puppeteer: {
-          getBrowser: () => browser
-        }
-      });
-    })
-    .then(() => {
-      if(! newPageCalled) {
-        done(new Error('Did not use the browser passed in options'))
-      } else {
-        done();
-      }
-    })
-    .catch(done)
   })
 })

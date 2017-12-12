@@ -1,9 +1,21 @@
+import fs from 'fs'
 import debug from 'debug'
 import pruneNonCriticalCss from './browser-sandbox/pruneNonCriticalCss'
 import replacePageCss from './browser-sandbox/replacePageCss'
 import postformatting from './postformatting/'
 
 const debuglog = debug('penthouse:core')
+
+const CSSTREE_DIST_PATH = require.resolve('css-tree/dist/csstree')
+
+const cssTreeContentPromise = new Promise(resolve => {
+  fs.readFile(CSSTREE_DIST_PATH, 'utf8', (err, content) => {
+    if (err) {
+      throw err
+    }
+    resolve(content)
+  })
+})
 
 function blockinterceptedRequests (interceptedRequest) {
   const isJsRequest = /\.js(\?.*)?$/.test(interceptedRequest.url)
@@ -98,16 +110,18 @@ async function pruneNonCriticalCssLauncher ({
         debuglog('blocking js requests')
       }
       page.on('console', msg => {
+        const text = msg.text || msg
         // pass through log messages
         // - the ones sent by penthouse for debugging has 'debug: ' prefix.
-        if (/^debug: /.test(msg)) {
-          debuglog(msg.replace(/^debug: /, ''))
+        if (/^debug: /.test(text)) {
+          debuglog(text.replace(/^debug: /, ''))
         }
       })
 
       debuglog('page load start')
       // set a higher number than the timeout option, in order to make
       // puppeteer’s timeout _never_ happen
+      let waitingForPageLoad = true
       const loadPagePromise = page.goto(url, { timeout: timeout + 1000 })
       if (pageLoadSkipTimeout) {
         await Promise.race([
@@ -119,24 +133,32 @@ async function pruneNonCriticalCssLauncher ({
             // With JS disabled it just shouldn't take that many seconds to load what's needed
             // for critical viewport.
             setTimeout(() => {
-              debuglog(
-                'page load waiting ABORTED after ' +
-                  pageLoadSkipTimeout / 1000 +
-                  's. '
-              )
-              resolve()
+              if (waitingForPageLoad) {
+                debuglog(
+                  'page load waiting ABORTED after ' +
+                    pageLoadSkipTimeout / 1000 +
+                    's. '
+                )
+                resolve()
+              }
             }, pageLoadSkipTimeout)
           })
         ])
       } else {
         await loadPagePromise
       }
+      waitingForPageLoad = false
       debuglog('page load DONE')
 
       if (!page) {
         // in case we timed out
         return
       }
+
+      await cssTreeContentPromise.then(content => {
+        page.evaluate(content)
+      })
+      debuglog('added css-tree library to page')
 
       // grab a "before" screenshot - of the page fully loaded, without JS
       // TODO: could potentially do in parallel with the page.evaluate
@@ -151,7 +173,7 @@ async function pruneNonCriticalCssLauncher ({
         debuglog('take before screenshot DONE: ' + beforePath)
       }
 
-      const criticalAstRules = await page.evaluate(pruneNonCriticalCss, {
+      const astRulesCritical = await page.evaluate(pruneNonCriticalCss, {
         astRules,
         forceInclude,
         renderWaitTime
@@ -159,10 +181,9 @@ async function pruneNonCriticalCssLauncher ({
       debuglog('generateCriticalCss done, now postformat')
 
       const formattedCss = postformatting({
-        criticalAstRules,
+        astRulesCritical,
         propertiesToRemove,
-        maxEmbeddedBase64Length,
-        debuglog
+        maxEmbeddedBase64Length
       })
       debuglog('postformatting done')
 

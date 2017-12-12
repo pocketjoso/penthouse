@@ -73,13 +73,8 @@ export default function pruneNonCriticalCss ({
   }
 
   function isSelectorCritical (selector) {
+    // console.log('debug: isSelectorCritical: ' + selector)
     if (matchesForceInclude(selector.trim())) {
-      return true
-    }
-
-    // Case 3: @-rule with full CSS (rules) inside [REMAIN]
-    // @viewport, @-ms-viewport. AST parser classifies these as "regular" rules
-    if (/^@/.test(selector)) {
       return true
     }
 
@@ -131,20 +126,64 @@ export default function pruneNonCriticalCss ({
     return aboveFold
   }
 
+  function translateSelectorObjectToString (selectorObject) {
+    var parsedSelector = window.csstree.fromPlainObject(selectorObject)
+    var selectorString = window.csstree.translate(parsedSelector)
+    return selectorString
+  }
+
+  function translateSelectorListRuleToStrings (selectorListRuleObject) {
+    return selectorListRuleObject.prelude.children.map(
+      translateSelectorObjectToString
+    )
+  }
+
+  function isCssSelectorRuleCritical (rule) {
+    // check what, if any selectors are found above fold
+    let selectors = []
+    if (rule.prelude.type === 'SelectorList') {
+      selectors = translateSelectorListRuleToStrings(rule)
+    }
+    if (selectors.length === 0) {
+      return false
+    }
+
+    // filter out the ones that are not critical
+    const criticalSelectorsMeta = selectors.map((selector, index) => {
+      return {
+        toKeep: isSelectorCritical(selector)
+      }
+    })
+    const criticalSelectorsLength = criticalSelectorsMeta.filter(s => s.toKeep)
+      .length
+    const keepRule = criticalSelectorsLength > 0
+    if (keepRule && criticalSelectorsLength < selectors.length) {
+      // NOTE: mutating the rule here
+      const selectorListFiltered = rule.prelude.children.filter(
+        (rule, index) => {
+          return criticalSelectorsMeta[index].toKeep
+        }
+      )
+      rule.prelude.children = selectorListFiltered
+    }
+
+    return keepRule
+  }
+
   function isCssRuleCritical (rule) {
-    if (rule.type === 'rule') {
-      // check what, if any selectors are found above fold
-      rule.selectors = rule.selectors.filter(isSelectorCritical)
-      return rule.selectors.length > 0
+    if (rule.type === 'Rule') {
+      // NOTE: isCssSelectorRuleCritical mutates the rule
+      return isCssSelectorRuleCritical(rule)
     }
     /* ==@-rule handling== */
     /* - Case 0 : Non nested @-rule [REMAIN]
      (@charset, @import, @namespace)
      */
     if (
-      rule.type === 'charset' ||
-      rule.type === 'import' ||
-      rule.type === 'namespace'
+      rule.type === 'Atrule' &&
+      (rule.name === 'charset' ||
+        rule.name === 'import' ||
+        rule.name === 'namespace')
     ) {
       return true
     }
@@ -152,20 +191,28 @@ export default function pruneNonCriticalCss ({
     /* Case 1: @-rule with CSS properties inside [REMAIN]
       @font-face, @keyframes - keep here, but remove later in code, unless it is used.
     */
-    if (rule.type === 'font-face' || rule.type === 'keyframes') {
+    if (
+      rule.type === 'Atrule' &&
+      (rule.name === 'font-face' ||
+        rule.name === 'keyframes' ||
+        rule.name === 'viewport' ||
+        rule.name === '-ms-viewport')
+    ) {
       return true
     }
 
     /* Case 3: @-rule with full CSS (rules) inside [REMAIN]
     */
     if (
+      rule.type === 'Atrule' &&
       // non matching media queries are stripped out in non-matching-media-query-remover.js
-      rule.type === 'media' ||
-      rule.type === 'document' ||
-      rule.type === 'supports'
+      (rule.name === 'media' ||
+        rule.name === 'document' ||
+        rule.name === '-moz-document' ||
+        rule.name === 'supports')
     ) {
-      rule.rules = rule.rules.filter(isCssRuleCritical)
-      return rule.rules.length > 0
+      rule.block.children = rule.block.children.filter(isCssRuleCritical)
+      return rule.block.children.length > 0
     }
 
     return false
@@ -175,7 +222,6 @@ export default function pruneNonCriticalCss ({
     console.log('debug: processCssRules BEFORE')
     var criticalRules = astRules.filter(isCssRuleCritical)
     console.log('debug: processCssRules AFTER')
-
     return criticalRules
   }
 
