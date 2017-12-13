@@ -308,11 +308,10 @@ module.exports = function (options, callback) {
   const debuglog = function (msg, isError) {
     if (isError) {
       console.error(msg)
-    } else {
-      debuglogger(msg)
-      msg = ''
+      return msg
     }
-    return msg
+    debuglogger(msg)
+    return ''
   }
 
   const logging = {
