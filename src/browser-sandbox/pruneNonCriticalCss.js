@@ -40,9 +40,7 @@ export default function pruneNonCriticalCss ({
   // and some stylesheets have lots of generic selectors (like '.button', '.fa' etc)
   var isElementAboveFoldCache = []
   function isElementAboveFold (element) {
-    // no support for Array.find
-    var matching = isElementAboveFoldCache.filter(c => c.element === element)
-    var cached = matching && matching[0]
+    var cached = isElementAboveFoldCache.find(c => c.element === element)
     if (cached) {
       return cached.aboveFold
     }
