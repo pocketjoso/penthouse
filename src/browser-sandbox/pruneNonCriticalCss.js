@@ -86,9 +86,15 @@ export default function pruneNonCriticalCss ({
       // many of these selectors can't be matched to anything on page via JS,
       // but that still might affect the above the fold styling
 
-      // these psuedo selectors depend on an element, so test element instead
+      // ::selection we just remove
+      if (/:?:(-moz-)?selection/.test(modifiedSelector)) {
+        return false
+      }
+
+      // for the psuedo selectors that depend on an element, test for presence
+      // of the element (in the critical viewport) instead
       // (:hover, :focus, :active would be treated same
-      // IF we wanted to keep them for critical path css, but we don't)
+      // IF we wanted to keep them for critical path css, but we don’t)
       modifiedSelector = modifiedSelector.replace(PSUEDO_SELECTOR_REGEXP, '')
 
       // if selector is purely psuedo (f.e. ::-moz-placeholder), just keep as is.

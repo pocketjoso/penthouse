@@ -37,9 +37,7 @@ export default function postformatting ({
   // remove irrelevant css properties
   try {
     finalCss = apartment(finalCss, {
-      properties: propertiesToRemove,
-      // TODO: move into pruneNonCriticalCss script
-      selectors: ['::(-moz-)?selection']
+      properties: propertiesToRemove
     })
     debuglog('cleaned css via apartment')
   } catch (e) {
