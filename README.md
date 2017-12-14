@@ -111,9 +111,7 @@ see [this answer](https://github.com/GoogleChrome/puppeteer/issues/404#issuecomm
 
 ### Problems with generated CSS
 
-Before going further, make sure that you fix any errors in your own CSS, as detected by [this AST explorer](http://astexplorer.net/), as they can cause problems with critical CSS generation.
-
-Also test your url + css in the hosted critical path css generator, to determine whether the problem
+A good first step can be to test your url + css in the hosted critical path css generator, to determine whether the problem
 is with the input your passing (css + url), or with your local setup:
 https://jonassebastianohlsson.com/criticalpathcssgenerator
 
