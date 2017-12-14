@@ -1,3 +1,6 @@
 div:hover, div:focus, div:active {
 background: red;
 }
+:selection {
+  background-color: rgba(0,0,0,0.5);
+}
