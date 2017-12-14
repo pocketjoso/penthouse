@@ -953,15 +953,6 @@ cryptiles@2.x.x:
   dependencies:
     boom "2.x.x"
 
-css-fork-pocketjoso@^2.2.1:
-  version "2.2.1"
-  resolved "https://registry.yarnpkg.com/css-fork-pocketjoso/-/css-fork-pocketjoso-2.2.1.tgz#a27748efa67351f45e4549a6806452beb4244162"
-  dependencies:
-    inherits "^2.0.1"
-    source-map "^0.1.38"
-    source-map-resolve "^0.3.0"
-    urix "^0.1.0"
-
 css-mediaquery@^0.1.2:
   version "0.1.2"
   resolved "https://registry.yarnpkg.com/css-mediaquery/-/css-mediaquery-0.1.2.tgz#6a2c37344928618631c54bd33cedd301da18bea0"

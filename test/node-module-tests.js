@@ -1,6 +1,5 @@
 'use strict'
 
-import css from 'css-fork-pocketjoso'
 import puppeteer from 'puppeteer'
 import { readFileSync as read } from 'fs'
 import { describe, it } from 'global-mocha'
@@ -9,13 +8,10 @@ import penthouse from '../lib/'
 import chai from 'chai'
 
 import chromeProcessesRunning from './util/chromeProcessesRunning'
+import normaliseCssAst from './util/normaliseCssAst'
 
 chai.should() // binds globally on Object
 
-// becasuse dont want to fail tests on white space differences
-function normalisedCssAst (cssString) {
-  return css.parse(css.stringify(css.parse(cssString), { compress: true }))
-}
 function staticServerFileUrl (file) {
   return 'file://' + path.join(__dirname, 'static-server', file)
 }
@@ -34,8 +30,8 @@ describe('extra tests for penthouse node module', function () {
       css: page1cssPath
     })
     .then(result => {
-      var resultAst = normalisedCssAst(result)
-      var expectedAst = normalisedCssAst(originalCss)
+      var resultAst = normaliseCssAst(result)
+      var expectedAst = normaliseCssAst(originalCss)
       resultAst.should.eql(expectedAst)
       done()
     })
