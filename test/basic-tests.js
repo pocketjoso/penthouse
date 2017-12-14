@@ -1,17 +1,15 @@
 'use strict'
 
-import css from 'css-fork-pocketjoso'
 import { describe, it } from 'global-mocha'
 import path from 'path'
 import penthouse from '../lib/'
 import { readFileSync as read } from 'fs'
 import chai from 'chai'
-chai.should() // binds globally on Object
+import csstree from 'css-tree'
 
-// because dont want to fail tests on white space differences
-function normalisedCssAst (cssString) {
-  return css.parse(css.stringify(css.parse(cssString), { compress: true }))
-}
+import normaliseCssAst from './util/normaliseCssAst'
+
+chai.should() // binds globally on Object
 
 function staticServerFileUrl (file) {
   return 'file://' + path.join(__dirname, 'static-server', file)
@@ -19,8 +17,8 @@ function staticServerFileUrl (file) {
 
 describe('basic tests of penthouse functionality', function () {
   var page1FileUrl = staticServerFileUrl('page1.html')
-  var page1cssPath = path.join(__dirname, 'static-server', 'page1.css'),
-    originalCss = read(page1cssPath).toString()
+  var page1cssPath = path.join(__dirname, 'static-server', 'page1.css')
+  var originalCss = read(page1cssPath).toString()
 
   // some of these tests take longer than default timeout
   this.timeout(10000)
@@ -31,15 +29,15 @@ describe('basic tests of penthouse functionality', function () {
       css: page1cssPath
     })
     .then(result => {
-      css.parse(result)
+      result.should.have.length.greaterThan(0)
       done()
     })
     .catch(done)
   })
 
   it('should return a css file whose parsed AST is equal to the the original\'s AST when the viewport is large', function (done) {
-    var widthLargerThanTotalTestCSS = 1000,
-      heightLargerThanTotalTestCSS = 1000
+    var widthLargerThanTotalTestCSS = 1000
+    var heightLargerThanTotalTestCSS = 1000
     penthouse({
       url: page1FileUrl,
       css: page1cssPath,
@@ -47,8 +45,8 @@ describe('basic tests of penthouse functionality', function () {
       height: heightLargerThanTotalTestCSS
     })
     .then(result => {
-      var resultAst = normalisedCssAst(result)
-      var expectedAst = normalisedCssAst(originalCss)
+      var resultAst = normaliseCssAst(result)
+      var expectedAst = normaliseCssAst(originalCss)
       resultAst.should.eql(expectedAst)
       done()
     })
@@ -56,8 +54,8 @@ describe('basic tests of penthouse functionality', function () {
   })
 
   it('should return a subset of the original AST rules when the viewport is small', function (done) {
-    var widthLargerThanTotalTestCSS = 1000,
-      heightSmallerThanTotalTestCSS = 100
+    var widthLargerThanTotalTestCSS = 1000
+    var heightSmallerThanTotalTestCSS = 100
     penthouse({
       url: page1FileUrl,
       css: page1cssPath,
@@ -65,9 +63,9 @@ describe('basic tests of penthouse functionality', function () {
       height: heightSmallerThanTotalTestCSS
     })
     .then(result => {
-      var resultAst = css.parse(result)
-      var orgAst = css.parse(originalCss)
-      resultAst.stylesheet.rules.should.have.length.lessThan(orgAst.stylesheet.rules.length)
+      const resultRules = csstree.toPlainObject(csstree.parse(result)).children
+      const originalRules = csstree.toPlainObject(csstree.parse(originalCss)).children
+      resultRules.should.have.length.lessThan(originalRules.length)
       // not be empty
       done()
     })
@@ -84,7 +82,7 @@ describe('basic tests of penthouse functionality', function () {
         done(new Error('length should be > 0'))
         return
       }
-      css.parse(result)
+      result.should.have.length.greaterThan(0)
       done()
     })
     .catch(done)
@@ -96,7 +94,7 @@ describe('basic tests of penthouse functionality', function () {
       css: path.join(__dirname, 'static-server', 'invalid-media.css')
     })
     .then(result => {
-      css.parse(result)
+      result.should.have.length.greaterThan(0)
       done()
     })
     .catch(done)
@@ -118,7 +116,7 @@ describe('basic tests of penthouse functionality', function () {
       css: path.join(__dirname, 'static-server', 'special-chars.css')
     })
     .then(result => {
-      css.parse(result)
+      result.should.have.length.greaterThan(0)
       done()
     })
     .catch(done)
