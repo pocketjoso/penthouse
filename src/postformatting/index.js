@@ -39,9 +39,9 @@ export default function postformatting ({
     finalCss = apartment(finalCss, {
       properties: propertiesToRemove
     })
-    debuglog('cleaned css via apartment')
+    debuglog('removed properties via apartment')
   } catch (e) {
-    debuglog('FAILED to clean css via apartment: ' + e)
+    debuglog('FAILED to remove properties via apartment: ' + e)
   }
 
   return finalCss
