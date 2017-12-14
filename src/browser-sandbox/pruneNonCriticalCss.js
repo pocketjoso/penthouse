@@ -57,16 +57,18 @@ export default function pruneNonCriticalCss ({
     // set clear style back to what it was
     element.style.clear = originalClearStyle
 
-    if (!aboveFold) {
-      // phantomJS/QT browser has some bugs regarding fixed position;
-      // sometimes positioning elements outside of screen incorrectly.
-      // just keep all fixed position elements - normally very few in a stylesheet anyway
-      var styles = window.getComputedStyle(element, null)
-      if (styles.position === 'fixed') {
-        console.log('debug: force keeping fixed position styles')
-        return true
-      }
-    }
+    // Should not be needed anymore with Chrome Headless:
+    // do some monitoring before complete removing the code (below)
+    // if (!aboveFold) {
+    //   // phantomJS/QT browser has some bugs regarding fixed position;
+    //   // sometimes positioning elements outside of screen incorrectly.
+    //   // just keep all fixed position elements - normally very few in a stylesheet anyway
+    //   var styles = window.getComputedStyle(element, null)
+    //   if (styles.position === 'fixed') {
+    //     console.log('debug: force keeping fixed position styles')
+    //     return true
+    //   }
+    // }
     return aboveFold
   }
 
