@@ -21,14 +21,19 @@ process.setMaxListeners(0)
 describe('penthouse post formatting tests', function () {
   it('should remove embedded base64', function (done) {
     const originalCss = read(path.join(__dirname, 'static-server', 'embedded-base64--remove.css')).toString()
+
+    const ast = normaliseCssAst(originalCss)
+    const astRules = csstree.toPlainObject(ast).children
     // NOTE: penthouse's default max uri length is 1000.
-    const result = embeddedbase64Remover(originalCss, 250)
-    try {
-      result.trim().should.equal('body{}@media (min-width: 10px){body{}}')
-      done()
-    } catch (ex) {
-      done(ex)
-    }
+    const resultRules = embeddedbase64Remover(astRules, 250)
+    const resultAst = csstree.fromPlainObject({
+      type: 'StyleSheet',
+      loc: null,
+      children: resultRules
+    })
+    var expectedAst = normaliseCssAst('body{}@media (min-width: 10px){body{}}')
+    resultAst.should.eql(expectedAst)
+    done()
   })
 
   it('should remove @fontface rule, because it is not used', function (done) {

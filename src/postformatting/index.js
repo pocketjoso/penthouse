@@ -14,20 +14,24 @@ export default function postformatting ({
   maxEmbeddedBase64Length
 }) {
   debuglog('start')
-  const usedCriticalRules = unusedKeyframeRemover(astRulesCritical)
+  let usedCriticalRules = unusedKeyframeRemover(astRulesCritical)
   debuglog('unusedKeyframeRemover AFTER, length: ' + usedCriticalRules.length)
+
+  // remove data-uris that are too long
+  // ..faster if this removal can be combined with @font-face one into same iteration..
+  usedCriticalRules = embeddedbase64Remover(
+    usedCriticalRules,
+    maxEmbeddedBase64Length
+  )
+  debuglog('embeddedbase64Remover')
 
   const finalAst = csstree.fromPlainObject({
     type: 'StyleSheet',
     children: usedCriticalRules
   })
+
   let finalCss = csstree.translate(finalAst)
   debuglog('stringify from ast')
-
-  // remove data-uris that are too long
-  // ..faster if this removal can be combined with @font-face one into same iteration..
-  finalCss = embeddedbase64Remover(finalCss, maxEmbeddedBase64Length)
-  debuglog('embeddedbase64Remover')
 
   // remove unused @fontface rules
   finalCss = ffRemover(finalCss)

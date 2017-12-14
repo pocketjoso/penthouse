@@ -1,7 +1,5 @@
 'use strict'
 
-const csstree = require('css-tree')
-
 const BASE64_ENCODE_PATTERN = /data:[^,]*base64,/
 
 const _isTooLongBase64Encoded = function (declaration, maxEmbeddedBase64Length) {
@@ -44,24 +42,10 @@ const _removeDataUrisFromRule = function (rule, maxEmbeddedBase64Length) {
   return rule
 }
 
-const embeddedbase64Remover = function (css, maxEmbeddedBase64Length) {
-  const ast = csstree.parse(css, {
-    parseRulePrelude: false,
-    parseAtrulePrelude: false,
-    parseValue: false
-  })
-  const astRules = csstree
-    .toPlainObject(ast)
-    .children.map(rule =>
-      _removeDataUrisFromRule(rule, maxEmbeddedBase64Length)
-    )
+const embeddedbase64Remover = function (astRules, maxEmbeddedBase64Length) {
+  return astRules
+    .map(rule => _removeDataUrisFromRule(rule, maxEmbeddedBase64Length))
     .filter(Boolean)
-
-  const finalAst = csstree.fromPlainObject({
-    type: 'StyleSheet',
-    children: astRules
-  })
-  return csstree.translate(finalAst)
 }
 
 module.exports = embeddedbase64Remover
