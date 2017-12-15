@@ -5,8 +5,7 @@
   color: red;
 }
 @media all {
-  #box21,
-  #box22 {
+  #box21,#box22 {
     color: red;
   }
 }
