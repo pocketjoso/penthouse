@@ -1,6 +1,8 @@
 html {
-	font-family: Arial;
+	font-family: Arial,Verdana;
+}
+body {
+  font: 16px 'museo-500';
 }
 
 @font-face{font-family:museo-500;font-style:normal;src:url(http://21339-presscdn.pagely.netdna-cdn.com/wp-content/uploads/useanyfont/160815015629Mikado-Bold.eot);src:local('museo-500'),url(http://21339-presscdn.pagely.netdna-cdn.com/wp-content/uploads/useanyfont/160815015629Mikado-Bold.eot) format('embedded-opentype'),url(http://21339-presscdn.pagely.netdna-cdn.com/wp-content/uploads/useanyfont/160815015629Mikado-Bold.woff) format('woff')}
-body{font-family:museo-500!important;}
