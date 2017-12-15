@@ -18,6 +18,10 @@ export default function postformatting ({
   let filteredCriticalRules = unusedKeyframeRemover(astRulesCritical)
   debuglog('unusedKeyframeRemover')
 
+  // remove unused @fontface rules
+  filteredCriticalRules = ffRemover(filteredCriticalRules)
+  debuglog('ffRemover')
+
   // remove data-uris that are too long
   filteredCriticalRules = embeddedbase64Remover(
     filteredCriticalRules,
@@ -38,10 +42,6 @@ export default function postformatting ({
   })
   let finalCss = csstree.translate(finalAst)
   debuglog('stringify from ast')
-
-  // remove unused @fontface rules
-  finalCss = ffRemover(finalCss)
-  debuglog('ffRemover')
 
   return finalCss
 }
