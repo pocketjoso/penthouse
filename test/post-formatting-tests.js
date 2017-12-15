@@ -8,6 +8,7 @@ import chai from 'chai'
 
 import ffRemover from '../lib/postformatting/unused-fontface-remover'
 import unusedKeyframeRemover from '../lib/postformatting/unused-keyframe-remover'
+import unwantedPropertiesRemover from '../lib/postformatting/unwanted-properties-remover'
 import embeddedbase64Remover from '../lib/postformatting/embedded-base64-remover'
 
 chai.should() // binds globally on Object
@@ -19,6 +20,38 @@ function staticServerFileUrl (file) {
 process.setMaxListeners(0)
 
 describe('penthouse post formatting tests', function () {
+  it('should remove propertiesToRemove', function (done) {
+    const originalCss = `
+      body {
+        transition: all 0.5s;
+        -webkit-transition: all 0.5s;
+        cursor: pointer;
+        pointer-events: null;
+        -webkit-tap-highlight-color: blue;
+        -moz-user-select: none;
+        user-select: none;
+      }
+      @media all {
+        body {
+          pointer-events: null;
+        }
+      }
+    `
+    const propertiesToRemove = [
+      '(.*)transition(.*)',
+      'cursor',
+      'pointer-events',
+      '(-webkit-)?tap-highlight-color',
+      '(.*)user-select'
+    ]
+
+    const ast = normaliseCssAst(originalCss)
+    const astRules = csstree.toPlainObject(ast).children
+    const resultRules = unwantedPropertiesRemover(astRules, propertiesToRemove)
+    resultRules.length.should.eql(0)
+    done()
+  })
+
   it('should remove embedded base64', function (done) {
     const originalCss = read(path.join(__dirname, 'static-server', 'embedded-base64--remove.css')).toString()
 
