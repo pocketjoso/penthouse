@@ -40,9 +40,7 @@ export default function pruneNonCriticalCss ({
   // and some stylesheets have lots of generic selectors (like '.button', '.fa' etc)
   var isElementAboveFoldCache = []
   function isElementAboveFold (element) {
-    // no support for Array.find
-    var matching = isElementAboveFoldCache.filter(c => c.element === element)
-    var cached = matching && matching[0]
+    var cached = isElementAboveFoldCache.find(c => c.element === element)
     if (cached) {
       return cached.aboveFold
     }
@@ -59,16 +57,18 @@ export default function pruneNonCriticalCss ({
     // set clear style back to what it was
     element.style.clear = originalClearStyle
 
-    if (!aboveFold) {
-      // phantomJS/QT browser has some bugs regarding fixed position;
-      // sometimes positioning elements outside of screen incorrectly.
-      // just keep all fixed position elements - normally very few in a stylesheet anyway
-      var styles = window.getComputedStyle(element, null)
-      if (styles.position === 'fixed') {
-        console.log('debug: force keeping fixed position styles')
-        return true
-      }
-    }
+    // Should not be needed anymore with Chrome Headless:
+    // do some monitoring before complete removing the code (below)
+    // if (!aboveFold) {
+    //   // phantomJS/QT browser has some bugs regarding fixed position;
+    //   // sometimes positioning elements outside of screen incorrectly.
+    //   // just keep all fixed position elements - normally very few in a stylesheet anyway
+    //   var styles = window.getComputedStyle(element, null)
+    //   if (styles.position === 'fixed') {
+    //     console.log('debug: force keeping fixed position styles')
+    //     return true
+    //   }
+    // }
     return aboveFold
   }
 
@@ -86,9 +86,15 @@ export default function pruneNonCriticalCss ({
       // many of these selectors can't be matched to anything on page via JS,
       // but that still might affect the above the fold styling
 
-      // these psuedo selectors depend on an element, so test element instead
+      // ::selection we just remove
+      if (/:?:(-moz-)?selection/.test(modifiedSelector)) {
+        return false
+      }
+
+      // for the psuedo selectors that depend on an element, test for presence
+      // of the element (in the critical viewport) instead
       // (:hover, :focus, :active would be treated same
-      // IF we wanted to keep them for critical path css, but we don't)
+      // IF we wanted to keep them for critical path css, but we don’t)
       modifiedSelector = modifiedSelector.replace(PSUEDO_SELECTOR_REGEXP, '')
 
       // if selector is purely psuedo (f.e. ::-moz-placeholder), just keep as is.

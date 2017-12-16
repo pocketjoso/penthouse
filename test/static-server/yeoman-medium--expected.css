@@ -80,8 +80,7 @@ h1 {
      -moz-box-sizing: border-box;
           box-sizing: border-box;
 }
-*:before,
-*:after {
+*:before,*:after {
   -webkit-box-sizing: border-box;
      -moz-box-sizing: border-box;
           box-sizing: border-box;
@@ -100,15 +99,13 @@ a {
   color: #428bca;
   text-decoration: none;
 }
-h1,
-h3{
+h1,h3{
   font-family: inherit;
   font-weight: 500;
   line-height: 1.1;
   color: inherit;
 }
-h1,
-h3{
+h1,h3{
   margin-top: 20px;
   margin-bottom: 10px;
 }
@@ -233,15 +230,11 @@ ul{
     font-size: 63px;
   }
 }
-.container:before,
-.container:after,
-.nav:before,
-.nav:after{
+.container:before,.container:after,.nav:before,.nav:after{
   display: table;
   content: " ";
 }
-.container:after,
-.nav:after{
+.container:after,.nav:after{
   clear: both;
 }
 .pull-right {
