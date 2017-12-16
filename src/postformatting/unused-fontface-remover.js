@@ -20,6 +20,10 @@ function getAllFontNameValues (rules) {
 
 function unusedFontfaceRemover (rules) {
   debuglog('getAllFontNameValues')
+  // NOTE: we grabp the full declaration everywhere a font name is used,
+  // and just do a simple index of on these lines to see if each @font-face
+  // is used anywhere. Could in theory yield false positives, but is quite unlikely,
+  // unless people use css keywoards in their custom font names.
   const fontNameValues = getAllFontNameValues(rules)
   debuglog('getAllFontNameValues AFTER')
 
@@ -33,6 +37,10 @@ function unusedFontfaceRemover (rules) {
       let font
       if (property === 'font-family') {
         font = value.value
+          // replace quoute mark to ensure we match inside font declaration,
+          // in case appears without them there
+          .replace(/^['"]/, '')
+          .replace(/['"]$/, '')
       }
       if (font) {
         toKeep = fontNameValues.some(value => value.indexOf(font) !== -1)
