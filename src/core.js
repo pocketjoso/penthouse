@@ -1,4 +1,5 @@
 import fs from 'fs'
+import csstree from 'css-tree'
 import debug from 'debug'
 import pruneNonCriticalCss from './browser-sandbox/pruneNonCriticalCss'
 import replacePageCss from './browser-sandbox/replacePageCss'
@@ -180,12 +181,19 @@ async function pruneNonCriticalCssLauncher ({
       })
       debuglog('generateCriticalCss done, now postformat')
 
-      const formattedCss = postformatting({
+      const formattedAstRules = postformatting({
         astRulesCritical,
         propertiesToRemove,
         maxEmbeddedBase64Length
       })
       debuglog('postformatting done')
+
+      const finalAst = csstree.fromPlainObject({
+        type: 'StyleSheet',
+        children: formattedAstRules
+      })
+      const formattedCss = csstree.translate(finalAst)
+      debuglog('stringify from ast')
 
       if (takeScreenshots) {
         debuglog('inline critical styles for after screenshot')

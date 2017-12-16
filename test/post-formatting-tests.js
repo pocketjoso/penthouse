@@ -70,21 +70,23 @@ describe('penthouse post formatting tests', function () {
   })
 
   it('should remove @fontface rule, because it is not used', function (done) {
-    var fontFaceRemoveCssFilePath = path.join(__dirname, 'static-server', 'fontface--remove.css'),
-      fontFaceRemoveExpectedCssFilePath = path.join(__dirname, 'static-server', 'fontface--remove--expected.css'),
-      fontFaceRemoveCss = read(fontFaceRemoveCssFilePath).toString(),
-      fontFaceRemoveExpectedCss = read(fontFaceRemoveExpectedCssFilePath).toString()
+    var fontFaceRemoveCssFilePath = path.join(__dirname, 'static-server', 'fontface--remove.css')
+    var fontFaceRemoveExpectedCssFilePath = path.join(__dirname, 'static-server', 'fontface--remove--expected.css')
+    var fontFaceRemoveCss = read(fontFaceRemoveCssFilePath).toString()
+    var fontFaceRemoveExpectedCss = read(fontFaceRemoveExpectedCssFilePath).toString()
 
-    var result = ffRemover(fontFaceRemoveCss)
+    const ast = normaliseCssAst(fontFaceRemoveCss)
+    const astRules = csstree.toPlainObject(ast).children
+    var resultRules = ffRemover(astRules)
+    const resultAst = csstree.fromPlainObject({
+      type: 'StyleSheet',
+      loc: null,
+      children: resultRules
+    })
 
-    try {
-      var resultAst = normaliseCssAst(result)
-      var expectedAst = normaliseCssAst(fontFaceRemoveExpectedCss)
-      resultAst.should.eql(expectedAst)
-      done()
-    } catch (ex) {
-      done(ex)
-    }
+    const expectedAst = normaliseCssAst(fontFaceRemoveExpectedCss)
+    resultAst.should.eql(expectedAst)
+    done()
   })
 
   it('should only keep @keyframe rules used in critical css', function (done) {

@@ -1,4 +1,3 @@
-import csstree from 'css-tree'
 import debug from 'debug'
 
 import embeddedbase64Remover from './embedded-base64-remover'
@@ -15,33 +14,26 @@ export default function postformatting ({
 }) {
   debuglog('start')
 
-  let filteredCriticalRules = unusedKeyframeRemover(astRulesCritical)
+  let formattedCriticalRules = unusedKeyframeRemover(astRulesCritical)
   debuglog('unusedKeyframeRemover')
 
+  // remove unused @fontface rules
+  formattedCriticalRules = ffRemover(formattedCriticalRules)
+  debuglog('ffRemover')
+
   // remove data-uris that are too long
-  filteredCriticalRules = embeddedbase64Remover(
-    filteredCriticalRules,
+  formattedCriticalRules = embeddedbase64Remover(
+    formattedCriticalRules,
     maxEmbeddedBase64Length
   )
   debuglog('embeddedbase64Remover')
 
   // remove irrelevant css properties via rule walking
-  filteredCriticalRules = unwantedPropertiesRemover(
-    filteredCriticalRules,
+  formattedCriticalRules = unwantedPropertiesRemover(
+    formattedCriticalRules,
     propertiesToRemove
   )
   debuglog('propertiesToRemove')
 
-  const finalAst = csstree.fromPlainObject({
-    type: 'StyleSheet',
-    children: filteredCriticalRules
-  })
-  let finalCss = csstree.translate(finalAst)
-  debuglog('stringify from ast')
-
-  // remove unused @fontface rules
-  finalCss = ffRemover(finalCss)
-  debuglog('ffRemover')
-
-  return finalCss
+  return formattedCriticalRules
 }
