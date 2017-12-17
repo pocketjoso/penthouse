@@ -58,6 +58,7 @@ describe('penthouse post formatting tests', function () {
     const ast = normaliseCssAst(originalCss)
     const astRules = csstree.toPlainObject(ast).children
     // NOTE: penthouse's default max uri length is 1000.
+    // lowering the limit here so that everything will be removed in test fixture
     const resultRules = embeddedbase64Remover(astRules, 250)
     const resultAst = csstree.fromPlainObject({
       type: 'StyleSheet',
