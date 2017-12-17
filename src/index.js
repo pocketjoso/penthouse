@@ -6,6 +6,8 @@ import debug from 'debug'
 import generateCriticalCss from './core'
 import nonMatchingMediaQueryRemover from './non-matching-media-query-remover'
 
+const debuglog = debug('penthouse')
+
 const DEFAULT_VIEWPORT_WIDTH = 1300 // px
 const DEFAULT_VIEWPORT_HEIGHT = 900 // px
 const DEFAULT_TIMEOUT = 30000 // ms
@@ -35,7 +37,7 @@ let _browserLaunchPromise = null
 // browser.pages is not implemented, so need to count myself to not close browser
 // until all pages used by penthouse are closed (i.e. individual calls are done)
 let _browserPagesOpen = 0
-const launchBrowserIfNeeded = async function ({ getBrowser }, debuglog) {
+const launchBrowserIfNeeded = async function ({ getBrowser }) {
   if (browser) {
     return
   }
@@ -99,7 +101,7 @@ function prepareForceIncludeForSerialization (forceInclude = []) {
   })
 }
 
-const astFromCss = async function astFromCss (options, { debuglog, stdErr }) {
+const astFromCss = async function astFromCss (options) {
   // breaks puppeteer
   const css = options.cssString.replace(/￿/g, '\f042')
 
@@ -128,7 +130,7 @@ const astFromCss = async function astFromCss (options, { debuglog, stdErr }) {
 const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
   options,
   ast,
-  { debuglog, stdErr, forceTryRestartBrowser }
+  { forceTryRestartBrowser } = {}
 ) {
   const width = parseInt(options.width || DEFAULT_VIEWPORT_WIDTH, 10)
   const height = parseInt(options.height || DEFAULT_VIEWPORT_HEIGHT, 10)
@@ -148,7 +150,7 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
     height,
     options.keepLargerMediaQueries
   )
-  stdErr += debuglog('stripped out non matching media queries')
+  debuglog('stripped out non matching media queries')
 
   // always forceInclude '*', 'html', and 'body' selectors
   const forceInclude = prepareForceIncludeForSerialization(
@@ -172,7 +174,7 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
       }
     }
 
-    stdErr += debuglog('call generateCriticalCssWrapped')
+    debuglog('call generateCriticalCssWrapped')
     let formattedCss
     try {
       _browserPagesOpen++
@@ -231,30 +233,23 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         } else if (!(options.puppeteer && options.puppeteer.getBrowser)) {
           console.log('restarting chrome after crash')
           browser = null
-          await launchBrowserIfNeeded({}, debuglog)
+          await launchBrowserIfNeeded({})
         }
         // retry
         resolve(
           generateCriticalCssWrapped(options, ast, {
-            debuglog,
-            stdErr,
             forceTryRestartBrowser
           })
         )
         return
       }
-      stdErr += e
-      const err = new Error(stdErr)
-      err.stderr = stdErr
-      cleanupAndExit({ error: err })
+      cleanupAndExit({ error: e })
       return
     }
-    stdErr += debuglog('generateCriticalCss done')
+    debuglog('generateCriticalCss done')
     if (formattedCss.trim().length === 0) {
-      // TODO: this error should surface to user
-      stdErr += debuglog(
-        'Note: Generated critical css was empty for URL: ' + options.url
-      )
+      // TODO: would be good to surface this to user, always
+      debuglog('Note: Generated critical css was empty for URL: ' + options.url)
       cleanupAndExit({ returnValue: '' })
       return
     }
@@ -264,22 +259,6 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
 }
 
 module.exports = function (options, callback) {
-  // init logging and debug output
-  const debuglogger = debug('penthouse')
-  const debuglog = function (msg, isError) {
-    if (isError) {
-      console.error(msg)
-      return msg
-    }
-    debuglogger(msg)
-    return ''
-  }
-
-  const logging = {
-    debuglog,
-    stdErr: ''
-  }
-
   process.on('exit', exitHandler)
   process.on('SIGTERM', exitHandler)
   process.on('SIGINT', exitHandler)
@@ -328,19 +307,12 @@ module.exports = function (options, callback) {
       return
     }
 
-    await launchBrowserIfNeeded(
-      {
-        getBrowser: options.puppeteer && options.puppeteer.getBrowser
-      },
-      debuglog
-    )
+    await launchBrowserIfNeeded({
+      getBrowser: options.puppeteer && options.puppeteer.getBrowser
+    })
     try {
-      const ast = await astFromCss(options, logging)
-      const criticalCss = await generateCriticalCssWrapped(
-        options,
-        ast,
-        logging
-      )
+      const ast = await astFromCss(options)
+      const criticalCss = await generateCriticalCssWrapped(options, ast)
       cleanupAndExit({ returnValue: criticalCss })
     } catch (err) {
       cleanupAndExit({ error: err })
