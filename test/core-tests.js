@@ -157,7 +157,7 @@ describe('penthouse core tests', function () {
 
     penthouse({
       url: page1FileUrl,
-      css: atRuleCase3RemainCssFilePath,
+      cssString: atRuleCase3RemainCss,
       strict: true
     })
     .then(result => {
