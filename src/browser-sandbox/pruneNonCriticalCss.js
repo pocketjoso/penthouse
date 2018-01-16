@@ -171,7 +171,7 @@ export default function pruneNonCriticalCss ({
     csstree.walk(ast, {
       visit: 'Atrule',
       enter: (atrule, item, list) => {
-        const name = csstree.keyword(atrule.name).name
+        const name = csstree.keyword(atrule.name).basename
 
         /* ==@-rule handling== */
         /* - Case 0 : Non nested @-rule [REMAIN]
@@ -187,21 +187,15 @@ export default function pruneNonCriticalCss ({
         if (
           name === 'font-face' ||
           name === 'keyframes' ||
-          name === 'viewport' ||
-          name === '-ms-viewport'
+          name === 'viewport'
         ) {
           return
         }
 
         /* Case 3: @-rule with full CSS (rules) inside [REMAIN]
         */
-        if (
-          // non matching media queries are stripped out in non-matching-media-query-remover.js
-          name === 'media' ||
-          name === 'document' ||
-          name === '-moz-document' ||
-          name === 'supports'
-        ) {
+        // non matching media queries are stripped out in non-matching-media-query-remover.js
+        if (name === 'media' || name === 'document' || name === 'supports') {
           if (atrule.block && !atrule.block.children.isEmpty()) {
             return
           }
