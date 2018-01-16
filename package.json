@@ -21,7 +21,7 @@
     "node": ">=6.4.0"
   },
   "scripts": {
-    "lint": "eslint \"src/**/*.js\"",
+    "lint": "eslint src test",
     "test": "mocha --compilers js:babel-core/register test/core-tests",
     "test-all": "mocha --compilers js:babel-core/register",
     "precommit": "lint-staged",

@@ -1,7 +1,6 @@
 'use strict'
 
 import { describe, it } from 'global-mocha'
-import csstree from 'css-tree'
 import path from 'path'
 import penthouse from '../lib/'
 import { readFileSync as read } from 'fs'

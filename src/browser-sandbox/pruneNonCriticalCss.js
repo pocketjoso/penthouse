@@ -6,6 +6,7 @@ export default function pruneNonCriticalCss ({
   renderWaitTime
 }) {
   console.log('debug: pruneNonCriticalCss')
+  var csstree = window.csstree
   var h = window.innerHeight
   // TODO: bind with forceInclude argument instead
   function matchesForceInclude (selector) {
@@ -74,7 +75,7 @@ export default function pruneNonCriticalCss ({
 
   function isSelectorCritical (selectorNode) {
     // console.log('debug: isSelectorCritical: ' + selector)
-    const selector = window.csstree.generate(selectorNode)
+    const selector = csstree.generate(selectorNode)
 
     if (matchesForceInclude(selector.trim())) {
       return true
@@ -137,15 +138,15 @@ export default function pruneNonCriticalCss ({
   function processCssRules (ast) {
     console.log('debug: processCssRules BEFORE')
 
-    ast = window.csstree.fromPlainObject(ast)
+    ast = csstree.fromPlainObject(ast)
 
-    window.csstree.walk(ast, {
+    csstree.walk(ast, {
       visit: 'Rule',
       enter: function (rule, item, list) {
-        // ignore rules inside
+        // ignore rules inside @keyframes
         if (
           this.atrule &&
-          window.csstree.keyword(this.atrule.name).basename === 'keyframes'
+          csstree.keyword(this.atrule.name).basename === 'keyframes'
         ) {
           return
         }
@@ -167,10 +168,10 @@ export default function pruneNonCriticalCss ({
       }
     })
 
-    window.csstree.walk(ast, {
+    csstree.walk(ast, {
       visit: 'Atrule',
       enter: (atrule, item, list) => {
-        const name = window.csstree.keyword(atrule.name).name
+        const name = csstree.keyword(atrule.name).name
 
         /* ==@-rule handling== */
         /* - Case 0 : Non nested @-rule [REMAIN]

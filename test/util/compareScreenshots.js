@@ -14,10 +14,9 @@ export default function (beforeImage, afterImage) {
           return
         }
         if (equality <= TOLERANCE_THRESHOLD_GOOD) {
-          resolve({ equality})
+          resolve({ equality })
         } else {
           reject(new Error('Equality insuffiecient: ' + equality))
-          return
         }
       }
     )
