@@ -175,14 +175,14 @@ export default function pruneNonCriticalCss ({
 
         /* ==@-rule handling== */
         /* - Case 0 : Non nested @-rule [REMAIN]
-         (@charset, @import, @namespace)
-         */
+           (@charset, @import, @namespace)
+        */
         if (name === 'charset' || name === 'import' || name === 'namespace') {
           return
         }
 
         /* Case 1: @-rule with CSS properties inside [REMAIN]
-          @font-face, @keyframes - keep here, but remove later in code, unless it is used.
+           @font-face, @keyframes - keep here, but remove later in code, unless it is used.
         */
         if (
           name === 'font-face' ||
@@ -192,8 +192,7 @@ export default function pruneNonCriticalCss ({
           return
         }
 
-        /* Case 3: @-rule with full CSS (rules) inside [REMAIN]
-        */
+        /* Case 3: @-rule with full CSS (rules) inside [REMAIN] */
         // non matching media queries are stripped out in non-matching-media-query-remover.js
         if (name === 'media' || name === 'document' || name === 'supports') {
           if (atrule.block && !atrule.block.children.isEmpty()) {
