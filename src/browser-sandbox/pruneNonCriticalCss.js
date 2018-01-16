@@ -1,7 +1,7 @@
 // executed inside sandboxed browser environment,
 // no access to scrope outside of function
 export default function pruneNonCriticalCss ({
-  astRules,
+  ast,
   forceInclude,
   renderWaitTime
 }) {
@@ -72,8 +72,10 @@ export default function pruneNonCriticalCss ({
     return aboveFold
   }
 
-  function isSelectorCritical (selector) {
+  function isSelectorCritical (selectorNode) {
     // console.log('debug: isSelectorCritical: ' + selector)
+    const selector = window.csstree.generate(selectorNode)
+
     if (matchesForceInclude(selector.trim())) {
       return true
     }
@@ -132,103 +134,85 @@ export default function pruneNonCriticalCss ({
     return aboveFold
   }
 
-  function translateSelectorObjectToString (selectorObject) {
-    var parsedSelector = window.csstree.fromPlainObject(selectorObject)
-    var selectorString = window.csstree.translate(parsedSelector)
-    return selectorString
-  }
+  function processCssRules (ast) {
+    console.log('debug: processCssRules BEFORE')
 
-  function translateSelectorListRuleToStrings (selectorListRuleObject) {
-    return selectorListRuleObject.prelude.children.map(
-      translateSelectorObjectToString
-    )
-  }
+    ast = window.csstree.fromPlainObject(ast)
 
-  function isCssSelectorRuleCritical (rule) {
-    // check what, if any selectors are found above fold
-    let selectors = []
-    if (rule.prelude.type === 'SelectorList') {
-      selectors = translateSelectorListRuleToStrings(rule)
-    }
-    if (selectors.length === 0) {
-      return false
-    }
+    window.csstree.walk(ast, {
+      visit: 'Rule',
+      enter: function (rule, item, list) {
+        // ignore rules inside
+        if (
+          this.atrule &&
+          window.csstree.keyword(this.atrule.name).basename === 'keyframes'
+        ) {
+          return
+        }
 
-    // filter out the ones that are not critical
-    const criticalSelectorsMeta = selectors.map((selector, index) => {
-      return {
-        toKeep: isSelectorCritical(selector)
+        if (rule.prelude.type !== 'SelectorList') {
+          // remove a rule with bad selector
+          list.remove(item)
+          return
+        }
+
+        // check what, if any selectors are found above fold
+        // filter out the ones that are not critical
+        rule.prelude.children = rule.prelude.children.filter(isSelectorCritical)
+
+        // NOTE: isCssSelectorRuleCritical mutates the rule
+        if (rule.prelude.children.isEmpty()) {
+          list.remove(item)
+        }
       }
     })
-    const criticalSelectorsLength = criticalSelectorsMeta.filter(s => s.toKeep)
-      .length
-    const keepRule = criticalSelectorsLength > 0
-    if (keepRule && criticalSelectorsLength < selectors.length) {
-      // NOTE: mutating the rule here
-      const selectorListFiltered = rule.prelude.children.filter(
-        (rule, index) => {
-          return criticalSelectorsMeta[index].toKeep
+
+    window.csstree.walk(ast, {
+      visit: 'Atrule',
+      enter: (atrule, item, list) => {
+        const name = window.csstree.keyword(atrule.name).name
+
+        /* ==@-rule handling== */
+        /* - Case 0 : Non nested @-rule [REMAIN]
+         (@charset, @import, @namespace)
+         */
+        if (name === 'charset' || name === 'import' || name === 'namespace') {
+          return
         }
-      )
-      rule.prelude.children = selectorListFiltered
-    }
 
-    return keepRule
-  }
+        /* Case 1: @-rule with CSS properties inside [REMAIN]
+          @font-face, @keyframes - keep here, but remove later in code, unless it is used.
+        */
+        if (
+          name === 'font-face' ||
+          name === 'keyframes' ||
+          name === 'viewport' ||
+          name === '-ms-viewport'
+        ) {
+          return
+        }
 
-  function isCssRuleCritical (rule) {
-    if (rule.type === 'Rule') {
-      // NOTE: isCssSelectorRuleCritical mutates the rule
-      return isCssSelectorRuleCritical(rule)
-    }
-    /* ==@-rule handling== */
-    /* - Case 0 : Non nested @-rule [REMAIN]
-     (@charset, @import, @namespace)
-     */
-    if (
-      rule.type === 'Atrule' &&
-      (rule.name === 'charset' ||
-        rule.name === 'import' ||
-        rule.name === 'namespace')
-    ) {
-      return true
-    }
+        /* Case 3: @-rule with full CSS (rules) inside [REMAIN]
+        */
+        if (
+          // non matching media queries are stripped out in non-matching-media-query-remover.js
+          name === 'media' ||
+          name === 'document' ||
+          name === '-moz-document' ||
+          name === 'supports'
+        ) {
+          if (atrule.block && !atrule.block.children.isEmpty()) {
+            return
+          }
+        }
 
-    /* Case 1: @-rule with CSS properties inside [REMAIN]
-      @font-face, @keyframes - keep here, but remove later in code, unless it is used.
-    */
-    if (
-      rule.type === 'Atrule' &&
-      (rule.name === 'font-face' ||
-        rule.name === 'keyframes' ||
-        rule.name === 'viewport' ||
-        rule.name === '-ms-viewport')
-    ) {
-      return true
-    }
+        // otherwise remove a at-rule
+        list.remove(item)
+      }
+    })
 
-    /* Case 3: @-rule with full CSS (rules) inside [REMAIN]
-    */
-    if (
-      rule.type === 'Atrule' &&
-      // non matching media queries are stripped out in non-matching-media-query-remover.js
-      (rule.name === 'media' ||
-        rule.name === 'document' ||
-        rule.name === '-moz-document' ||
-        rule.name === 'supports')
-    ) {
-      rule.block.children = rule.block.children.filter(isCssRuleCritical)
-      return rule.block.children.length > 0
-    }
-
-    return false
-  }
-
-  function processCssRules (astRules) {
-    console.log('debug: processCssRules BEFORE')
-    var criticalRules = astRules.filter(isCssRuleCritical)
     console.log('debug: processCssRules AFTER')
-    return criticalRules
+    return ast
   }
 
   function pollUntilTimePassed (start, timeToPass) {
@@ -255,6 +239,6 @@ export default function pruneNonCriticalCss ({
   // it doesn't deserve to be in critical path.
   return new Promise(resolve => resolve(sleep(renderWaitTime))).then(() => {
     console.log('debug: waited for renderWaitTime: ' + renderWaitTime)
-    return processCssRules(astRules)
+    return processCssRules(ast)
   })
 }

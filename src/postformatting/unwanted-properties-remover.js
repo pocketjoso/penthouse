@@ -1,41 +1,44 @@
-'use strict'
+import csstree from 'css-tree'
 
-const _removePropertiesFromRule = function (rule, propertiesToRemoveRegexes) {
-  if (
-    rule.type === 'Rule' ||
-    (rule.type === 'Atrule' && rule.name === 'font-face')
-  ) {
-    rule.block.children = rule.block.children.filter(declaration => {
-      if (
-        propertiesToRemoveRegexes.some(toRemovePattern => {
-          return toRemovePattern.test(declaration.property)
-        })
-      ) {
-        return false
-      }
-      return true
-    })
-  } else if (rule.type === 'Atrule' && rule.name === 'media') {
-    rule.block.children = rule.block.children
-      .map(function (rule) {
-        return _removePropertiesFromRule(rule, propertiesToRemoveRegexes)
-      })
-      .filter(Boolean)
-  }
-  if (rule.block && rule.block.children.length === 0) {
-    return null
-  }
-  return rule
-}
-
-const unwantedPropertiesRemover = function (astRules, propertiesToRemove) {
+const unwantedPropertiesRemover = function (ast, propertiesToRemove) {
   const propertiesToRemoveRegexes = propertiesToRemove.map(
     text => new RegExp(text)
   )
+  const shouldRemove = declaration =>
+    propertiesToRemoveRegexes.some(toRemovePattern =>
+      toRemovePattern.test(declaration.property)
+    )
 
-  return astRules
-    .map(rule => _removePropertiesFromRule(rule, propertiesToRemoveRegexes))
-    .filter(Boolean)
+  csstree.walk(ast, {
+    visit: 'Declaration',
+    enter: (declaration, item, list) => {
+      if (shouldRemove(declaration)) {
+        list.remove(item)
+      }
+    }
+  })
+
+  // remove empty rules
+  csstree.walk(ast, {
+    visit: 'Rule',
+    leave: (rule, item, list) => {
+      if (rule.block.children.isEmpty()) {
+        list.remove(item)
+      }
+    }
+  })
+
+  // remove empty at-rules
+  csstree.walk(ast, {
+    visit: 'Atrule',
+    leave: (atrule, item, list) => {
+      if (atrule.block && atrule.block.children.isEmpty()) {
+        list.remove(item)
+      }
+    }
+  })
+
+  return ast
 }
 
 module.exports = unwantedPropertiesRemover

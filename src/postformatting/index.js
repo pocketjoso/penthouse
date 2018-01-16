@@ -8,32 +8,26 @@ import unwantedPropertiesRemover from './unwanted-properties-remover'
 const debuglog = debug('penthouse:postformatting')
 
 export default function postformatting ({
-  astRulesCritical,
+  ast,
   propertiesToRemove,
   maxEmbeddedBase64Length
 }) {
   debuglog('start')
 
-  let formattedCriticalRules = unusedKeyframeRemover(astRulesCritical)
+  unusedKeyframeRemover(ast)
   debuglog('unusedKeyframeRemover')
 
   // remove unused @fontface rules
-  formattedCriticalRules = ffRemover(formattedCriticalRules)
+  ffRemover(ast)
   debuglog('ffRemover')
 
   // remove data-uris that are too long
-  formattedCriticalRules = embeddedbase64Remover(
-    formattedCriticalRules,
-    maxEmbeddedBase64Length
-  )
+  embeddedbase64Remover(ast, maxEmbeddedBase64Length)
   debuglog('embeddedbase64Remover')
 
   // remove irrelevant css properties via rule walking
-  formattedCriticalRules = unwantedPropertiesRemover(
-    formattedCriticalRules,
-    propertiesToRemove
-  )
+  unwantedPropertiesRemover(ast, propertiesToRemove)
   debuglog('propertiesToRemove')
 
-  return formattedCriticalRules
+  return ast
 }

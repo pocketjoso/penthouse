@@ -35,7 +35,7 @@ async function blockJsRequests (page) {
 async function pruneNonCriticalCssLauncher ({
   browser,
   url,
-  astRules,
+  ast,
   width,
   height,
   forceInclude,
@@ -174,25 +174,32 @@ async function pruneNonCriticalCssLauncher ({
         debuglog('take before screenshot DONE: ' + beforePath)
       }
 
-      const astRulesCritical = await page.evaluate(pruneNonCriticalCss, {
-        astRules,
+      // remove all comments
+      csstree.walk(ast, {
+        visit: 'Comment',
+        enter: (node, item, list) => {
+          if (list) {
+            list.remove(item)
+          }
+        }
+      })
+
+      const astCritical = await page.evaluate(pruneNonCriticalCss, {
+        ast,
         forceInclude,
         renderWaitTime
       })
+
       debuglog('generateCriticalCss done, now postformat')
 
-      const formattedAstRules = postformatting({
-        astRulesCritical,
+      const finalAst = postformatting({
+        ast: csstree.fromPlainObject(astCritical),
         propertiesToRemove,
         maxEmbeddedBase64Length
       })
       debuglog('postformatting done')
 
-      const finalAst = csstree.fromPlainObject({
-        type: 'StyleSheet',
-        children: formattedAstRules
-      })
-      const formattedCss = csstree.translate(finalAst)
+      const formattedCss = csstree.generate(finalAst)
       debuglog('stringify from ast')
 
       if (takeScreenshots) {

@@ -36,7 +36,7 @@
   },
   "dependencies": {
     "css-mediaquery": "^0.1.2",
-    "css-tree": "1.0.0-alpha.26",
+    "css-tree": "1.0.0-alpha.27",
     "debug": "^3.1.0",
     "jsesc": "^1.0.0",
     "puppeteer": "0.12"

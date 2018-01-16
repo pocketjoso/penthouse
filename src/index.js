@@ -107,8 +107,6 @@ const astFromCss = async function astFromCss (options) {
 
   let parsingErrors = []
   let ast = csstree.parse(css, {
-    parseAtrulePrelude: false,
-    parseValue: false,
     onParseError: error => parsingErrors.push(error.formattedMessage)
   })
   debuglog(`parsed ast (with ${parsingErrors.length} errors)`)
@@ -139,13 +137,9 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
   const propertiesToRemove =
     options.propertiesToRemove || DEFAULT_PROPERTIES_TO_REMOVE
 
-  // turn into JS Array so we can traverse more easily
-  // possibly reverse this for performance gains
-  let astRules = csstree.toPlainObject(ast).children
-
   // first strip out non matching media queries
-  astRules = nonMatchingMediaQueryRemover(
-    astRules,
+  nonMatchingMediaQueryRemover(
+    ast,
     width,
     height,
     options.keepLargerMediaQueries
@@ -184,7 +178,7 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
       formattedCss = await generateCriticalCss({
         browser,
         url: options.url,
-        astRules,
+        ast,
         width,
         height,
         forceInclude,
@@ -222,8 +216,8 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
             (_browserPagesOpen + 1) +
             '\nurl: ' +
             options.url +
-            '\nastRules: ' +
-            astRules.length
+            '\nAST children: ' +
+            ast.children.getSize()
         )
         // for some reason Chromium is no longer opened;
         // perhaps it crashed

@@ -11,13 +11,14 @@ chai.should() // binds globally on Object
 function testMediaQueryRemoval (tests, width, height, keepLargerMediaQueries) {
   return [].concat(...tests.map(({rules, remove}) => {
     return rules.map(ruleCss => {
-      const ast = csstree.parse(ruleCss, {
-        parseRulePrelude: false,
-        parseAtrulePrelude: false,
-        parseValue: false
-      })
-      const astRules = csstree.toPlainObject(ast).children
-      const matchingRules = nonMatchingMediaQueryRemover(astRules, width, height, keepLargerMediaQueries)
+      const ast = csstree.parse(ruleCss)
+      const matchingRules = nonMatchingMediaQueryRemover(
+        ast,
+        width,
+        height,
+        keepLargerMediaQueries
+      ).children.toArray()
+
       if (remove && matchingRules.length) {
         return `❌ media query should have been removed: \n${ruleCss}`
       } else if (!remove && !matchingRules.length) {
