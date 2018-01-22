@@ -17,6 +17,15 @@ function staticServerFileUrl (file) {
   return 'file://' + path.join(__dirname, 'static-server', file)
 }
 
+function countDeclarations (ast) {
+  let count = 0
+  csstree.walk(ast, {
+    visit: 'Declaration',
+    enter: () => count++
+  })
+  return count
+}
+
 process.setMaxListeners(0)
 
 describe('penthouse post formatting tests', function () {
@@ -46,10 +55,12 @@ describe('penthouse post formatting tests', function () {
     ]
 
     const ast = csstree.parse(originalCss)
+    const beforeRemoval = countDeclarations(ast)
 
     unwantedPropertiesRemover(ast, propertiesToRemove)
 
-    ast.children.isEmpty().should.eql(true)
+    beforeRemoval.should.eql(8)
+    countDeclarations(ast).should.eql(0)
   })
 
   it('should remove embedded base64', function () {

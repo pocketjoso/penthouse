@@ -1,6 +1,7 @@
 import debug from 'debug'
 import csstree from 'css-tree'
-const debuglog = debug('penthouse:postformatting:unused-keyframe-remover')
+
+const debuglog = debug('penthouse:css-cleanup:unused-keyframe-remover')
 
 function getAllKeyframes (ast) {
   return new Set(
@@ -12,7 +13,7 @@ function getAllKeyframes (ast) {
   )
 }
 
-function unusedKeyframeRemover (ast) {
+export default function unusedKeyframeRemover (ast) {
   debuglog('getAllAnimationKeyframes')
   const usedKeyFrames = getAllKeyframes(ast)
   debuglog(
@@ -32,10 +33,4 @@ function unusedKeyframeRemover (ast) {
       }
     }
   })
-
-  return ast
-}
-
-if (typeof module !== 'undefined') {
-  module.exports = unusedKeyframeRemover
 }

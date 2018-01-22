@@ -1,22 +1,12 @@
-import fs from 'fs'
 import csstree from 'css-tree'
 import debug from 'debug'
-import pruneNonCriticalCss from './browser-sandbox/pruneNonCriticalCss'
+import pruneNonCriticalSelectors
+  from './browser-sandbox/pruneNonCriticalSelectors'
 import replacePageCss from './browser-sandbox/replacePageCss'
-import postformatting from './postformatting/'
+import cleanupAst from './postformatting'
+import buildSelectorProfile from './selectors-profile'
 
 const debuglog = debug('penthouse:core')
-
-const CSSTREE_DIST_PATH = require.resolve('css-tree/dist/csstree')
-
-const cssTreeContentPromise = new Promise(resolve => {
-  fs.readFile(CSSTREE_DIST_PATH, 'utf8', (err, content) => {
-    if (err) {
-      throw err
-    }
-    resolve(content)
-  })
-})
 
 function blockinterceptedRequests (interceptedRequest) {
   const isJsRequest = /\.js(\?.*)?$/.test(interceptedRequest.url)
@@ -73,6 +63,7 @@ async function pruneNonCriticalCssLauncher ({
         // browser before page is properly closed
         await page.close()
       }
+      debuglog('cleanupAndExit')
       if (error) {
         reject(error)
         return
@@ -156,11 +147,6 @@ async function pruneNonCriticalCssLauncher ({
         return
       }
 
-      await cssTreeContentPromise.then(content => {
-        page.evaluate(content)
-      })
-      debuglog('added css-tree library to page')
-
       // grab a "before" screenshot - of the page fully loaded, without JS
       // TODO: could potentially do in parallel with the page.evaluate
       if (takeScreenshots) {
@@ -174,33 +160,30 @@ async function pruneNonCriticalCssLauncher ({
         debuglog('take before screenshot DONE: ' + beforePath)
       }
 
-      // remove all comments
-      csstree.walk(ast, {
-        visit: 'Comment',
-        enter: (node, item, list) => {
-          if (list) {
-            list.remove(item)
-          }
-        }
-      })
-
-      const astCritical = await page.evaluate(pruneNonCriticalCss, {
+      const { selectorNodeMap, selectors } = buildSelectorProfile(
         ast,
-        forceInclude,
+        forceInclude
+      )
+      debuglog('collect selector map')
+
+      const criticalSelectors = await page.evaluate(pruneNonCriticalSelectors, {
+        selectors,
         renderWaitTime
       })
 
-      debuglog('generateCriticalCss done, now postformat')
+      debuglog('pruneNonCriticalSelectors done, now postformat')
 
-      const finalAst = postformatting({
-        ast: csstree.fromPlainObject(astCritical),
+      const finalAst = cleanupAst({
+        ast,
+        selectorNodeMap,
+        criticalSelectors,
         propertiesToRemove,
         maxEmbeddedBase64Length
       })
-      debuglog('postformatting done')
+      debuglog('AST cleanup done')
 
       const formattedCss = csstree.generate(finalAst)
-      debuglog('stringify from ast')
+      debuglog('generate CSS from AST')
 
       if (takeScreenshots) {
         debuglog('inline critical styles for after screenshot')
@@ -215,6 +198,8 @@ async function pruneNonCriticalCssLauncher ({
         })
         debuglog('take after screenshot DONE: ' + afterPath)
       }
+
+      debuglog('generateCriticalCss DONE')
 
       cleanupAndExit({ returnValue: formattedCss })
     } catch (e) {

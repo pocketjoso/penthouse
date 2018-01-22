@@ -1,6 +1,7 @@
 import csstree from 'css-tree'
 import debug from 'debug'
-const debuglog = debug('penthouse:postformatting:unused-font-face-remover')
+
+const debuglog = debug('penthouse:css-cleanup:unused-font-face-remover')
 
 function decodeFontName (node) {
   let name = csstree.generate(node)
@@ -27,7 +28,7 @@ function getAllFontNameValues (ast) {
               type: 'Value',
               children: entry.nodes
             })
-            debuglog('found used keyframe animation: ' + familyName)
+            debuglog('found used font-family: ' + familyName)
             fontNameValues.add(familyName)
           })
       }
@@ -37,12 +38,8 @@ function getAllFontNameValues (ast) {
   return fontNameValues
 }
 
-function unusedFontfaceRemover (ast) {
+export default function unusedFontfaceRemover (ast) {
   debuglog('getAllFontNameValues')
-  // NOTE: we grabp the full declaration everywhere a font name is used,
-  // and just do a simple index of on these lines to see if each @font-face
-  // is used anywhere. Could in theory yield false positives, but is quite unlikely,
-  // unless people use css keywords in their custom font names.
   const fontNameValues = getAllFontNameValues(ast)
   debuglog('getAllFontNameValues AFTER')
 
@@ -54,26 +51,34 @@ function unusedFontfaceRemover (ast) {
         return
       }
 
+      let hasSrc = false
+      let used = true
+
       csstree.walk(atrule, {
         visit: 'Declaration',
         enter: declaration => {
-          if (csstree.property(declaration.property).name === 'font-family') {
+          const name = csstree.property(declaration.property).name
+
+          if (name === 'font-family') {
             const familyName = decodeFontName(declaration.value)
 
             // was this @font-face used?
             if (!fontNameValues.has(familyName)) {
-              debuglog('drop unused font-face rule: ' + familyName)
-              atruleList.remove(atruleItem)
+              debuglog('drop unused @font-face: ' + familyName)
+              used = false
             }
+          } else if (name === 'src') {
+            hasSrc = true
           }
         }
       })
+
+      if (!used || !hasSrc) {
+        if (used && !hasSrc) {
+          debuglog('drop @font-face with no src')
+        }
+        atruleList.remove(atruleItem)
+      }
     }
   })
-
-  return ast
-}
-
-if (typeof module !== 'undefined') {
-  module.exports = unusedFontfaceRemover
 }

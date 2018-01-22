@@ -82,6 +82,4 @@ function nonMatchingMediaQueryRemover (
   return ast
 }
 
-if (typeof module !== 'undefined') {
-  module.exports = nonMatchingMediaQueryRemover
-}
+module.exports = nonMatchingMediaQueryRemover
