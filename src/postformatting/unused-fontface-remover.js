@@ -20,7 +20,7 @@ function getAllFontNameValues (ast) {
     visit: 'Declaration',
     enter: function (node) {
       // walker pass through `font-family` declarations inside @font-face too
-      // this condition filter them, to walk through declarations inside a rules only
+      // this condition filters them, to walk through declarations inside a rules only
       if (this.rule) {
         csstree.lexer
           .findDeclarationValueFragments(node, 'Type', 'family-name')
@@ -43,9 +43,9 @@ function getAllFontNameValues (ast) {
 export default function unusedFontfaceRemover (ast) {
   const fontNameValues = getAllFontNameValues(ast)
 
-  // remove @font-face at-rule
-  // - is never unused
-  // - has no src descriptor
+  // remove @font-face at-rule when:
+  // - it's never unused
+  // - has no a `src` descriptor
   csstree.walk(ast, {
     visit: 'Atrule',
     enter: (atrule, atruleItem, atruleList) => {

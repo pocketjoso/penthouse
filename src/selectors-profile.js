@@ -7,7 +7,7 @@ var pseudoSelectorsToKeep = [
   ':first-letter',
   ':first-line'
 ]
-// detect these selectors regardless of whether one or two semi-colons are used
+// detect these selectors regardless of whether one or two semicolons are used
 var pseudoSelectorsToKeepRegex = pseudoSelectorsToKeep
   .map(function (s) {
     return ':?' + s
@@ -16,7 +16,6 @@ var pseudoSelectorsToKeepRegex = pseudoSelectorsToKeep
 // we will replace all instances of these pseudo selectors; hence global flag
 var PSUEDO_SELECTOR_REGEXP = new RegExp(pseudoSelectorsToKeepRegex, 'g')
 
-// TODO: bind with forceInclude argument instead
 function matchesForceInclude (selector, forceInclude) {
   return forceInclude.some(function (includeSelector) {
     if (includeSelector.type === 'RegExp') {
@@ -29,10 +28,9 @@ function matchesForceInclude (selector, forceInclude) {
 }
 
 function normalizeSelector (selectorNode, forceInclude) {
-  // console.log('debug: isSelectorCritical: ' + selector)
   const selector = csstree.generate(selectorNode)
   // some selectors can't be matched on page.
-  // In these cases we test a slightly modified selectors instead, modifiedSelector.
+  // In these cases we test a slightly modified selector instead
   let modifiedSelector = selector.trim()
 
   if (matchesForceInclude(modifiedSelector, forceInclude)) {
@@ -80,7 +78,7 @@ export default function buildSelectorProfile (ast, forceInclude) {
   csstree.walk(ast, {
     visit: 'Rule',
     enter: function (rule, item, list) {
-      // ignore rules inside @keyframes
+      // ignore rules inside @keyframes at-rule
       if (
         this.atrule &&
         csstree.keyword(this.atrule.name).basename === 'keyframes'
@@ -88,11 +86,12 @@ export default function buildSelectorProfile (ast, forceInclude) {
         return
       }
 
-      // ignore a rule with bad selector
+      // ignore a rule with a bad selector
       if (rule.prelude.type !== 'SelectorList') {
         return
       }
 
+      // collect selectors and build a map
       rule.prelude.children.each(selectorNode => {
         const selector = normalizeSelector(selectorNode, forceInclude)
         if (typeof selector === 'string') {

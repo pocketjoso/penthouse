@@ -23,7 +23,7 @@ export default function ruleSelectorRemover (ast, selectorNodeMap, selectors) {
         }
       )
 
-      // remote the rule if no selector is left
+      // remove the rule if no selector is left
       if (rule.prelude.children.isEmpty()) {
         list.remove(item)
       }
