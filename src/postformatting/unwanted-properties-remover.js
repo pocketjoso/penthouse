@@ -1,41 +1,20 @@
-'use strict'
+import csstree from 'css-tree'
 
-const _removePropertiesFromRule = function (rule, propertiesToRemoveRegexes) {
-  if (
-    rule.type === 'Rule' ||
-    (rule.type === 'Atrule' && rule.name === 'font-face')
-  ) {
-    rule.block.children = rule.block.children.filter(declaration => {
-      if (
-        propertiesToRemoveRegexes.some(toRemovePattern => {
-          return toRemovePattern.test(declaration.property)
-        })
-      ) {
-        return false
-      }
-      return true
-    })
-  } else if (rule.type === 'Atrule' && rule.name === 'media') {
-    rule.block.children = rule.block.children
-      .map(function (rule) {
-        return _removePropertiesFromRule(rule, propertiesToRemoveRegexes)
-      })
-      .filter(Boolean)
-  }
-  if (rule.block && rule.block.children.length === 0) {
-    return null
-  }
-  return rule
-}
-
-const unwantedPropertiesRemover = function (astRules, propertiesToRemove) {
+export default function unwantedPropertiesRemover (ast, propertiesToRemove) {
   const propertiesToRemoveRegexes = propertiesToRemove.map(
     text => new RegExp(text)
   )
 
-  return astRules
-    .map(rule => _removePropertiesFromRule(rule, propertiesToRemoveRegexes))
-    .filter(Boolean)
-}
+  csstree.walk(ast, {
+    visit: 'Declaration',
+    enter: (declaration, item, list) => {
+      const shouldRemove = propertiesToRemoveRegexes.some(pattern =>
+        pattern.test(declaration.property)
+      )
 
-module.exports = unwantedPropertiesRemover
+      if (shouldRemove) {
+        list.remove(item)
+      }
+    }
+  })
+}

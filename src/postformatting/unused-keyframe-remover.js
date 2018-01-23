@@ -1,59 +1,39 @@
+import csstree from 'css-tree'
 import debug from 'debug'
-const debuglog = debug('penthouse:postformatting:unused-keyframe-remover')
 
-function getAllKeyframes (rules) {
-  const matches = []
-  function handleRule (rule) {
-    if (rule.type === 'Rule') {
-      rule.block.children.forEach(function (possibleDeclaration) {
-        if (
-          possibleDeclaration.property === 'animation' ||
-          possibleDeclaration.property === 'animation-name'
-        ) {
-          const keyframeName = possibleDeclaration.value.value.split(' ')[0]
-          debuglog('found used keyframe animation: ' + keyframeName)
-          matches.push(keyframeName)
-        }
-      })
-    } else if (rule.type === 'Atrule' && rule.name === 'media') {
-      rule.block.children.forEach(handleRule)
-    }
-  }
-  rules.forEach(handleRule)
-  return matches
+const debuglog = debug('penthouse:css-cleanup:unused-keyframe-remover')
+
+function getAllKeyframes (ast) {
+  return new Set(
+    csstree.lexer.findAllFragments(ast, 'Type', 'keyframes-name').map(entry => {
+      const keyframeName = csstree.generate(entry.nodes.first())
+      debuglog('found used keyframe animation: ' + keyframeName)
+      return keyframeName
+    })
+  )
 }
 
-function unusedKeyframeRemover (rules) {
+export default function unusedKeyframeRemover (ast) {
   debuglog('getAllAnimationKeyframes')
-  const usedKeyFrames = getAllKeyframes(rules)
+  const usedKeyFrames = getAllKeyframes(ast)
   debuglog(
-    'getAllAnimationKeyframes AFTER, usedKeyFrames: ' + usedKeyFrames.length
+    'getAllAnimationKeyframes AFTER, usedKeyFrames: ' + usedKeyFrames.size
   )
 
-  function filterUnusedKeyframeRule (rule) {
-    if (rule.type !== 'Atrule') {
-      return true
-    }
-    if (rule.name === 'media') {
-      // mutating the original object..
-      rule.block.children = rule.block.children.filter(filterUnusedKeyframeRule)
-      return rule.block.children.length > 0
-    }
-    if (!/^(-webkit-)?keyframes/.test(rule.name)) {
-      return true
-    }
-    // remove unnused keyframes rules
-    const keep = usedKeyFrames.indexOf(rule.prelude.value) !== -1
-    if (!keep) {
-      debuglog('drop non critical keyframe: ' + rule.prelude.value)
-    }
-    return keep
-  }
+  // remove all unused keyframes
+  csstree.walk(ast, {
+    visit: 'Atrule',
+    enter: (atrule, item, list) => {
+      const keyword = csstree.keyword(atrule.name)
 
-  // remove all unknown keyframes
-  return rules.filter(filterUnusedKeyframeRule)
-}
+      if (keyword.basename === 'keyframes') {
+        const keyframeName = csstree.generate(atrule.prelude)
 
-if (typeof module !== 'undefined') {
-  module.exports = unusedKeyframeRemover
+        if (!usedKeyFrames.has(keyframeName)) {
+          debuglog(`drop unused @${keyword.name}: ${keyframeName}`)
+          list.remove(item)
+        }
+      }
+    }
+  })
 }

@@ -1,39 +1,45 @@
+import commentRemover from './comment-remover'
+import embeddedbase64Remover from './embedded-base64-remover'
+import unusedKeyframeRemover from './unused-keyframe-remover'
+import unusedFontFaceRemover from './unused-fontface-remover'
+import unwantedPropertiesRemover from './unwanted-properties-remover'
+import ruleSelectorRemover from './rule-selector-remover'
+import finalRuleRemover from './final-rule-remover'
 import debug from 'debug'
 
-import embeddedbase64Remover from './embedded-base64-remover'
-import ffRemover from './unused-fontface-remover'
-import unusedKeyframeRemover from './unused-keyframe-remover'
-import unwantedPropertiesRemover from './unwanted-properties-remover'
+const debuglog = debug('penthouse:css-cleanup')
 
-const debuglog = debug('penthouse:postformatting')
-
-export default function postformatting ({
-  astRulesCritical,
+export default function cleanup ({
+  ast,
+  selectorNodeMap,
+  criticalSelectors,
   propertiesToRemove,
   maxEmbeddedBase64Length
 }) {
   debuglog('start')
 
-  let formattedCriticalRules = unusedKeyframeRemover(astRulesCritical)
+  commentRemover(ast)
+  debuglog('commentRemover')
+
+  ruleSelectorRemover(ast, selectorNodeMap, criticalSelectors)
+  debuglog('ruleSelectorRemover')
+
+  unusedKeyframeRemover(ast)
   debuglog('unusedKeyframeRemover')
 
-  // remove unused @fontface rules
-  formattedCriticalRules = ffRemover(formattedCriticalRules)
-  debuglog('ffRemover')
-
   // remove data-uris that are too long
-  formattedCriticalRules = embeddedbase64Remover(
-    formattedCriticalRules,
-    maxEmbeddedBase64Length
-  )
+  embeddedbase64Remover(ast, maxEmbeddedBase64Length)
   debuglog('embeddedbase64Remover')
 
+  // remove bad and unused @fontface rules
+  unusedFontFaceRemover(ast)
+  debuglog('unusedFontFaceRemover')
+
   // remove irrelevant css properties via rule walking
-  formattedCriticalRules = unwantedPropertiesRemover(
-    formattedCriticalRules,
-    propertiesToRemove
-  )
+  unwantedPropertiesRemover(ast, propertiesToRemove)
   debuglog('propertiesToRemove')
 
-  return formattedCriticalRules
+  // remove empty and unwanted rules and at-rules
+  finalRuleRemover(ast)
+  debuglog('finalRuleRemover')
 }

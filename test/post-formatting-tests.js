@@ -3,7 +3,7 @@ import { describe, it } from 'global-mocha'
 import path from 'path'
 import penthouse from '../lib/'
 import { readFileSync as read } from 'fs'
-import normaliseCssAst from './util/normaliseCssAst'
+import normaliseCss from './util/normaliseCss'
 import chai from 'chai'
 
 import ffRemover from '../lib/postformatting/unused-fontface-remover'
@@ -17,10 +17,19 @@ function staticServerFileUrl (file) {
   return 'file://' + path.join(__dirname, 'static-server', file)
 }
 
+function countDeclarations (ast) {
+  let count = 0
+  csstree.walk(ast, {
+    visit: 'Declaration',
+    enter: () => count++
+  })
+  return count
+}
+
 process.setMaxListeners(0)
 
 describe('penthouse post formatting tests', function () {
-  it('should remove propertiesToRemove', function (done) {
+  it('should remove propertiesToRemove', function () {
     const originalCss = `
       body {
         transition: all 0.5s;
@@ -45,80 +54,58 @@ describe('penthouse post formatting tests', function () {
       '(.*)user-select'
     ]
 
-    const ast = normaliseCssAst(originalCss)
-    const astRules = csstree.toPlainObject(ast).children
-    const resultRules = unwantedPropertiesRemover(astRules, propertiesToRemove)
-    resultRules.length.should.eql(0)
-    done()
+    const ast = csstree.parse(originalCss)
+    const beforeRemoval = countDeclarations(ast)
+
+    unwantedPropertiesRemover(ast, propertiesToRemove)
+
+    beforeRemoval.should.eql(8)
+    countDeclarations(ast).should.eql(0)
   })
 
-  it('should remove embedded base64', function (done) {
+  it('should remove embedded base64', function () {
     const originalCss = read(path.join(__dirname, 'static-server', 'embedded-base64--remove.css')).toString()
+    const expectedCss = read(path.join(__dirname, 'static-server', 'embedded-base64--remove--expected.css')).toString()
 
-    const ast = normaliseCssAst(originalCss)
-    const astRules = csstree.toPlainObject(ast).children
+    const ast = csstree.parse(originalCss)
+
     // NOTE: penthouse's default max uri length is 1000.
     // lowering the limit here so that everything will be removed in test fixture
-    const resultRules = embeddedbase64Remover(astRules, 250)
-    const resultAst = csstree.fromPlainObject({
-      type: 'StyleSheet',
-      loc: null,
-      children: resultRules
-    })
-    var expectedAst = normaliseCssAst('body{}@media (min-width: 10px){body{}}')
-    resultAst.should.eql(expectedAst)
-    done()
+    embeddedbase64Remover(ast, 250)
+
+    csstree.generate(ast).should.eql(normaliseCss(expectedCss))
   })
 
-  it('should remove @fontface rule, because it is not used', function (done) {
+  it('should remove @font-face rule, because it is not used', function () {
     var fontFaceRemoveCssFilePath = path.join(__dirname, 'static-server', 'fontface--remove.css')
     var fontFaceRemoveExpectedCssFilePath = path.join(__dirname, 'static-server', 'fontface--remove--expected.css')
-    var fontFaceRemoveCss = read(fontFaceRemoveCssFilePath).toString()
-    var fontFaceRemoveExpectedCss = read(fontFaceRemoveExpectedCssFilePath).toString()
+    var originalCss = read(fontFaceRemoveCssFilePath).toString()
+    var expectedCss = read(fontFaceRemoveExpectedCssFilePath).toString()
 
-    const ast = normaliseCssAst(fontFaceRemoveCss)
-    const astRules = csstree.toPlainObject(ast).children
-    var resultRules = ffRemover(astRules)
-    const resultAst = csstree.fromPlainObject({
-      type: 'StyleSheet',
-      loc: null,
-      children: resultRules
-    })
+    const ast = csstree.parse(originalCss)
 
-    const expectedAst = normaliseCssAst(fontFaceRemoveExpectedCss)
-    resultAst.should.eql(expectedAst)
-    done()
+    ffRemover(ast)
+
+    csstree.generate(ast).should.eql(normaliseCss(expectedCss))
   })
 
-  it('should only keep @keyframe rules used in critical css', function (done) {
+  it('should only keep @keyframe rules used in critical css', function () {
     const originalCss = read(path.join(__dirname, 'static-server', 'unused-keyframes.css'), 'utf8')
-    const expextedCss = read(path.join(__dirname, 'static-server', 'unused-keyframes--expected.css'), 'utf8')
+    const expectedCss = read(path.join(__dirname, 'static-server', 'unused-keyframes--expected.css'), 'utf8')
 
-    try {
-      const ast = normaliseCssAst(originalCss)
-      const astRules = csstree.toPlainObject(ast).children
+    const ast = csstree.parse(originalCss)
 
-      var resultRules = unusedKeyframeRemover(astRules)
-      const resultAst = csstree.fromPlainObject({
-        type: 'StyleSheet',
-        loc: null,
-        children: resultRules
-      })
+    unusedKeyframeRemover(ast)
 
-      var expectedAst = normaliseCssAst(expextedCss)
-      resultAst.should.eql(expectedAst)
-      done()
-    } catch (ex) {
-      done(ex)
-    }
+    csstree.generate(ast).should.eql(normaliseCss(expectedCss))
   })
 
-  it('should not remove transitions but still remove cursor from css', function (done) {
+  it('should not remove transitions but still remove cursor from css', function () {
     var fullCssFilePath = path.join(__dirname, 'static-server', 'transition-full.css')
     var expectedCssFilePath = path.join(__dirname, 'static-server', 'transition-crit--expected.css')
     var expectedCss = read(expectedCssFilePath).toString()
 
-    penthouse({
+    return penthouse({
       url: staticServerFileUrl('transition.html'),
       css: fullCssFilePath,
       width: 800,
@@ -131,12 +118,7 @@ describe('penthouse post formatting tests', function () {
       ]
     })
       .then(result => {
-        var resultAst = normaliseCssAst(result)
-        var expectedAst = normaliseCssAst(expectedCss)
-
-        resultAst.should.eql(expectedAst)
-        done()
+        result.should.eql(normaliseCss(expectedCss))
       })
-      .catch(done)
   })
 })

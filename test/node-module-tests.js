@@ -8,7 +8,7 @@ import penthouse from '../lib/'
 import chai from 'chai'
 
 import chromeProcessesRunning from './util/chromeProcessesRunning'
-import normaliseCssAst from './util/normaliseCssAst'
+import normaliseCss from './util/normaliseCss'
 
 chai.should() // binds globally on Object
 
@@ -22,20 +22,16 @@ describe('extra tests for penthouse node module', function () {
 
   this.timeout(6000)
   // module handles both callback (legacy), and promise
-  it('module invocation should return promise', function (done) {
+  it('module invocation should return promise', function () {
     var originalCss = read(page1cssPath).toString()
 
-    penthouse({
+    return penthouse({
       url: page1FileUrl,
       css: page1cssPath
     })
-    .then(result => {
-      var resultAst = normaliseCssAst(result)
-      var expectedAst = normaliseCssAst(originalCss)
-      resultAst.should.eql(expectedAst)
-      done()
-    })
-    .catch(done)
+      .then(result => {
+        result.should.eql(normaliseCss(originalCss))
+      })
   })
 
   it('error should not contain debug info', function (done) {
@@ -44,17 +40,17 @@ describe('extra tests for penthouse node module', function () {
       url: 'http://localhost.does.not.exist',
       css: page1cssPath
     })
-    .catch(err => {
-      if (err) {
-        if (/^Error: time: 0/.test(err)) {
-          done(err)
-        } else {
-          done()
+      .catch(err => {
+        if (err) {
+          if (/^Error: time: 0/.test(err)) {
+            done(err)
+          } else {
+            done()
+          }
+          return
         }
-        return
-      }
-      done(new Error('did not return expected error'))
-    })
+        done(new Error('did not return expected error'))
+      })
   })
 
   it('error should handle parallell jobs, sharing one browser instance, closing afterwards', function (done) {
@@ -63,52 +59,48 @@ describe('extra tests for penthouse node module', function () {
       return penthouse(({url, css: page1cssPath}))
     })
     Promise.all(promises)
-    .then(results => {
-      const hasErrors = results.find(result => {
-        return result.error || !result.length
+      .then(results => {
+        const hasErrors = results.find(result => {
+          return result.error || !result.length
+        })
+        if (hasErrors) {
+          done(new Error('some result had errors: ' + hasErrors))
+        } else {
+          // give chrome some time to shutdown
+          // NOTE: this test assumes no other chrome processes are running in this environment
+          setTimeout(() => {
+            chromeProcessesRunning()
+              .then(({browsers, pages}) => {
+                if (browsers || pages) {
+                  done(new Error('Chromium seems to not have shut down properly: ' + {browsers, pages}))
+                } else {
+                  done()
+                }
+              })
+          }, 1000)
+        }
       })
-      if (hasErrors) {
-        done(new Error('some result had errors: ' + hasErrors))
-      } else {
-        // give chrome some time to shutdown
-        // NOTE: this test assumes no other chrome processes are running in this environment
-        setTimeout(() => {
-          chromeProcessesRunning()
-          .then(({browsers, pages}) => {
-            if (browsers || pages) {
-              done(new Error('Chromium seems to not have shut down properly: ' + {browsers, pages}))
-            } else {
-              done()
-            }
-          })
-        }, 1000)
-      }
-    })
-    .catch(err => {
-      done(err)
-    })
+      .catch(done)
   })
 
   it('should keep chromium browser instance open, if requested', function (done) {
     penthouse(({url: page1FileUrl, css: page1cssPath, unstableKeepBrowserAlive: true}))
-    .then(() => {
-      // wait a bit to ensure Chrome doesn't just take time to close
-      // we want to ensure it stays open
-      // NOTE: this test assumes no other chrome processes are running in this environment
-      setTimeout(() => {
-        chromeProcessesRunning()
-        .then(({browsers, pages}) => {
-          if (browsers) {
-            done()
-          } else {
-            done(new Error('Chromium did NOT keep running despite option telling it so'))
-          }
-        })
-      }, 1000)
-    })
-    .catch(err => {
-      done(err)
-    })
+      .then(() => {
+        // wait a bit to ensure Chrome doesn't just take time to close
+        // we want to ensure it stays open
+        // NOTE: this test assumes no other chrome processes are running in this environment
+        setTimeout(() => {
+          chromeProcessesRunning()
+            .then(({browsers, pages}) => {
+              if (browsers) {
+                done()
+              } else {
+                done(new Error('Chromium did NOT keep running despite option telling it so'))
+              }
+            })
+        }, 1000)
+      })
+      .catch(done)
   })
 
   it('should close browser page even if page execution errored, in unstableKeepBrowserAlive mode', function (done) {
@@ -117,50 +109,50 @@ describe('extra tests for penthouse node module', function () {
       css: page1cssPath,
       unstableKeepBrowserAlive: true
     })
-    .catch(() => {
-      // NOTE: this test assumes no other chrome processes are running in this environment
-      setTimeout(() => {
-        chromeProcessesRunning()
-        .then(({browsers, pages}) => {
-          // chrome browser opens with an empty page (tab),
-          // which we are just ignoring for now -
-          // did the _extra_ page we opened close, or are we left with 2?
-          if (pages && pages.length > 1) {
-            done(new Error('Chromium seems to not have closed the page we opened, kept nr of pages: ' + pages.length))
-          } else {
-            done()
-          }
-        })
-      }, 1000)
-    })
+      .catch(() => {
+        // NOTE: this test assumes no other chrome processes are running in this environment
+        setTimeout(() => {
+          chromeProcessesRunning()
+            .then(({browsers, pages}) => {
+              // chrome browser opens with an empty page (tab),
+              // which we are just ignoring for now -
+              // did the _extra_ page we opened close, or are we left with 2?
+              if (pages && pages.length > 1) {
+                done(new Error('Chromium seems to not have closed the page we opened, kept nr of pages: ' + pages.length))
+              } else {
+                done()
+              }
+            })
+        }, 1000)
+      })
   })
 
   it('should use the browser given in options', function (done) {
     let newPageCalled = false
 
     puppeteer.launch()
-    .then((browser) => {
-      // Spy on browser.newPage method to check if it's called
-      let originalNewPage = browser.newPage
-      browser.newPage = (...args) => {
-        newPageCalled = true
-        return originalNewPage.call(browser, args)
-      }
-      return penthouse({
-        url: page1FileUrl,
-        css: page1cssPath,
-        puppeteer: {
-          getBrowser: () => browser
+      .then((browser) => {
+        // Spy on browser.newPage method to check if it's called
+        let originalNewPage = browser.newPage
+        browser.newPage = (...args) => {
+          newPageCalled = true
+          return originalNewPage.call(browser, args)
+        }
+        return penthouse({
+          url: page1FileUrl,
+          css: page1cssPath,
+          puppeteer: {
+            getBrowser: () => browser
+          }
+        })
+      })
+      .then(() => {
+        if (!newPageCalled) {
+          done(new Error('Did not use the browser passed in options'))
+        } else {
+          done()
         }
       })
-    })
-    .then(() => {
-      if (!newPageCalled) {
-        done(new Error('Did not use the browser passed in options'))
-      } else {
-        done()
-      }
-    })
-    .catch(done)
+      .catch(done)
   })
 })
