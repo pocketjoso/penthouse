@@ -40,7 +40,7 @@ export default function finalRuleRemover (ast, propertiesToRemove) {
         }
       }
 
-      // otherwise remove a at-rule
+      // otherwise remove the at-rule
       list.remove(item)
     }
   })

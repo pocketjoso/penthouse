@@ -6,14 +6,13 @@ export default function ruleSelectorRemover (ast, selectorNodeMap, selectors) {
   csstree.walk(ast, {
     visit: 'Rule',
     enter: function (rule, item, list) {
-      // remove a rule with bad selector
+      // remove a rule with a bad selector
       if (rule.prelude.type !== 'SelectorList') {
         list.remove(item)
         return
       }
 
-      // check what, if any selectors are found above fold
-      // filter out the ones that are not critical
+      // filter out non-critical selectors
       rule.prelude.children = rule.prelude.children.filter(
         (selectorNode, item, list) => {
           let decision = selectorNodeMap.get(selectorNode)
@@ -24,7 +23,7 @@ export default function ruleSelectorRemover (ast, selectorNodeMap, selectors) {
         }
       )
 
-      // NOTE: isCssSelectorRuleCritical mutates the rule
+      // remote the rule if no selector is left
       if (rule.prelude.children.isEmpty()) {
         list.remove(item)
       }

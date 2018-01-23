@@ -1,5 +1,3 @@
-import debug from 'debug'
-
 import commentRemover from './comment-remover'
 import embeddedbase64Remover from './embedded-base64-remover'
 import unusedKeyframeRemover from './unused-keyframe-remover'
@@ -7,6 +5,7 @@ import unusedFontFaceRemover from './unused-fontface-remover'
 import unwantedPropertiesRemover from './unwanted-properties-remover'
 import ruleSelectorRemover from './rule-selector-remover'
 import finalRuleRemover from './final-rule-remover'
+import debug from 'debug'
 
 const debuglog = debug('penthouse:css-cleanup')
 
@@ -43,6 +42,4 @@ export default function cleanup ({
   // remove empty and unwanted rules and at-rules
   finalRuleRemover(ast)
   debuglog('finalRuleRemover')
-
-  return ast
 }

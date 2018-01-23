@@ -164,16 +164,16 @@ async function pruneNonCriticalCssLauncher ({
         ast,
         forceInclude
       )
-      debuglog('collect selector map')
+      debuglog('build selector profile')
 
       const criticalSelectors = await page.evaluate(pruneNonCriticalSelectors, {
         selectors,
         renderWaitTime
       })
 
-      debuglog('pruneNonCriticalSelectors done, now postformat')
+      debuglog('pruneNonCriticalSelectors done, now cleanup AST')
 
-      const finalAst = cleanupAst({
+      cleanupAst({
         ast,
         selectorNodeMap,
         criticalSelectors,
@@ -182,14 +182,12 @@ async function pruneNonCriticalCssLauncher ({
       })
       debuglog('AST cleanup done')
 
-      const formattedCss = csstree.generate(finalAst)
+      const css = csstree.generate(ast)
       debuglog('generate CSS from AST')
 
       if (takeScreenshots) {
         debuglog('inline critical styles for after screenshot')
-        await page.evaluate(replacePageCss, {
-          css: formattedCss
-        })
+        await page.evaluate(replacePageCss, { css })
         debuglog('take after screenshot')
         const afterPath = screenshots.basePath + '-after' + screenshotExtension
         await page.screenshot({
@@ -201,7 +199,7 @@ async function pruneNonCriticalCssLauncher ({
 
       debuglog('generateCriticalCss DONE')
 
-      cleanupAndExit({ returnValue: formattedCss })
+      cleanupAndExit({ returnValue: css })
     } catch (e) {
       cleanupAndExit({ error: e })
     }

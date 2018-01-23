@@ -15,6 +15,7 @@ function decodeFontName (node) {
 function getAllFontNameValues (ast) {
   const fontNameValues = new Set()
 
+  debuglog('getAllFontNameValues')
   csstree.walk(ast, {
     visit: 'Declaration',
     enter: function (node) {
@@ -34,16 +35,17 @@ function getAllFontNameValues (ast) {
       }
     }
   })
+  debuglog('getAllFontNameValues AFTER')
 
   return fontNameValues
 }
 
 export default function unusedFontfaceRemover (ast) {
-  debuglog('getAllFontNameValues')
   const fontNameValues = getAllFontNameValues(ast)
-  debuglog('getAllFontNameValues AFTER')
 
-  // remove all unused font-face declarations
+  // remove @font-face at-rule
+  // - is never unused
+  // - has no src descriptor
   csstree.walk(ast, {
     visit: 'Atrule',
     enter: (atrule, atruleItem, atruleList) => {
@@ -75,7 +77,7 @@ export default function unusedFontfaceRemover (ast) {
 
       if (!used || !hasSrc) {
         if (used && !hasSrc) {
-          debuglog('drop @font-face with no src')
+          debuglog('drop @font-face with no src descriptor')
         }
         atruleList.remove(atruleItem)
       }
