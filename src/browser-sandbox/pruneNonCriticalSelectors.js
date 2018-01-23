@@ -54,7 +54,7 @@ export default function pruneNonCriticalSelectors ({
       return false
     }
 
-    // filter a selector if all elements are above the fold
+    // only keep selectors that match at least one elements on the page above the fold
     for (let idx = 0; idx < elements.length; idx++) {
       if (isElementAboveFold(elements[idx])) {
         return true
