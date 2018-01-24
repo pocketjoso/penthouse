@@ -57,13 +57,84 @@ async function blockJsRequests (page) {
   page.on('request', blockinterceptedRequests)
 }
 
+async function astFromCss ({ cssString, strict }) {
+  // breaks puppeteer
+  const css = cssString.replace(/￿/g, '\f042')
+
+  let parsingErrors = []
+  debuglog('parse ast START')
+  let ast = csstree.parse(css, {
+    onParseError: error => parsingErrors.push(error.formattedMessage)
+  })
+  debuglog(`parsed ast (with ${parsingErrors.length} errors)`)
+
+  if (parsingErrors.length && strict === true) {
+    // NOTE: only informing about first error, even if there were more than one.
+    const parsingErrorMessage = parsingErrors[0]
+    throw new Error(
+      `AST parser (css-tree) found ${parsingErrors.length} errors in CSS.
+      Breaking because in strict mode.
+      The first error was:
+      ` + parsingErrorMessage
+    )
+  }
+  return ast
+}
+
+async function preparePage ({
+  page,
+  width,
+  height,
+  browser,
+  userAgent,
+  customPageHeaders,
+  blockJSRequests
+}) {
+  debuglog('preparePage START')
+  page = await browser.newPage()
+  debuglog('new page opened in browser')
+
+  await page.setViewport({ width, height })
+  debuglog('viewport set')
+
+  await page.setUserAgent(userAgent)
+
+  if (customPageHeaders) {
+    try {
+      debuglog('set custom headers')
+      await page.setExtraHTTPHeaders(customPageHeaders)
+    } catch (e) {
+      debuglog('failed setting extra http headers: ' + e)
+    }
+  }
+
+  if (blockJSRequests) {
+    // NOTE: with JS disabled we cannot use JS timers inside page.evaluate
+    // (setTimeout, setInterval), however requestAnimationFrame works.
+    await page.setJavaScriptEnabled(false)
+    await blockJsRequests(page)
+    debuglog('blocking js requests')
+  }
+  page.on('console', msg => {
+    const text = msg.text || msg
+    // pass through log messages
+    // - the ones sent by penthouse for debugging has 'debug: ' prefix.
+    if (/^debug: /.test(text)) {
+      debuglog(text.replace(/^debug: /, ''))
+    }
+  })
+  debuglog('preparePage DONE')
+  return page
+}
+
 async function pruneNonCriticalCssLauncher ({
   browser,
   url,
-  ast,
+  cssString,
   width,
   height,
   forceInclude,
+  strict,
   userAgent,
   renderWaitTime,
   timeout,
@@ -113,38 +184,25 @@ async function pruneNonCriticalCssLauncher ({
     }, timeout)
 
     try {
-      page = await browser.newPage()
-      debuglog('new page opened in browser')
-
-      await page.setViewport({ width, height })
-      debuglog('viewport set')
-
-      await page.setUserAgent(userAgent)
-
-      if (customPageHeaders) {
-        try {
-          debuglog('set custom headers')
-          await page.setExtraHTTPHeaders(customPageHeaders)
-        } catch (e) {
-          debuglog('failed setting extra http headers: ' + e)
-        }
-      }
-
-      if (blockJSRequests) {
-        // NOTE: with JS disabled we cannot use JS timers inside page.evaluate
-        // (setTimeout, setInterval), however requestAnimationFrame works.
-        await page.setJavaScriptEnabled(false)
-        await blockJsRequests(page)
-        debuglog('blocking js requests')
-      }
-      page.on('console', msg => {
-        const text = msg.text || msg
-        // pass through log messages
-        // - the ones sent by penthouse for debugging has 'debug: ' prefix.
-        if (/^debug: /.test(text)) {
-          debuglog(text.replace(/^debug: /, ''))
-        }
-      })
+      // prepare (puppeteer) page in parallel with ast parsing,
+      // as operations are independent and both expensive
+      // (ast parsing primarily on larger stylesheets)
+      const [updatedPage, ast] = await Promise.all([
+        preparePage({
+          page,
+          width,
+          height,
+          browser,
+          userAgent,
+          customPageHeaders,
+          blockJSRequests
+        }),
+        astFromCss({
+          cssString,
+          strict
+        })
+      ])
+      page = updatedPage
 
       // first strip out non matching media queries.
       // Need to be done before buildSelectorProfile;
