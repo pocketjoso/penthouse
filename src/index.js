@@ -4,7 +4,6 @@ import puppeteer from 'puppeteer'
 import debug from 'debug'
 
 import generateCriticalCss from './core'
-import nonMatchingMediaQueryRemover from './non-matching-media-query-remover'
 
 const debuglog = debug('penthouse')
 
@@ -137,15 +136,6 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
   const propertiesToRemove =
     options.propertiesToRemove || DEFAULT_PROPERTIES_TO_REMOVE
 
-  // first strip out non matching media queries
-  nonMatchingMediaQueryRemover(
-    ast,
-    width,
-    height,
-    options.keepLargerMediaQueries
-  )
-  debuglog('stripped out non matching media queries')
-
   // always forceInclude '*', 'html', and 'body' selectors
   const forceInclude = prepareForceIncludeForSerialization(
     [{ value: '*' }, { value: 'html' }, { value: 'body' }].concat(
@@ -191,6 +181,7 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
           : DEFAULT_BLOCK_JS_REQUESTS,
         customPageHeaders: options.customPageHeaders,
         screenshots: options.screenshots,
+        keepLargerMediaQueries: options.keepLargerMediaQueries,
         // postformatting
         propertiesToRemove,
         maxEmbeddedBase64Length: typeof options.maxEmbeddedBase64Length ===

@@ -5,6 +5,7 @@ import pruneNonCriticalSelectors
 import replacePageCss from './browser-sandbox/replacePageCss'
 import cleanupAst from './postformatting'
 import buildSelectorProfile from './selectors-profile'
+import nonMatchingMediaQueryRemover from './non-matching-media-query-remover'
 
 const debuglog = debug('penthouse:core')
 
@@ -71,7 +72,8 @@ async function pruneNonCriticalCssLauncher ({
   customPageHeaders,
   screenshots,
   propertiesToRemove,
-  maxEmbeddedBase64Length
+  maxEmbeddedBase64Length,
+  keepLargerMediaQueries
 }) {
   let _hasExited = false
   const takeScreenshots = screenshots && screenshots.basePath
@@ -143,6 +145,12 @@ async function pruneNonCriticalCssLauncher ({
           debuglog(text.replace(/^debug: /, ''))
         }
       })
+
+      // first strip out non matching media queries.
+      // Need to be done before buildSelectorProfile;
+      // although could shave of further time via doing it as part of buildSelectorProfile..
+      nonMatchingMediaQueryRemover(ast, width, height, keepLargerMediaQueries)
+      debuglog('stripped out non matching media queries')
 
       // load the page (slow)
       // in parallel with preformatting the css
