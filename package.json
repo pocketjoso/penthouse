@@ -24,6 +24,7 @@
     "lint": "eslint src test",
     "test": "mocha --compilers js:babel-core/register test/core-tests",
     "test-all": "mocha --compilers js:babel-core/register",
+    "test-perf": "mocha --compilers js:babel-core/register test/perf-tests",
     "precommit": "lint-staged",
     "prepublish": "npm run lint && npm run transpile",
     "transpile": "babel -d lib src/"
