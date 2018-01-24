@@ -71,7 +71,7 @@ function normalizeSelector (selectorNode, forceInclude) {
   return modifiedSelector
 }
 
-export default function buildSelectorProfile (ast, forceInclude) {
+export default async function buildSelectorProfile (ast, forceInclude) {
   const selectors = new Set()
   const selectorNodeMap = new WeakMap()
 

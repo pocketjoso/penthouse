@@ -17,6 +17,40 @@ function blockinterceptedRequests (interceptedRequest) {
   }
 }
 
+async function loadPage (page, url, timeout, pageLoadSkipTimeout) {
+  debuglog('page load start')
+  // set a higher number than the timeout option, in order to make
+  // puppeteer’s timeout _never_ happen
+  let waitingForPageLoad = true
+  const loadPagePromise = page.goto(url, { timeout: timeout + 1000 })
+  if (pageLoadSkipTimeout) {
+    await Promise.race([
+      loadPagePromise,
+      new Promise(resolve => {
+        // instead we manually _abort_ page load after X time,
+        // in order to deal with spammy pages that keep sending non-critical requests
+        // (tracking etc), which would otherwise never load.
+        // With JS disabled it just shouldn't take that many seconds to load what's needed
+        // for critical viewport.
+        setTimeout(() => {
+          if (waitingForPageLoad) {
+            debuglog(
+              'page load waiting ABORTED after ' +
+                pageLoadSkipTimeout / 1000 +
+                's. '
+            )
+            resolve()
+          }
+        }, pageLoadSkipTimeout)
+      })
+    ])
+  } else {
+    await loadPagePromise
+  }
+  waitingForPageLoad = false
+  debuglog('page load DONE')
+}
+
 async function blockJsRequests (page) {
   await page.setRequestInterceptionEnabled(true)
   page.on('request', blockinterceptedRequests)
@@ -110,37 +144,13 @@ async function pruneNonCriticalCssLauncher ({
         }
       })
 
-      debuglog('page load start')
-      // set a higher number than the timeout option, in order to make
-      // puppeteer’s timeout _never_ happen
-      let waitingForPageLoad = true
-      const loadPagePromise = page.goto(url, { timeout: timeout + 1000 })
-      if (pageLoadSkipTimeout) {
-        await Promise.race([
-          loadPagePromise,
-          new Promise(resolve => {
-            // instead we manually _abort_ page load after X time,
-            // in order to deal with spammy pages that keep sending non-critical requests
-            // (tracking etc), which would otherwise never load.
-            // With JS disabled it just shouldn't take that many seconds to load what's needed
-            // for critical viewport.
-            setTimeout(() => {
-              if (waitingForPageLoad) {
-                debuglog(
-                  'page load waiting ABORTED after ' +
-                    pageLoadSkipTimeout / 1000 +
-                    's. '
-                )
-                resolve()
-              }
-            }, pageLoadSkipTimeout)
-          })
-        ])
-      } else {
-        await loadPagePromise
-      }
-      waitingForPageLoad = false
-      debuglog('page load DONE')
+      // load the page (slow)
+      // in parallel with preformatting the css
+      // - for improved performance
+      const [, { selectorNodeMap, selectors }] = await Promise.all([
+        loadPage(page, url, timeout, pageLoadSkipTimeout),
+        buildSelectorProfile(ast, forceInclude)
+      ])
 
       if (!page) {
         // in case we timed out
@@ -159,12 +169,6 @@ async function pruneNonCriticalCssLauncher ({
         })
         debuglog('take before screenshot DONE: ' + beforePath)
       }
-
-      const { selectorNodeMap, selectors } = buildSelectorProfile(
-        ast,
-        forceInclude
-      )
-      debuglog('build selector profile')
 
       const criticalSelectors = await page.evaluate(pruneNonCriticalSelectors, {
         selectors,
