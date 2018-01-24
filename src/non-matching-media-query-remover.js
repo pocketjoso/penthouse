@@ -69,7 +69,11 @@ function nonMatchingMediaQueryRemover (
       if (csstree.keyword(atrule.name).name !== 'media') {
         return
       }
-
+      // this can happen - why? (atrule.prelude === null)
+      // and should we remove this rule here, or keep it?
+      if (!atrule.prelude) {
+        return
+      }
       const mediaQuery = csstree.generate(atrule.prelude)
       const isMatching = _isMatchingMediaQuery(mediaQuery, matchConfig)
       if (!isMatching) {
