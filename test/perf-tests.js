@@ -13,7 +13,7 @@ function staticServerPerfHtmlUrl (file) {
 
 const FIXTURES = [
   {
-    threshold: 1700,
+    threshold: 1900,
     name: 'stripe'
   },
   {
@@ -25,7 +25,7 @@ const FIXTURES = [
     name: 'dn'
   },
   {
-    threshold: 3800,
+    threshold: 4600,
     name: 'guardian'
   },
   {
