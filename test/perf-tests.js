@@ -1,11 +1,6 @@
-'use strict'
-
-import { describe, it } from 'global-mocha'
 import path from 'path'
 import penthouse from '../lib/'
-import chai from 'chai'
 
-chai.should() // binds globally on Object
 
 function staticServerPerfHtmlUrl (file) {
   return 'file://' + path.join(__dirname, 'static-server', 'perf', file)
@@ -34,18 +29,18 @@ const FIXTURES = [
   }
 ]
 
-describe('performance tests for penthouse', function () {
+describe('performance tests for penthouse', () => {
   this.timeout(10000)
 
   FIXTURES.forEach(({name, threshold}) => {
-    it(`Penthouse should handle ${name} in less than ${threshold / 1000}s`, function () {
+    it(`Penthouse should handle ${name} in less than ${threshold / 1000}s`, () => {
       const start = Date.now()
       return penthouse({
         url: staticServerPerfHtmlUrl(`${name}.html`),
         css: path.join(__dirname, 'static-server', 'perf', `${name}.css`)
       })
         .then(result => {
-          (Date.now() - start).should.be.below(threshold)
+          expect(Date.now() - start).toBeLessThan(threshold)
         })
     })
   })

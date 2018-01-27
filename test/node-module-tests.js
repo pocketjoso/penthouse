@@ -1,28 +1,22 @@
-'use strict'
-
 import puppeteer from 'puppeteer'
 import { readFileSync as read } from 'fs'
-import { describe, it } from 'global-mocha'
 import path from 'path'
 import penthouse from '../lib/'
-import chai from 'chai'
 
 import chromeProcessesRunning from './util/chromeProcessesRunning'
 import normaliseCss from './util/normaliseCss'
-
-chai.should() // binds globally on Object
 
 function staticServerFileUrl (file) {
   return 'file://' + path.join(__dirname, 'static-server', file)
 }
 
-describe('extra tests for penthouse node module', function () {
+describe('extra tests for penthouse node module', () => {
   var page1FileUrl = staticServerFileUrl('page1.html')
   var page1cssPath = path.join(__dirname, 'static-server', 'page1.css')
 
   this.timeout(6000)
   // module handles both callback (legacy), and promise
-  it('module invocation should return promise', function () {
+  it('module invocation should return promise', () => {
     var originalCss = read(page1cssPath).toString()
 
     return penthouse({
@@ -30,11 +24,11 @@ describe('extra tests for penthouse node module', function () {
       css: page1cssPath
     })
       .then(result => {
-        result.should.eql(normaliseCss(originalCss))
+        expect(result).toEqual(normaliseCss(originalCss))
       })
   })
 
-  it('error should not contain debug info', function (done) {
+  it('error should not contain debug info', done => {
     // callback
     penthouse({
       url: 'http://localhost.does.not.exist',
@@ -53,7 +47,7 @@ describe('extra tests for penthouse node module', function () {
       })
   })
 
-  it('error should handle parallell jobs, sharing one browser instance, closing afterwards', function (done) {
+  it('error should handle parallell jobs, sharing one browser instance, closing afterwards', done => {
     const urls = [page1FileUrl, page1FileUrl, page1FileUrl]
     const promises = urls.map(url => {
       return penthouse(({url, css: page1cssPath}))
@@ -83,7 +77,7 @@ describe('extra tests for penthouse node module', function () {
       .catch(done)
   })
 
-  it('should keep chromium browser instance open, if requested', function (done) {
+  it('should keep chromium browser instance open, if requested', done => {
     penthouse(({url: page1FileUrl, css: page1cssPath, unstableKeepBrowserAlive: true}))
       .then(() => {
         // wait a bit to ensure Chrome doesn't just take time to close
@@ -103,7 +97,7 @@ describe('extra tests for penthouse node module', function () {
       .catch(done)
   })
 
-  it('should close browser page even if page execution errored, in unstableKeepBrowserAlive mode', function (done) {
+  it('should close browser page even if page execution errored, in unstableKeepBrowserAlive mode', done => {
     penthouse({
       url: 'http://localhost.does.not.exist',
       css: page1cssPath,
@@ -127,7 +121,7 @@ describe('extra tests for penthouse node module', function () {
       })
   })
 
-  it('should use the browser given in options', function (done) {
+  it('should use the browser given in options', done => {
     let newPageCalled = false
 
     puppeteer.launch()

@@ -1,21 +1,17 @@
 'use strict'
 
-import { describe, it } from 'global-mocha'
 import path from 'path'
 import penthouse from '../lib/'
 import { readFileSync as read } from 'fs'
-import chai from 'chai'
 import csstree from 'css-tree'
 
 import normaliseCss from './util/normaliseCss'
-
-chai.should() // binds globally on Object
 
 function staticServerFileUrl (file) {
   return 'file://' + path.join(__dirname, 'static-server', file)
 }
 
-describe('basic tests of penthouse functionality', function () {
+describe('basic tests of penthouse functionality', () => {
   var page1FileUrl = staticServerFileUrl('page1.html')
   var page1cssPath = path.join(__dirname, 'static-server', 'page1.css')
   var originalCss = read(page1cssPath).toString()
@@ -23,17 +19,17 @@ describe('basic tests of penthouse functionality', function () {
   // some of these tests take longer than default timeout
   this.timeout(10000)
 
-  it('should return css', function () {
+  it('should return css', () => {
     return penthouse({
       url: page1FileUrl,
       css: page1cssPath
     })
       .then(result => {
-        result.should.have.length.greaterThan(0)
+        expect(result).to.have.length.greaterThan(0)
       })
   })
 
-  it('should return a css file whose parsed AST is equal to the the original\'s AST when the viewport is large', function () {
+  it('should return a css file whose parsed AST is equal to the the original\'s AST when the viewport is large', () => {
     var widthLargerThanTotalTestCSS = 1000
     var heightLargerThanTotalTestCSS = 1000
 
@@ -44,11 +40,11 @@ describe('basic tests of penthouse functionality', function () {
       height: heightLargerThanTotalTestCSS
     })
       .then(result => {
-        result.should.eql(normaliseCss(originalCss))
+        expect(result).toEqual(normaliseCss(originalCss))
       })
   })
 
-  it('should return a subset of the original AST rules when the viewport is small', function () {
+  it('should return a subset of the original AST rules when the viewport is small', () => {
     var widthLargerThanTotalTestCSS = 1000
     var heightSmallerThanTotalTestCSS = 100
 
@@ -61,12 +57,12 @@ describe('basic tests of penthouse functionality', function () {
       .then(result => {
         const resultRules = csstree.toPlainObject(csstree.parse(result)).children
         const originalRules = csstree.toPlainObject(csstree.parse(originalCss)).children
-        resultRules.should.have.length.lessThan(originalRules.length)
+        expect(resultRules.length).toBeLessThan(originalRules.length)
         // not be empty
       })
   })
 
-  it('should not crash on invalid css', function () {
+  it('should not crash on invalid css', () => {
     return penthouse({
       url: page1FileUrl,
       css: path.join(__dirname, 'static-server', 'invalid.css')
@@ -75,21 +71,21 @@ describe('basic tests of penthouse functionality', function () {
         if (result.length === 0) {
           throw new Error('length should be > 0')
         }
-        result.should.have.length.greaterThan(0)
+        expect(result).to.have.length.greaterThan(0)
       })
   })
 
-  it('should not crash on invalid media query', function () {
+  it('should not crash on invalid media query', () => {
     return penthouse({
       url: page1FileUrl,
       css: path.join(__dirname, 'static-server', 'invalid-media.css')
     })
       .then(result => {
-        result.should.have.length.greaterThan(0)
+        expect(result).to.have.length.greaterThan(0)
       })
   })
 
-  it('should crash with errors in strict mode on invalid css', function (done) {
+  it('should crash with errors in strict mode on invalid css', done => {
     penthouse({
       url: page1FileUrl,
       css: path.join(__dirname, 'static-server', 'invalid.css'),
@@ -99,17 +95,17 @@ describe('basic tests of penthouse functionality', function () {
       .catch(() => done())
   })
 
-  it('should not crash or hang on special chars', function () {
+  it('should not crash or hang on special chars', () => {
     return penthouse({
       url: page1FileUrl,
       css: path.join(__dirname, 'static-server', 'special-chars.css')
     })
       .then(result => {
-        result.should.have.length.greaterThan(0)
+        expect(result).to.have.length.greaterThan(0)
       })
   })
 
-  it('should surface parsing errors to the end user', function (done) {
+  it('should surface parsing errors to the end user', done => {
     penthouse({
       css: 'missing.css'
     })
@@ -117,7 +113,7 @@ describe('basic tests of penthouse functionality', function () {
       .catch(() => done())
   })
 
-  it('should exit after timeout', function (done) {
+  it('should exit after timeout', done => {
     penthouse({
       url: page1FileUrl,
       css: page1cssPath,
