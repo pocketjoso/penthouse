@@ -1,28 +1,17 @@
-'use strict'
-
-import { describe, it } from 'global-mocha'
 import path from 'path'
 import penthouse from '../lib/'
 import { readFileSync as read } from 'fs'
 import normaliseCss from './util/normaliseCss'
-import chai from 'chai'
-chai.should() // binds globally on Object
 
-process.setMaxListeners(0)
-
-function staticServerFileUrl (file) {
-  return 'file://' + path.join(__dirname, 'static-server', file)
-}
-
-describe('penthouse core tests', function () {
+describe('penthouse core tests', () => {
+  function staticServerFileUrl (file) {
+    return 'file://' + path.join(process.env.PWD, 'test', 'static-server', file)
+  }
   var page1FileUrl = staticServerFileUrl('page1.html')
 
-  // some of these tests take longer than default timeout
-  this.timeout(10000)
-
-  it('should match exactly the css in the yeoman test', function () {
-    var yeomanFullCssFilePath = path.join(__dirname, 'static-server', 'yeoman-full.css')
-    var yeomanExpectedCssFilePath = path.join(__dirname, 'static-server', 'yeoman-medium--expected.css')
+  it('should match exactly the css in the yeoman test', () => {
+    var yeomanFullCssFilePath = path.join(process.env.PWD, 'test', 'static-server', 'yeoman-full.css')
+    var yeomanExpectedCssFilePath = path.join(process.env.PWD, 'test', 'static-server', 'yeoman-medium--expected.css')
     var yeomanExpectedCss = read(yeomanExpectedCssFilePath).toString()
 
     return penthouse({
@@ -32,11 +21,11 @@ describe('penthouse core tests', function () {
       height: 450
     })
       .then(result => {
-        result.should.eql(normaliseCss(yeomanExpectedCss))
+        expect(result).toEqual(normaliseCss(yeomanExpectedCss))
       })
   })
 
-  it('should remove non critical selectors from individual rules', function () {
+  it('should remove non critical selectors from individual rules', () => {
     var testFixtureCss = read(path.join(__dirname, 'static-server', 'rm-non-critical-selectors.css')).toString()
     var expected = read(path.join(__dirname, 'static-server', 'rm-non-critical-selectors--expected.css')).toString()
 
@@ -45,11 +34,11 @@ describe('penthouse core tests', function () {
       cssString: testFixtureCss
     })
       .then(result => {
-        result.should.eql(normaliseCss(expected))
+        expect(result).toEqual(normaliseCss(expected))
       })
   })
 
-  it('should keep :before, :after, :visited rules (because el above fold)', function () {
+  it('should keep :before, :after, :visited rules (because el above fold)', () => {
     var pseudoRemainCssFilePath = path.join(__dirname, 'static-server', 'psuedo--remain.css')
     var pseudoRemainCss = read(pseudoRemainCssFilePath).toString()
 
@@ -58,11 +47,11 @@ describe('penthouse core tests', function () {
       css: pseudoRemainCssFilePath
     })
       .then(result => {
-        result.should.eql(normaliseCss(pseudoRemainCss))
+        expect(result).toEqual(normaliseCss(pseudoRemainCss))
       })
   })
 
-  it('should remove :hover, :active, etc rules - always', function () {
+  it('should remove :hover, :active, etc rules - always', () => {
     var pusedoRemoveCssFilePath = path.join(__dirname, 'static-server', 'psuedo--remove.css')
 
     return penthouse({
@@ -70,7 +59,7 @@ describe('penthouse core tests', function () {
       css: pusedoRemoveCssFilePath
     })
       .then(result => {
-        result.trim().should.equal('')
+        expect(result.trim()).toBe('')
       })
   })
 
@@ -78,7 +67,7 @@ describe('penthouse core tests', function () {
   /* - Case 0 : Non nested @-rule [REMAIN]
    (@charset, @import, @namespace)
    */
-  it('should keep complete case 0 @-rules (@import, @charset, @namespace)', function () {
+  it('should keep complete case 0 @-rules (@import, @charset, @namespace)', () => {
     var atRuleCase0RemainCssFilePath = path.join(__dirname, 'static-server', 'at-rule-case-0--remain.css')
     var atRuleCase0RemainCss = read(atRuleCase0RemainCssFilePath).toString()
 
@@ -87,7 +76,7 @@ describe('penthouse core tests', function () {
       css: atRuleCase0RemainCssFilePath
     })
       .then(result => {
-        result.should.eql(normaliseCss(atRuleCase0RemainCss))
+        expect(result).toEqual(normaliseCss(atRuleCase0RemainCss))
       })
   })
 
@@ -95,7 +84,7 @@ describe('penthouse core tests', function () {
    (NOTE: @font-face, @keyframes are removed later in code, unless they are used.
    Therefor currently this test has to include CSS 'using' the @font-face|@keyframes)
    */
-  it('should keep complete case 1 @-rules (@font-face, @keyframes)', function () {
+  it('should keep complete case 1 @-rules (@font-face, @keyframes)', () => {
     var atRuleCase1RemainCssFilePath = path.join(__dirname, 'static-server', 'at-rule-case-1--remain.css')
     var atRuleCase1RemainCss = read(atRuleCase1RemainCssFilePath).toString()
 
@@ -104,14 +93,14 @@ describe('penthouse core tests', function () {
       css: atRuleCase1RemainCssFilePath
     })
       .then(result => {
-        result.should.eql(normaliseCss(atRuleCase1RemainCss))
+        expect(result).toEqual(normaliseCss(atRuleCase1RemainCss))
       })
   })
 
   /* Case 2: @-rule with CSS properties inside [REMOVE]
    @page
    */
-  it('should remove complete case 2 @-rules (@page..)', function () {
+  it('should remove complete case 2 @-rules (@page..)', () => {
     var atRuleCase2RemoveCssFilePath = path.join(__dirname, 'static-server', 'at-rule-case-2--remove.css')
 
     return penthouse({
@@ -119,7 +108,7 @@ describe('penthouse core tests', function () {
       css: atRuleCase2RemoveCssFilePath
     })
       .then(result => {
-        result.trim().should.equal('')
+        expect(result.trim()).toBe('')
       })
   })
 
@@ -127,7 +116,7 @@ describe('penthouse core tests', function () {
    @media, @document, @supports..
    */
   // TODO: handle @document, @supports also in invalid css (normalising)
-  it('should keep case 3 @-rules (@media, @document..)', function () {
+  it('should keep case 3 @-rules (@media, @document..)', () => {
     var atRuleCase3RemainCssFilePath = path.join(__dirname, 'static-server', 'at-rule-case-3--remain.css')
     var atRuleCase3RemainCss = read(atRuleCase3RemainCssFilePath).toString()
 
@@ -137,7 +126,7 @@ describe('penthouse core tests', function () {
       strict: true
     })
       .then(result => {
-        result.should.eql(normaliseCss(atRuleCase3RemainCss))
+        expect(result).toEqual(normaliseCss(atRuleCase3RemainCss))
       })
   })
 
@@ -145,7 +134,7 @@ describe('penthouse core tests', function () {
    - @media print|speech|arual
    (removed via non-matching-media-query-remover in preformatting tests
    */
-  it('should remove case 4 @-rules (@media print|speech)', function () {
+  it('should remove case 4 @-rules (@media print|speech)', () => {
     var atRuleCase4RemoveCssFilePath = path.join(__dirname, 'static-server', 'at-rule-case-4--remove.css')
 
     return penthouse({
@@ -153,11 +142,11 @@ describe('penthouse core tests', function () {
       css: atRuleCase4RemoveCssFilePath
     })
       .then(result => {
-        result.trim().should.equal('')
+        expect(result.trim()).toBe('')
       })
   })
 
-  it('should keep self clearing rules when needed to stay outside the fold', function () {
+  it('should keep self clearing rules when needed to stay outside the fold', () => {
     var clearSelfRemainCssFilePath = path.join(__dirname, 'static-server', 'clearSelf--remain.css')
     var clearSelfRemainCss = read(clearSelfRemainCssFilePath).toString()
 
@@ -166,11 +155,11 @@ describe('penthouse core tests', function () {
       css: clearSelfRemainCssFilePath
     })
       .then(result => {
-        result.should.eql(normaliseCss(clearSelfRemainCss))
+        expect(result).toEqual(normaliseCss(clearSelfRemainCss))
       })
   })
 
-  it('should force include specified selectors', function () {
+  it('should force include specified selectors', () => {
     var forceIncludeCssFilePath = path.join(__dirname, 'static-server', 'forceInclude.css')
     var forceIncludeCss = read(forceIncludeCssFilePath).toString()
 
@@ -184,12 +173,12 @@ describe('penthouse core tests', function () {
       ]
     })
       .then(result => {
-        result.should.eql(normaliseCss(forceIncludeCss))
+        expect(result).toEqual(normaliseCss(forceIncludeCss))
       })
   })
 
   // non essential
-  it('should remove empty rules', function () {
+  it('should remove empty rules', () => {
     var emptyRemoveCssFilePath = path.join(__dirname, 'static-server', 'empty-rules--remove.css')
 
     return penthouse({
@@ -197,7 +186,7 @@ describe('penthouse core tests', function () {
       css: emptyRemoveCssFilePath
     })
       .then(result => {
-        result.trim().should.equal('')
+        expect(result.trim()).toBe('')
       })
   })
 })

@@ -1,20 +1,16 @@
 import csstree from 'css-tree'
-import { describe, it } from 'global-mocha'
 import path from 'path'
 import penthouse from '../lib/'
 import { readFileSync as read } from 'fs'
 import normaliseCss from './util/normaliseCss'
-import chai from 'chai'
 
 import ffRemover from '../lib/postformatting/unused-fontface-remover'
 import unusedKeyframeRemover from '../lib/postformatting/unused-keyframe-remover'
 import unwantedPropertiesRemover from '../lib/postformatting/unwanted-properties-remover'
 import embeddedbase64Remover from '../lib/postformatting/embedded-base64-remover'
 
-chai.should() // binds globally on Object
-
 function staticServerFileUrl (file) {
-  return 'file://' + path.join(__dirname, 'static-server', file)
+  return 'file://' + path.join(process.env.PWD, 'test', 'static-server', file)
 }
 
 function countDeclarations (ast) {
@@ -28,8 +24,8 @@ function countDeclarations (ast) {
 
 process.setMaxListeners(0)
 
-describe('penthouse post formatting tests', function () {
-  it('should remove propertiesToRemove', function () {
+describe('penthouse post formatting tests', () => {
+  it('should remove propertiesToRemove', () => {
     const originalCss = `
       body {
         transition: all 0.5s;
@@ -59,13 +55,13 @@ describe('penthouse post formatting tests', function () {
 
     unwantedPropertiesRemover(ast, propertiesToRemove)
 
-    beforeRemoval.should.eql(8)
-    countDeclarations(ast).should.eql(0)
+    expect(beforeRemoval).toEqual(8)
+    expect(countDeclarations(ast)).toEqual(0)
   })
 
-  it('should remove embedded base64', function () {
-    const originalCss = read(path.join(__dirname, 'static-server', 'embedded-base64--remove.css')).toString()
-    const expectedCss = read(path.join(__dirname, 'static-server', 'embedded-base64--remove--expected.css')).toString()
+  it('should remove embedded base64', () => {
+    const originalCss = read(path.join(process.env.PWD, 'test', 'static-server', 'embedded-base64--remove.css')).toString()
+    const expectedCss = read(path.join(process.env.PWD, 'test', 'static-server', 'embedded-base64--remove--expected.css')).toString()
 
     const ast = csstree.parse(originalCss)
 
@@ -73,12 +69,12 @@ describe('penthouse post formatting tests', function () {
     // lowering the limit here so that everything will be removed in test fixture
     embeddedbase64Remover(ast, 250)
 
-    csstree.generate(ast).should.eql(normaliseCss(expectedCss))
+    expect(csstree.generate(ast)).toEqual(normaliseCss(expectedCss))
   })
 
-  it('should remove @font-face rule, because it is not used', function () {
-    var fontFaceRemoveCssFilePath = path.join(__dirname, 'static-server', 'fontface--remove.css')
-    var fontFaceRemoveExpectedCssFilePath = path.join(__dirname, 'static-server', 'fontface--remove--expected.css')
+  it('should remove @font-face rule, because it is not used', () => {
+    var fontFaceRemoveCssFilePath = path.join(process.env.PWD, 'test', 'static-server', 'fontface--remove.css')
+    var fontFaceRemoveExpectedCssFilePath = path.join(process.env.PWD, 'test', 'static-server', 'fontface--remove--expected.css')
     var originalCss = read(fontFaceRemoveCssFilePath).toString()
     var expectedCss = read(fontFaceRemoveExpectedCssFilePath).toString()
 
@@ -86,23 +82,23 @@ describe('penthouse post formatting tests', function () {
 
     ffRemover(ast)
 
-    csstree.generate(ast).should.eql(normaliseCss(expectedCss))
+    expect(csstree.generate(ast)).toEqual(normaliseCss(expectedCss))
   })
 
-  it('should only keep @keyframe rules used in critical css', function () {
-    const originalCss = read(path.join(__dirname, 'static-server', 'unused-keyframes.css'), 'utf8')
-    const expectedCss = read(path.join(__dirname, 'static-server', 'unused-keyframes--expected.css'), 'utf8')
+  it('should only keep @keyframe rules used in critical css', () => {
+    const originalCss = read(path.join(process.env.PWD, 'test', 'static-server', 'unused-keyframes.css'), 'utf8')
+    const expectedCss = read(path.join(process.env.PWD, 'test', 'static-server', 'unused-keyframes--expected.css'), 'utf8')
 
     const ast = csstree.parse(originalCss)
 
     unusedKeyframeRemover(ast)
 
-    csstree.generate(ast).should.eql(normaliseCss(expectedCss))
+    expect(csstree.generate(ast)).toEqual(normaliseCss(expectedCss))
   })
 
-  it('should not remove transitions but still remove cursor from css', function () {
-    var fullCssFilePath = path.join(__dirname, 'static-server', 'transition-full.css')
-    var expectedCssFilePath = path.join(__dirname, 'static-server', 'transition-crit--expected.css')
+  it('should not remove transitions but still remove cursor from css', () => {
+    var fullCssFilePath = path.join(process.env.PWD, 'test', 'static-server', 'transition-full.css')
+    var expectedCssFilePath = path.join(process.env.PWD, 'test', 'static-server', 'transition-crit--expected.css')
     var expectedCss = read(expectedCssFilePath).toString()
 
     return penthouse({
@@ -118,7 +114,7 @@ describe('penthouse post formatting tests', function () {
       ]
     })
       .then(result => {
-        result.should.eql(normaliseCss(expectedCss))
+        expect(result).toEqual(normaliseCss(expectedCss))
       })
   })
 })

@@ -1,12 +1,6 @@
-'use strict'
-
 import csstree from 'css-tree'
-import { describe, it } from 'global-mocha'
-import chai from 'chai'
 
 import nonMatchingMediaQueryRemover from '../lib/non-matching-media-query-remover'
-
-chai.should() // binds globally on Object
 
 function testMediaQueryRemoval (tests, width, height, keepLargerMediaQueries) {
   return [].concat(...tests.map(({rules, remove}) => {
@@ -30,8 +24,8 @@ function testMediaQueryRemoval (tests, width, height, keepLargerMediaQueries) {
 
 process.setMaxListeners(0)
 
-describe('penthouse pre formatting tests', function () {
-  it('should remove non matching media queries', function (done) {
+describe('penthouse pre formatting tests', () => {
+  it('should remove non matching media queries', done => {
     const mediaToAlwaysKeep = [
       `@media all {}`,
       // going for false positives over false negatives
