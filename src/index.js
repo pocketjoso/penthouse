@@ -232,7 +232,7 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         // retry
         resolve(
           generateCriticalCssWrapped(options, ast, {
-            forceTryRestartBrowser
+            forceTryRestartBrowser: true
           })
         )
         return
