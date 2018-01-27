@@ -1,10 +1,10 @@
 import puppeteer from 'puppeteer'
 import { readFileSync as read } from 'fs'
 import path from 'path'
-import penthouse from '../lib/'
+import penthouse from '../../lib/'
 
-import chromeProcessesRunning from './util/chromeProcessesRunning'
-import normaliseCss from './util/normaliseCss'
+import chromeProcessesRunning from '../util/chromeProcessesRunning'
+import normaliseCss from '../util/normaliseCss'
 
 function staticServerFileUrl (file) {
   return 'file://' + path.join(process.env.PWD, 'test', 'static-server', file)

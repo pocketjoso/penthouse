@@ -1,6 +1,6 @@
 import puppeteer from 'puppeteer'
 import path from 'path'
-import penthouse from '../lib/'
+import penthouse from '../../lib/'
 
 
 function staticServerPerfHtmlUrl (file) {
@@ -11,7 +11,7 @@ const FIXTURES = [
   {
     // NOTE: with current test setup, the first test incurs extra cost of launching browser
     // whereas the latter ones re-use it
-    threshold: 3500,
+    threshold: 1900,
     name: 'stripe'
   },
   {
@@ -19,7 +19,7 @@ const FIXTURES = [
     name: 'jso'
   },
   {
-    threshold: 6500,
+    threshold: 2700,
     name: 'dn'
   },
   {
@@ -42,7 +42,7 @@ describe('performance tests for penthouse', () => {
       const start = Date.now()
       return penthouse({
         url: staticServerPerfHtmlUrl(`${name}.html`),
-        css: path.join(__dirname, 'static-server', 'perf', `${name}.css`),
+        css: path.join(process.env.PWD, 'test', 'static-server', 'perf', `${name}.css`),
         unstableKeepBrowserAlive: true,
         puppeteer: { getBrowser: () => browserPromise }
       })
