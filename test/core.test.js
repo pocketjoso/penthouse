@@ -3,21 +3,15 @@ import penthouse from '../lib/'
 import { readFileSync as read } from 'fs'
 import normaliseCss from './util/normaliseCss'
 
-process.setMaxListeners(0)
-
-function staticServerFileUrl (file) {
-  return 'file://' + path.join(__dirname, 'static-server', file)
-}
-
 describe('penthouse core tests', () => {
+  function staticServerFileUrl (file) {
+    return 'file://' + path.join(process.env.PWD, 'test', 'static-server', file)
+  }
   var page1FileUrl = staticServerFileUrl('page1.html')
 
-  // some of these tests take longer than default timeout
-  this.timeout(10000)
-
   it('should match exactly the css in the yeoman test', () => {
-    var yeomanFullCssFilePath = path.join(__dirname, 'static-server', 'yeoman-full.css')
-    var yeomanExpectedCssFilePath = path.join(__dirname, 'static-server', 'yeoman-medium--expected.css')
+    var yeomanFullCssFilePath = path.join(process.env.PWD, 'test', 'static-server', 'yeoman-full.css')
+    var yeomanExpectedCssFilePath = path.join(process.env.PWD, 'test', 'static-server', 'yeoman-medium--expected.css')
     var yeomanExpectedCss = read(yeomanExpectedCssFilePath).toString()
 
     return penthouse({

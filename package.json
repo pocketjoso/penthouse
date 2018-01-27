@@ -22,9 +22,10 @@
   },
   "scripts": {
     "lint": "eslint src test",
-    "test": "mocha --compilers js:babel-core/register test/core-tests",
-    "test-all": "mocha --compilers js:babel-core/register",
-    "test-perf": "mocha --compilers js:babel-core/register test/perf-tests",
+    "test": "jest test/core.test.js",
+    "test-all": "jest && yarn test-extra",
+    "test-perf": "jest test/perf.test.js",
+    "test-extra": "jest --runInBand test/node-module-run-sequential-last-test.js",
     "precommit": "lint-staged",
     "prepublish": "npm run lint && npm run transpile",
     "transpile": "babel -d lib src/"
