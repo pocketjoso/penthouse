@@ -19,7 +19,7 @@ const FIXTURES = [
     name: 'jso'
   },
   {
-    threshold: 2700,
+    threshold: 2900,
     name: 'dn'
   },
   {
