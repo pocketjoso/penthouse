@@ -1,7 +1,7 @@
 import csstree from 'css-tree'
 import debug from 'debug'
-import pruneNonCriticalSelectors
-  from './browser-sandbox/pruneNonCriticalSelectors'
+import pruneNonCriticalSelectors from './browser-sandbox/pruneNonCriticalSelectors'
+import pageLoadSkipTimeoutFunc from './browser-sandbox/pageLoadSkipTimeout'
 import replacePageCss from './browser-sandbox/replacePageCss'
 import cleanupAst from './postformatting'
 import buildSelectorProfile from './selectors-profile'
@@ -39,17 +39,18 @@ async function pruneNonCriticalCssLauncher ({
   propertiesToRemove,
   maxEmbeddedBase64Length
 }) {
+  let _hasError = false
   let _hasExited = false
   const takeScreenshots = screenshots && screenshots.basePath
-  const screenshotExtension = takeScreenshots && screenshots.type === 'jpeg'
-    ? '.jpg'
-    : '.png'
+  const screenshotExtension =
+    takeScreenshots && screenshots.type === 'jpeg' ? '.jpg' : '.png'
 
   return new Promise(async (resolve, reject) => {
     debuglog('Penthouse core start')
     let page
     let killTimeout
     async function cleanupAndExit ({ error, returnValue }) {
+      debuglog('cleanupAndExit start')
       if (_hasExited) {
         return
       }
@@ -61,14 +62,14 @@ async function pruneNonCriticalCssLauncher ({
       if (page && !(error && error.toString().indexOf('Target closed') > -1)) {
         // must await here, otherwise will receive errors if closing
         // browser before page is properly closed
+        debuglog('cleanupAndExit -> Target not closed -> closing page')
         await page.close()
       }
-      debuglog('cleanupAndExit')
+      debuglog('cleanupAndExit end')
       if (error) {
-        reject(error)
-        return
+        return reject(error)
       }
-      resolve(returnValue)
+      return resolve(returnValue)
     }
     killTimeout = setTimeout(() => {
       cleanupAndExit({
@@ -84,6 +85,21 @@ async function pruneNonCriticalCssLauncher ({
       debuglog('viewport set')
 
       await page.setUserAgent(userAgent)
+
+      page.on('error', error => {
+        console.error('Chromium Tab CRASHED', error)
+        page.close()
+        browser.close()
+      })
+
+      page.on('console', msg => {
+        const text = msg.text || msg
+        // pass through log messages
+        // - the ones sent by penthouse for debugging has 'debug: ' prefix.
+        if (/^debug: /.test(text)) {
+          debuglog(text.replace(/^debug: /, ''))
+        }
+      })
 
       if (customPageHeaders) {
         try {
@@ -101,49 +117,97 @@ async function pruneNonCriticalCssLauncher ({
         await blockJsRequests(page)
         debuglog('blocking js requests')
       }
-      page.on('console', msg => {
-        const text = msg.text || msg
-        // pass through log messages
-        // - the ones sent by penthouse for debugging has 'debug: ' prefix.
-        if (/^debug: /.test(text)) {
-          debuglog(text.replace(/^debug: /, ''))
+
+      // Handle requests of pages and block the page from going away and losing context
+      // https://github.com/pocketjoso/penthouse/issues/202
+      let pageLoadSkipPromise = new Promise((resolve, reject) => {
+        if (pageLoadSkipTimeout) {
+          debuglog('intercepting redirecting of page')
+          page.setRequestInterceptionEnabled(true) // TODO: Rename to "setRequestInterception" when updating puppeteer > 0.12
+
+          page.on('request', async request => {
+            debuglog('REQUEST URL: ' + request.url) // TODO: interceptedRequest.url is a function in puppeteer > 0.12
+          })
+
+          page.on('response', async response => {
+            if (response.url === url) {
+              debuglog('RESPONSE URL: ' + response.url) // TODO: interceptedRequest.url is a function in puppeteer > 0.12
+              if (pageLoadSkipTimeout) {
+                debuglog('pageLoadSkipTimeout injected on dom creation')
+                await page.waitFor(100)
+                page
+                  .evaluate(pageLoadSkipTimeoutFunc, {
+                    pageLoadSkipTimeout
+                  })
+                  .then(message => {
+                    debuglog('page.evaluate - RESOLVED', message)
+                    return reject('pageLoadSkipTimeout') // when pageLoadSkipTimeout is reached after dom request
+                  })
+                  .catch(err => {
+                    if (!err.message.includes('Target closed')) {
+                      debuglog('page.evaluate - ERROR', err)
+                      _hasError = true
+                      return reject(false)
+                    }
+                  })
+              }
+            }
+          })
+        } else {
+          resolve()
         }
       })
 
       debuglog('page load start')
       // set a higher number than the timeout option, in order to make
       // puppeteer’s timeout _never_ happen
-      let waitingForPageLoad = true
-      const loadPagePromise = page.goto(url, { timeout: timeout + 1000 })
-      if (pageLoadSkipTimeout) {
-        await Promise.race([
-          loadPagePromise,
-          new Promise(resolve => {
-            // instead we manually _abort_ page load after X time,
-            // in order to deal with spammy pages that keep sending non-critical requests
-            // (tracking etc), which would otherwise never load.
-            // With JS disabled it just shouldn't take that many seconds to load what's needed
-            // for critical viewport.
-            setTimeout(() => {
-              if (waitingForPageLoad) {
-                debuglog(
-                  'page load waiting ABORTED after ' +
-                    pageLoadSkipTimeout / 1000 +
-                    's. '
-                )
-                resolve()
-              }
-            }, pageLoadSkipTimeout)
+      const loadPageResponse = new Promise((resolve, reject) => {
+        page
+          .goto(url, {
+            timeout: timeout + 1000,
+            waitUntil: 'networkidle'
           })
+          .then(response => {
+            // Reject exits the Promise.all call immediately and ensures that the pageload is always higher prio than timout
+            return reject('loadPageResponse')
+          })
+          .catch(err => {
+            _hasError = true
+            // Reject when error because we don't want an errored page
+            console.error(err)
+            return reject(false)
+          })
+      })
+
+      try {
+        // Instead of race we want to use all for better workflow. Race is evil
+        let raceResult = await Promise.all([
+          pageLoadSkipPromise,
+          loadPageResponse
         ])
-      } else {
-        await loadPagePromise
+        debuglog('RACE RESULT: ', raceResult) // should never be reached
+      } catch (err) {
+        debuglog('RACE RESULT CATCH: ', err)
       }
-      waitingForPageLoad = false
-      debuglog('page load DONE')
+
+      try {
+        await loadPageResponse
+      } catch (err) {
+        if (err === 'loadPageResponse') {
+          debuglog('page load DONE')
+        } else {
+          _hasError = true
+        }
+      }
 
       if (!page) {
         // in case we timed out
+        debuglog('page load TIMED OUT')
+        return
+      }
+
+      if (_hasError) {
+        debuglog('page load error')
         return
       }
 
@@ -168,9 +232,9 @@ async function pruneNonCriticalCssLauncher ({
 
       const criticalSelectors = await page.evaluate(pruneNonCriticalSelectors, {
         selectors,
-        renderWaitTime
+        renderWaitTime,
+        pageLoadSkipTimeout
       })
-
       debuglog('pruneNonCriticalSelectors done, now cleanup AST')
 
       cleanupAst({

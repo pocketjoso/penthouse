@@ -52,7 +52,8 @@ const launchBrowserIfNeeded = async function ({ getBrowser }) {
         // for spammy pages that keep on sending (non critcal) requests
         waitUntil: 'networkidle2',
         ignoreHTTPSErrors: true,
-        args: ['--disable-setuid-sandbox', '--no-sandbox']
+        args: ['--disable-setuid-sandbox', '--no-sandbox'],
+        dumpio: false
       })
       .then(browser => {
         debuglog('new browser launched')
@@ -186,17 +187,18 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         renderWaitTime: options.renderWaitTime || DEFAULT_RENDER_WAIT_TIMEOUT,
         timeout: timeoutWait,
         pageLoadSkipTimeout: options.pageLoadSkipTimeout,
-        blockJSRequests: typeof options.blockJSRequests !== 'undefined'
-          ? options.blockJSRequests
-          : DEFAULT_BLOCK_JS_REQUESTS,
+        blockJSRequests:
+          typeof options.blockJSRequests !== 'undefined'
+            ? options.blockJSRequests
+            : DEFAULT_BLOCK_JS_REQUESTS,
         customPageHeaders: options.customPageHeaders,
         screenshots: options.screenshots,
         // postformatting
         propertiesToRemove,
-        maxEmbeddedBase64Length: typeof options.maxEmbeddedBase64Length ===
-          'number'
-          ? options.maxEmbeddedBase64Length
-          : DEFAULT_MAX_EMBEDDED_BASE64_LENGTH,
+        maxEmbeddedBase64Length:
+          typeof options.maxEmbeddedBase64Length === 'number'
+            ? options.maxEmbeddedBase64Length
+            : DEFAULT_MAX_EMBEDDED_BASE64_LENGTH,
         debuglog
       })
       _browserPagesOpen--
