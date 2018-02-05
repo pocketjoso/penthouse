@@ -122,25 +122,22 @@ async function pruneNonCriticalCssLauncher ({
       // https://github.com/pocketjoso/penthouse/issues/202
       let pageLoadSkipPromise = new Promise((resolve, reject) => {
         if (pageLoadSkipTimeout) {
-          debuglog('intercepting redirecting of page')
+          // enables us to control requests(stop, continue, modify)
           page.setRequestInterceptionEnabled(true) // TODO: Rename to "setRequestInterception" when updating puppeteer > 0.12
-
-          page.on('request', async request => {
-            debuglog('REQUEST URL: ' + request.url) // TODO: interceptedRequest.url is a function in puppeteer > 0.12
-          })
-
           page.on('response', async response => {
             if (response.url === url) {
               debuglog('RESPONSE URL: ' + response.url) // TODO: interceptedRequest.url is a function in puppeteer > 0.12
               if (pageLoadSkipTimeout) {
                 debuglog('pageLoadSkipTimeout injected on dom creation')
-                await page.waitFor(100)
+                // This is crucial for the evaluate to work. If this is not set we got an error:
+                // ERROR Error: Protocol error (Runtime.callFunctionOn): Cannot find context with specified id undefined
+                // Maybe this should be evaluated on low power machines if they need 100ms
+                await page.waitFor(10)
                 page
                   .evaluate(pageLoadSkipTimeoutFunc, {
                     pageLoadSkipTimeout
                   })
                   .then(message => {
-                    debuglog('page.evaluate - RESOLVED', message)
                     return reject('pageLoadSkipTimeout') // when pageLoadSkipTimeout is reached after dom request
                   })
                   .catch(err => {
@@ -185,9 +182,9 @@ async function pruneNonCriticalCssLauncher ({
           pageLoadSkipPromise,
           loadPageResponse
         ])
-        debuglog('RACE RESULT: ', raceResult) // should never be reached
+        debuglog('RACE RESULT [SHOULD NOT HAPPEN]: ', raceResult) // should never be reached
       } catch (err) {
-        debuglog('RACE RESULT CATCH: ', err)
+        debuglog('RACE RESULT: ', err)
       }
 
       try {
@@ -208,7 +205,7 @@ async function pruneNonCriticalCssLauncher ({
 
       if (_hasError) {
         debuglog('page load error')
-        return
+        throw new Error('Error while page load')
       }
 
       // grab a "before" screenshot - of the page fully loaded, without JS
