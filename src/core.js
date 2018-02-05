@@ -41,6 +41,7 @@ async function pruneNonCriticalCssLauncher ({
 }) {
   let _hasError = false
   let _hasExited = false
+  let _hasLoaded = false
   const takeScreenshots = screenshots && screenshots.basePath
   const screenshotExtension =
     takeScreenshots && screenshots.type === 'jpeg' ? '.jpg' : '.png'
@@ -138,7 +139,16 @@ async function pruneNonCriticalCssLauncher ({
                     pageLoadSkipTimeout
                   })
                   .then(message => {
-                    return reject('pageLoadSkipTimeout') // when pageLoadSkipTimeout is reached after dom request
+                    if (!_hasLoaded) {
+                      // when pageLoadSkipTimeout is reached after dom request
+                      // don't resolve when page already loaded completely
+                      debuglog(
+                        'pageLoadSkipTimeout - page load waiting ABORTED after ' +
+                          pageLoadSkipTimeout / 1000 +
+                          's. '
+                      )
+                      return resolve('pageLoadSkipTimeout')
+                    }
                   })
                   .catch(err => {
                     if (!err.message.includes('Target closed')) {
@@ -150,8 +160,6 @@ async function pruneNonCriticalCssLauncher ({
               }
             }
           })
-        } else {
-          resolve()
         }
       })
 
@@ -166,7 +174,8 @@ async function pruneNonCriticalCssLauncher ({
           })
           .then(response => {
             // Reject exits the Promise.all call immediately and ensures that the pageload is always higher prio than timout
-            return reject('loadPageResponse')
+            _hasLoaded = true
+            return resolve('loadPageResponse')
           })
           .catch(err => {
             _hasError = true
@@ -178,23 +187,25 @@ async function pruneNonCriticalCssLauncher ({
 
       try {
         // Instead of race we want to use all for better workflow. Race is evil
-        let raceResult = await Promise.all([
+        let raceResult = await Promise.race([
           pageLoadSkipPromise,
           loadPageResponse
         ])
-        debuglog('RACE RESULT [SHOULD NOT HAPPEN]: ', raceResult) // should never be reached
+        debuglog('RACE RESULT: ', raceResult)
       } catch (err) {
-        debuglog('RACE RESULT: ', err)
+        debuglog('RACE RESULT ERROR: ', err)
+        _hasError = true
       }
 
       try {
+        // still waiting for the page to load
+        // if we run into pageLoadSkipTimout then there will be a window.stop()
+        // so this will be resolved aswell
         await loadPageResponse
+        debuglog('page load DONE')
       } catch (err) {
-        if (err === 'loadPageResponse') {
-          debuglog('page load DONE')
-        } else {
-          _hasError = true
-        }
+        console.error(err)
+        _hasError = true
       }
 
       if (!page) {

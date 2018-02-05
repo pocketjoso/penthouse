@@ -16,11 +16,6 @@ export default function pruneNonCriticalSelectors ({ pageLoadSkipTimeout }) {
             const timePassed = Date.now() - start
 
             if (timePassed >= pageLoadSkipTimeout) {
-              console.log(
-                'debug: pageLoadSkipTimeout - page load waiting ABORTED after ' +
-                  pageLoadSkipTimeout / 1000 +
-                  's. '
-              )
               window.stop()
               return resolve()
             } else {
