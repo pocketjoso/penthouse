@@ -2,8 +2,7 @@
 // no access to scrope outside of function
 export default function pruneNonCriticalSelectors ({
   selectors,
-  renderWaitTime,
-  pageLoadSkipTimeout
+  renderWaitTime
 }) {
   try {
     console.log('debug: pruneNonCriticalSelectors')

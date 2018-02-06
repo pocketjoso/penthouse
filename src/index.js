@@ -37,6 +37,7 @@ let _browserLaunchPromise = null
 // browser.pages is not implemented, so need to count myself to not close browser
 // until all pages used by penthouse are closed (i.e. individual calls are done)
 let _browserPagesOpen = 0
+
 const launchBrowserIfNeeded = async function ({ getBrowser }) {
   if (browser) {
     return

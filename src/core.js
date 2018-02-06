@@ -90,7 +90,6 @@ async function pruneNonCriticalCssLauncher ({
       page.on('error', error => {
         console.error('Chromium Tab CRASHED', error)
         page.close()
-        browser.close()
       })
 
       page.on('console', msg => {
@@ -133,7 +132,7 @@ async function pruneNonCriticalCssLauncher ({
                 // This is crucial for the evaluate to work. If this is not set we got an error:
                 // ERROR Error: Protocol error (Runtime.callFunctionOn): Cannot find context with specified id undefined
                 // Maybe this should be evaluated on low power machines if they need 100ms
-                await page.waitFor(10)
+                await page.waitFor(100)
                 page
                   .evaluate(pageLoadSkipTimeoutFunc, {
                     pageLoadSkipTimeout
@@ -153,7 +152,7 @@ async function pruneNonCriticalCssLauncher ({
                   .catch(err => {
                     if (!err.message.includes('Target closed')) {
                       debuglog('page.evaluate - ERROR', err)
-                      _hasError = true
+                      _hasError = err
                       return reject(false)
                     }
                   })
@@ -178,7 +177,7 @@ async function pruneNonCriticalCssLauncher ({
             return resolve('loadPageResponse')
           })
           .catch(err => {
-            _hasError = true
+            _hasError = err
             // Reject when error because we don't want an errored page
             console.error(err)
             return reject(false)
@@ -194,7 +193,7 @@ async function pruneNonCriticalCssLauncher ({
         debuglog('RACE RESULT: ', raceResult)
       } catch (err) {
         debuglog('RACE RESULT ERROR: ', err)
-        _hasError = true
+        _hasError = err
       }
 
       try {
@@ -238,10 +237,10 @@ async function pruneNonCriticalCssLauncher ({
       )
       debuglog('build selector profile')
 
+      await page.waitFor(100)
       const criticalSelectors = await page.evaluate(pruneNonCriticalSelectors, {
         selectors,
-        renderWaitTime,
-        pageLoadSkipTimeout
+        renderWaitTime
       })
       debuglog('pruneNonCriticalSelectors done, now cleanup AST')
 
