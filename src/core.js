@@ -18,7 +18,7 @@ function blockinterceptedRequests (interceptedRequest) {
 }
 
 async function blockJsRequests (page) {
-  await page.setRequestInterceptionEnabled(true)
+  await page.setRequestInterceptionEnabled(true) // TODO: Rename to "setRequestInterception" when updating puppeteer > 0.12
   page.on('request', blockinterceptedRequests)
 }
 
@@ -64,7 +64,13 @@ async function pruneNonCriticalCssLauncher ({
         // must await here, otherwise will receive errors if closing
         // browser before page is properly closed
         debuglog('cleanupAndExit -> Target not closed -> closing page')
-        await page.close()
+        // Without try catch we are crashing penthouse and
+        // being unable to restart
+        try {
+          await page.close()
+        } catch (err) {
+          // console.error(err) // Information is not needed at all
+        }
       }
       debuglog('cleanupAndExit end')
       if (error) {
@@ -72,6 +78,7 @@ async function pruneNonCriticalCssLauncher ({
       }
       return resolve(returnValue)
     }
+
     killTimeout = setTimeout(() => {
       cleanupAndExit({
         error: new Error('Penthouse timed out after ' + timeout / 1000 + 's. ')
@@ -123,7 +130,6 @@ async function pruneNonCriticalCssLauncher ({
       let pageLoadSkipPromise = new Promise((resolve, reject) => {
         if (pageLoadSkipTimeout) {
           // enables us to control requests(stop, continue, modify)
-          page.setRequestInterceptionEnabled(true) // TODO: Rename to "setRequestInterception" when updating puppeteer > 0.12
           page.on('response', async response => {
             if (response.url === url) {
               debuglog('RESPONSE URL: ' + response.url) // TODO: interceptedRequest.url is a function in puppeteer > 0.12
@@ -132,7 +138,7 @@ async function pruneNonCriticalCssLauncher ({
                 // This is crucial for the evaluate to work. If this is not set we got an error:
                 // ERROR Error: Protocol error (Runtime.callFunctionOn): Cannot find context with specified id undefined
                 // Maybe this should be evaluated on low power machines if they need 100ms
-                await page.waitFor(100)
+                await page.waitFor(500)
                 page
                   .evaluate(pageLoadSkipTimeoutFunc, {
                     pageLoadSkipTimeout
@@ -153,7 +159,7 @@ async function pruneNonCriticalCssLauncher ({
                     if (!err.message.includes('Target closed')) {
                       debuglog('page.evaluate - ERROR', err)
                       _hasError = err
-                      return reject(false)
+                      return reject(err)
                     }
                   })
               }
@@ -180,7 +186,7 @@ async function pruneNonCriticalCssLauncher ({
             _hasError = err
             // Reject when error because we don't want an errored page
             console.error(err)
-            return reject(false)
+            return reject(err)
           })
       })
 
@@ -203,8 +209,7 @@ async function pruneNonCriticalCssLauncher ({
         await loadPageResponse
         debuglog('page load DONE')
       } catch (err) {
-        console.error(err)
-        _hasError = true
+        _hasError = err
       }
 
       if (!page) {
@@ -215,7 +220,7 @@ async function pruneNonCriticalCssLauncher ({
 
       if (_hasError) {
         debuglog('page load error')
-        throw new Error('Error while page load')
+        reject(_hasError)
       }
 
       // grab a "before" screenshot - of the page fully loaded, without JS
@@ -237,7 +242,7 @@ async function pruneNonCriticalCssLauncher ({
       )
       debuglog('build selector profile')
 
-      await page.waitFor(100)
+      await page.waitFor(500)
       const criticalSelectors = await page.evaluate(pruneNonCriticalSelectors, {
         selectors,
         renderWaitTime
