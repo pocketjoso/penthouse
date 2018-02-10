@@ -18,10 +18,11 @@ const FIXTURES = [
     threshold: 2000,
     name: 'jso'
   },
-  {
-    threshold: 2900,
-    name: 'dn'
-  },
+  // to much variation in page load time
+  // {
+  //   threshold: 2900,
+  //   name: 'dn'
+  // },
   {
     threshold: 4600,
     name: 'guardian'
