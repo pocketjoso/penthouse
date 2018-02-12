@@ -5,6 +5,7 @@ import pruneNonCriticalSelectors
 import replacePageCss from './browser-sandbox/replacePageCss'
 import cleanupAst from './postformatting'
 import buildSelectorProfile from './selectors-profile'
+import nonMatchingMediaQueryRemover from './non-matching-media-query-remover'
 
 const debuglog = debug('penthouse:core')
 
@@ -17,18 +18,123 @@ function blockinterceptedRequests (interceptedRequest) {
   }
 }
 
+async function loadPage (page, url, timeout, pageLoadSkipTimeout) {
+  debuglog('page load start')
+  // set a higher number than the timeout option, in order to make
+  // puppeteer’s timeout _never_ happen
+  let waitingForPageLoad = true
+  const loadPagePromise = page.goto(url, { timeout: timeout + 1000 })
+  if (pageLoadSkipTimeout) {
+    await Promise.race([
+      loadPagePromise,
+      new Promise(resolve => {
+        // instead we manually _abort_ page load after X time,
+        // in order to deal with spammy pages that keep sending non-critical requests
+        // (tracking etc), which would otherwise never load.
+        // With JS disabled it just shouldn't take that many seconds to load what's needed
+        // for critical viewport.
+        setTimeout(() => {
+          if (waitingForPageLoad) {
+            debuglog(
+              'page load waiting ABORTED after ' +
+                pageLoadSkipTimeout / 1000 +
+                's. '
+            )
+            resolve()
+          }
+        }, pageLoadSkipTimeout)
+      })
+    ])
+  } else {
+    await loadPagePromise
+  }
+  waitingForPageLoad = false
+  debuglog('page load DONE')
+}
+
 async function blockJsRequests (page) {
   await page.setRequestInterceptionEnabled(true)
   page.on('request', blockinterceptedRequests)
 }
 
+async function astFromCss ({ cssString, strict }) {
+  // breaks puppeteer
+  const css = cssString.replace(/￿/g, '\f042')
+
+  let parsingErrors = []
+  debuglog('parse ast START')
+  let ast = csstree.parse(css, {
+    onParseError: error => parsingErrors.push(error.formattedMessage)
+  })
+  debuglog(`parsed ast (with ${parsingErrors.length} errors)`)
+
+  if (parsingErrors.length && strict === true) {
+    // NOTE: only informing about first error, even if there were more than one.
+    const parsingErrorMessage = parsingErrors[0]
+    throw new Error(
+      `AST parser (css-tree) found ${parsingErrors.length} errors in CSS.
+      Breaking because in strict mode.
+      The first error was:
+      ` + parsingErrorMessage
+    )
+  }
+  return ast
+}
+
+async function preparePage ({
+  page,
+  width,
+  height,
+  browser,
+  userAgent,
+  customPageHeaders,
+  blockJSRequests
+}) {
+  debuglog('preparePage START')
+  page = await browser.newPage()
+  debuglog('new page opened in browser')
+
+  await page.setViewport({ width, height })
+  debuglog('viewport set')
+
+  await page.setUserAgent(userAgent)
+
+  if (customPageHeaders) {
+    try {
+      debuglog('set custom headers')
+      await page.setExtraHTTPHeaders(customPageHeaders)
+    } catch (e) {
+      debuglog('failed setting extra http headers: ' + e)
+    }
+  }
+
+  if (blockJSRequests) {
+    // NOTE: with JS disabled we cannot use JS timers inside page.evaluate
+    // (setTimeout, setInterval), however requestAnimationFrame works.
+    await page.setJavaScriptEnabled(false)
+    await blockJsRequests(page)
+    debuglog('blocking js requests')
+  }
+  page.on('console', msg => {
+    const text = msg.text || msg
+    // pass through log messages
+    // - the ones sent by penthouse for debugging has 'debug: ' prefix.
+    if (/^debug: /.test(text)) {
+      debuglog(text.replace(/^debug: /, ''))
+    }
+  })
+  debuglog('preparePage DONE')
+  return page
+}
+
 async function pruneNonCriticalCssLauncher ({
   browser,
   url,
-  ast,
+  cssString,
   width,
   height,
   forceInclude,
+  strict,
   userAgent,
   renderWaitTime,
   timeout,
@@ -37,7 +143,8 @@ async function pruneNonCriticalCssLauncher ({
   customPageHeaders,
   screenshots,
   propertiesToRemove,
-  maxEmbeddedBase64Length
+  maxEmbeddedBase64Length,
+  keepLargerMediaQueries
 }) {
   let _hasExited = false
   const takeScreenshots = screenshots && screenshots.basePath
@@ -77,70 +184,39 @@ async function pruneNonCriticalCssLauncher ({
     }, timeout)
 
     try {
-      page = await browser.newPage()
-      debuglog('new page opened in browser')
+      // prepare (puppeteer) page in parallel with ast parsing,
+      // as operations are independent and both expensive
+      // (ast parsing primarily on larger stylesheets)
+      const [updatedPage, ast] = await Promise.all([
+        preparePage({
+          page,
+          width,
+          height,
+          browser,
+          userAgent,
+          customPageHeaders,
+          blockJSRequests
+        }),
+        astFromCss({
+          cssString,
+          strict
+        })
+      ])
+      page = updatedPage
 
-      await page.setViewport({ width, height })
-      debuglog('viewport set')
+      // first strip out non matching media queries.
+      // Need to be done before buildSelectorProfile;
+      // although could shave of further time via doing it as part of buildSelectorProfile..
+      nonMatchingMediaQueryRemover(ast, width, height, keepLargerMediaQueries)
+      debuglog('stripped out non matching media queries')
 
-      await page.setUserAgent(userAgent)
-
-      if (customPageHeaders) {
-        try {
-          debuglog('set custom headers')
-          await page.setExtraHTTPHeaders(customPageHeaders)
-        } catch (e) {
-          debuglog('failed setting extra http headers: ' + e)
-        }
-      }
-
-      if (blockJSRequests) {
-        // NOTE: with JS disabled we cannot use JS timers inside page.evaluate
-        // (setTimeout, setInterval), however requestAnimationFrame works.
-        await page.setJavaScriptEnabled(false)
-        await blockJsRequests(page)
-        debuglog('blocking js requests')
-      }
-      page.on('console', msg => {
-        const text = msg.text || msg
-        // pass through log messages
-        // - the ones sent by penthouse for debugging has 'debug: ' prefix.
-        if (/^debug: /.test(text)) {
-          debuglog(text.replace(/^debug: /, ''))
-        }
-      })
-
-      debuglog('page load start')
-      // set a higher number than the timeout option, in order to make
-      // puppeteer’s timeout _never_ happen
-      let waitingForPageLoad = true
-      const loadPagePromise = page.goto(url, { timeout: timeout + 1000 })
-      if (pageLoadSkipTimeout) {
-        await Promise.race([
-          loadPagePromise,
-          new Promise(resolve => {
-            // instead we manually _abort_ page load after X time,
-            // in order to deal with spammy pages that keep sending non-critical requests
-            // (tracking etc), which would otherwise never load.
-            // With JS disabled it just shouldn't take that many seconds to load what's needed
-            // for critical viewport.
-            setTimeout(() => {
-              if (waitingForPageLoad) {
-                debuglog(
-                  'page load waiting ABORTED after ' +
-                    pageLoadSkipTimeout / 1000 +
-                    's. '
-                )
-                resolve()
-              }
-            }, pageLoadSkipTimeout)
-          })
-        ])
-      } else {
-        await loadPagePromise
-      }
-      waitingForPageLoad = false
-      debuglog('page load DONE')
+      // load the page (slow)
+      // in parallel with preformatting the css
+      // - for improved performance
+      const [, { selectorNodeMap, selectors }] = await Promise.all([
+        loadPage(page, url, timeout, pageLoadSkipTimeout),
+        buildSelectorProfile(ast, forceInclude)
+      ])
 
       if (!page) {
         // in case we timed out
@@ -159,12 +235,6 @@ async function pruneNonCriticalCssLauncher ({
         })
         debuglog('take before screenshot DONE: ' + beforePath)
       }
-
-      const { selectorNodeMap, selectors } = buildSelectorProfile(
-        ast,
-        forceInclude
-      )
-      debuglog('build selector profile')
 
       const criticalSelectors = await page.evaluate(pruneNonCriticalSelectors, {
         selectors,

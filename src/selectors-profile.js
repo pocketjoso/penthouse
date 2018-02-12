@@ -1,4 +1,7 @@
 import csstree from 'css-tree'
+import debug from 'debug'
+
+const debuglog = debug('penthouse:preformatting:selectors-profile')
 
 var pseudoSelectorsToKeep = [
   ':before',
@@ -71,7 +74,8 @@ function normalizeSelector (selectorNode, forceInclude) {
   return modifiedSelector
 }
 
-export default function buildSelectorProfile (ast, forceInclude) {
+export default async function buildSelectorProfile (ast, forceInclude) {
+  debuglog('buildSelectorProfile START')
   const selectors = new Set()
   const selectorNodeMap = new WeakMap()
 
@@ -102,6 +106,7 @@ export default function buildSelectorProfile (ast, forceInclude) {
     }
   })
 
+  debuglog('buildSelectorProfile DONE')
   return {
     selectorNodeMap,
     selectors: Array.from(selectors)
