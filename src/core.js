@@ -160,7 +160,8 @@ async function pruneNonCriticalCssLauncher ({
   screenshots,
   propertiesToRemove,
   maxEmbeddedBase64Length,
-  keepLargerMediaQueries
+  keepLargerMediaQueries,
+  unstableKeepBrowserAlive
 }) {
   let _hasExited = false
   const takeScreenshots = screenshots && screenshots.basePath
@@ -183,8 +184,13 @@ async function pruneNonCriticalCssLauncher ({
       // try to avoid
       if (page && !(error && error.toString().indexOf('Target closed') > -1)) {
         // must await here, otherwise will receive errors if closing
-        // browser before page is properly closed
-        await page.close()
+        // browser before page is properly closed,
+        // however in unstableKeepBrowserAlive browser is never closed by penthouse.
+        if (unstableKeepBrowserAlive) {
+          page.close()
+        } else {
+          await page.close()
+        }
       }
       debuglog('cleanupAndExit')
       if (error) {
