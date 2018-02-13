@@ -88,7 +88,8 @@ async function preparePage ({
   browser,
   userAgent,
   customPageHeaders,
-  blockJSRequests
+  blockJSRequests,
+  cleanupAndExit
 }) {
   debuglog('preparePage START')
   page = await browser.newPage()
@@ -98,6 +99,11 @@ async function preparePage ({
   debuglog('viewport set')
 
   await page.setUserAgent(userAgent)
+
+  page.on('error', error => {
+    debuglog('page crashed: ' + error)
+    cleanupAndExit({ error })
+  })
 
   if (customPageHeaders) {
     try {
@@ -134,13 +140,14 @@ async function grabPageScreenshot ({
   screenshotExtension,
   debuglog
 }) {
-  const path =
-    screenshots.basePath + `-${type}` + screenshotExtension
+  const path = screenshots.basePath + `-${type}` + screenshotExtension
   debuglog(`take ${type} screenshot, path: ${path}`)
-  return page.screenshot({
-    ...screenshots,
-    path
-  }).then(() => debuglog(`take ${type} screenshot DONE`))
+  return page
+    .screenshot({
+      ...screenshots,
+      path
+    })
+    .then(() => debuglog(`take ${type} screenshot DONE`))
 }
 
 async function pruneNonCriticalCssLauncher ({
@@ -177,27 +184,34 @@ async function pruneNonCriticalCssLauncher ({
       if (_hasExited) {
         return
       }
+      debuglog('cleanupAndExit start')
       _hasExited = true
 
       clearTimeout(killTimeout)
       // page.close will error if page/browser has already been closed;
       // try to avoid
       if (page && !(error && error.toString().indexOf('Target closed') > -1)) {
-        // must await here, otherwise will receive errors if closing
-        // browser before page is properly closed,
-        // however in unstableKeepBrowserAlive browser is never closed by penthouse.
-        if (unstableKeepBrowserAlive) {
-          page.close()
-        } else {
-          await page.close()
+        debuglog('cleanupAndExit -> try to close browser page')
+        // Without try/catch if error penthouse will crash if error here,
+        // and wont restart properly
+        try {
+          // must await here, otherwise will receive errors if closing
+          // browser before page is properly closed,
+          // however in unstableKeepBrowserAlive browser is never closed by penthouse.
+          if (unstableKeepBrowserAlive) {
+            page.close()
+          } else {
+            await page.close()
+          }
+        } catch (err) {
+          debuglog('cleanupAndExit -> failed to close browser page (ignoring)')
         }
       }
-      debuglog('cleanupAndExit')
+      debuglog('cleanupAndExit end')
       if (error) {
-        reject(error)
-        return
+        return reject(error)
       }
-      resolve(returnValue)
+      return resolve(returnValue)
     }
     killTimeout = setTimeout(() => {
       cleanupAndExit({
@@ -217,7 +231,8 @@ async function pruneNonCriticalCssLauncher ({
           browser,
           userAgent,
           customPageHeaders,
-          blockJSRequests
+          blockJSRequests,
+          cleanupAndExit
         }),
         astFromCss({
           cssString,
@@ -242,23 +257,43 @@ async function pruneNonCriticalCssLauncher ({
 
       if (!page) {
         // in case we timed out
+        debuglog('page load TIMED OUT')
+        cleanupAndExit({ error: new Error('Page load timed out') })
         return
       }
 
-      const [, criticalSelectors] = await Promise.all([
-        // grab a "before" screenshot (if takeScreenshots) - of the page fully loaded (without JS in default settings)
-        // in parallel with...
-        takeScreenshots && grabPageScreenshot({type: 'before', page, screenshots, screenshotExtension, debuglog}),
-        // with prunning the critical css (selector list)
-        // TODO: need to try catch pruneNonCriticalSelectors? or inside?
-        page.evaluate(pruneNonCriticalSelectors, {
-          selectors,
-          renderWaitTime
-        }).then(criticalSelectors => {
-          debuglog('pruneNonCriticalSelectors done')
-          return criticalSelectors
-        })
-      ])
+      let criticalSelectors
+      try {
+        ;[, criticalSelectors] = await Promise.all([
+          // grab a "before" screenshot (if takeScreenshots) - of the page fully loaded (without JS in default settings)
+          // in parallel with...
+          takeScreenshots &&
+            grabPageScreenshot({
+              type: 'before',
+              page,
+              screenshots,
+              screenshotExtension,
+              debuglog
+            }),
+          // ...prunning the critical css (selector list)
+          page
+            .evaluate(pruneNonCriticalSelectors, {
+              selectors,
+              renderWaitTime
+            })
+            .then(criticalSelectors => {
+              debuglog('pruneNonCriticalSelectors done')
+              return criticalSelectors
+            })
+        ])
+      } catch (err) {
+        debuglog(
+          'grabPageScreenshot OR pruneNonCriticalSelector threw an error: ' +
+            err
+        )
+        cleanupAndExit({ error: err })
+        return
+      }
 
       debuglog('AST cleanup start')
       // NOTE: this function mutates the AST
@@ -277,7 +312,13 @@ async function pruneNonCriticalCssLauncher ({
       if (takeScreenshots) {
         debuglog('inline critical styles for after screenshot')
         await page.evaluate(replacePageCss, { css })
-        await grabPageScreenshot({type: 'after', page, screenshots, screenshotExtension, debuglog})
+        await grabPageScreenshot({
+          type: 'after',
+          page,
+          screenshots,
+          screenshotExtension,
+          debuglog
+        })
       }
 
       debuglog('generateCriticalCss DONE')
