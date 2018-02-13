@@ -127,6 +127,22 @@ async function preparePage ({
   return page
 }
 
+async function grabPageScreenshot ({
+  type,
+  page,
+  screenshots,
+  screenshotExtension,
+  debuglog
+}) {
+  const path =
+    screenshots.basePath + `-${type}` + screenshotExtension
+  debuglog(`take ${type} screenshot, path: ${path}`)
+  return page.screenshot({
+    ...screenshots,
+    path
+  }).then(() => debuglog(`take ${type} screenshot DONE`))
+}
+
 async function pruneNonCriticalCssLauncher ({
   browser,
   url,
@@ -223,26 +239,23 @@ async function pruneNonCriticalCssLauncher ({
         return
       }
 
-      // grab a "before" screenshot - of the page fully loaded, without JS
-      // TODO: could potentially do in parallel with the page.evaluate
-      if (takeScreenshots) {
-        debuglog('take before screenshot')
-        const beforePath =
-          screenshots.basePath + '-before' + screenshotExtension
-        await page.screenshot({
-          ...screenshots,
-          path: beforePath
+      const [, criticalSelectors] = await Promise.all([
+        // grab a "before" screenshot (if takeScreenshots) - of the page fully loaded (without JS in default settings)
+        // in parallel with...
+        takeScreenshots && grabPageScreenshot({type: 'before', page, screenshots, screenshotExtension, debuglog}),
+        // with prunning the critical css (selector list)
+        // TODO: need to try catch pruneNonCriticalSelectors? or inside?
+        page.evaluate(pruneNonCriticalSelectors, {
+          selectors,
+          renderWaitTime
+        }).then(criticalSelectors => {
+          debuglog('pruneNonCriticalSelectors done')
+          return criticalSelectors
         })
-        debuglog('take before screenshot DONE: ' + beforePath)
-      }
+      ])
 
-      const criticalSelectors = await page.evaluate(pruneNonCriticalSelectors, {
-        selectors,
-        renderWaitTime
-      })
-
-      debuglog('pruneNonCriticalSelectors done, now cleanup AST')
-
+      debuglog('AST cleanup start')
+      // NOTE: this function mutates the AST
       cleanupAst({
         ast,
         selectorNodeMap,
@@ -253,18 +266,12 @@ async function pruneNonCriticalCssLauncher ({
       debuglog('AST cleanup done')
 
       const css = csstree.generate(ast)
-      debuglog('generate CSS from AST')
+      debuglog('generated CSS from AST')
 
       if (takeScreenshots) {
         debuglog('inline critical styles for after screenshot')
         await page.evaluate(replacePageCss, { css })
-        debuglog('take after screenshot')
-        const afterPath = screenshots.basePath + '-after' + screenshotExtension
-        await page.screenshot({
-          ...screenshots,
-          path: afterPath
-        })
-        debuglog('take after screenshot DONE: ' + afterPath)
+        await grabPageScreenshot({type: 'after', page, screenshots, screenshotExtension, debuglog})
       }
 
       debuglog('generateCriticalCss DONE')
