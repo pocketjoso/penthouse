@@ -52,9 +52,9 @@ async function loadPage (page, url, timeout, pageLoadSkipTimeout) {
   debuglog('page load DONE')
 }
 
-async function blockJsRequests (page) {
-  await page.setRequestInterceptionEnabled(true)
+function setupBlockJsRequests (page) {
   page.on('request', blockinterceptedRequests)
+  return page.setRequestInterceptionEnabled(true)
 }
 
 async function astFromCss ({ cssString, strict }) {
@@ -66,7 +66,7 @@ async function astFromCss ({ cssString, strict }) {
   let ast = csstree.parse(css, {
     onParseError: error => parsingErrors.push(error.formattedMessage)
   })
-  debuglog(`parsed ast (with ${parsingErrors.length} errors)`)
+  debuglog(`parse ast DONE (with ${parsingErrors.length} errors)`)
 
   if (parsingErrors.length && strict === true) {
     // NOTE: only informing about first error, even if there were more than one.
@@ -95,32 +95,40 @@ async function preparePage ({
   page = await browser.newPage()
   debuglog('new page opened in browser')
 
-  await page.setViewport({ width, height })
-  debuglog('viewport set')
+  const setViewportPromise = page
+    .setViewport({ width, height })
+    .then(() => debuglog('viewport set'))
+  const setUserAgentPromise = page
+    .setUserAgent(userAgent)
+    .then(() => debuglog('userAgent set'))
 
-  await page.setUserAgent(userAgent)
-
-  page.on('error', error => {
-    debuglog('page crashed: ' + error)
-    cleanupAndExit({ error })
-  })
-
+  let setCustomPageHeadersPromise
   if (customPageHeaders) {
     try {
-      debuglog('set custom headers')
-      await page.setExtraHTTPHeaders(customPageHeaders)
+      setCustomPageHeadersPromise = page
+        .setExtraHTTPHeaders(customPageHeaders)
+        .then(() => debuglog('customPageHeaders set'))
     } catch (e) {
       debuglog('failed setting extra http headers: ' + e)
     }
   }
 
+  let blockJSRequestsPromise
   if (blockJSRequests) {
     // NOTE: with JS disabled we cannot use JS timers inside page.evaluate
     // (setTimeout, setInterval), however requestAnimationFrame works.
-    await page.setJavaScriptEnabled(false)
-    await blockJsRequests(page)
-    debuglog('blocking js requests')
+    blockJSRequestsPromise = Promise.all([
+      page.setJavaScriptEnabled(false),
+      setupBlockJsRequests(page)
+    ]).then(() => {
+      debuglog('blocking js requests DONE')
+    })
   }
+
+  page.on('error', error => {
+    debuglog('page crashed: ' + error)
+    cleanupAndExit({ error })
+  })
   page.on('console', msg => {
     const text = msg.text || msg
     // pass through log messages
@@ -129,8 +137,17 @@ async function preparePage ({
       debuglog(text.replace(/^debug: /, ''))
     }
   })
-  debuglog('preparePage DONE')
-  return page
+  debuglog('page event listeners set')
+
+  return Promise.all([
+    setViewportPromise,
+    setUserAgentPromise,
+    setCustomPageHeadersPromise,
+    blockJSRequestsPromise
+  ]).then(() => {
+    debuglog('preparePage DONE')
+    return page
+  })
 }
 
 async function grabPageScreenshot ({
@@ -141,13 +158,13 @@ async function grabPageScreenshot ({
   debuglog
 }) {
   const path = screenshots.basePath + `-${type}` + screenshotExtension
-  debuglog(`take ${type} screenshot, path: ${path}`)
+  debuglog(`take ${type} screenshot, START`)
   return page
     .screenshot({
       ...screenshots,
       path
     })
-    .then(() => debuglog(`take ${type} screenshot DONE`))
+    .then(() => debuglog(`take ${type} screenshot DONE, path: ${path}`))
 }
 
 async function pruneNonCriticalCssLauncher ({
@@ -219,114 +236,134 @@ async function pruneNonCriticalCssLauncher ({
       })
     }, timeout)
 
+    // 1. start preparing a browser page (tab) [NOT BLOCKING]
+    const updatedPagePromise = preparePage({
+      page,
+      width,
+      height,
+      browser,
+      userAgent,
+      customPageHeaders,
+      blockJSRequests,
+      cleanupAndExit
+    })
+
+    // 2. parse ast
+    // -> [BLOCK FOR] AST parsing
+    let ast
     try {
-      // prepare (puppeteer) page in parallel with ast parsing,
-      // as operations are independent and both expensive
-      // (ast parsing primarily on larger stylesheets)
-      const [updatedPage, ast] = await Promise.all([
-        preparePage({
-          page,
-          width,
-          height,
-          browser,
-          userAgent,
-          customPageHeaders,
-          blockJSRequests,
-          cleanupAndExit
-        }),
-        astFromCss({
-          cssString,
-          strict
-        })
-      ])
-      page = updatedPage
-
-      // first strip out non matching media queries.
-      // Need to be done before buildSelectorProfile;
-      // although could shave of further time via doing it as part of buildSelectorProfile..
-      nonMatchingMediaQueryRemover(ast, width, height, keepLargerMediaQueries)
-      debuglog('stripped out non matching media queries')
-
-      // load the page (slow)
-      // in parallel with preformatting the css
-      // - for improved performance
-      const [, { selectorNodeMap, selectors }] = await Promise.all([
-        loadPage(page, url, timeout, pageLoadSkipTimeout),
-        buildSelectorProfile(ast, forceInclude)
-      ])
-
-      if (!page) {
-        // in case we timed out
-        debuglog('page load TIMED OUT')
-        cleanupAndExit({ error: new Error('Page load timed out') })
-        return
-      }
-
-      let criticalSelectors
-      try {
-        ;[, criticalSelectors] = await Promise.all([
-          // grab a "before" screenshot (if takeScreenshots) - of the page fully loaded (without JS in default settings)
-          // in parallel with...
-          takeScreenshots &&
-            grabPageScreenshot({
-              type: 'before',
-              page,
-              screenshots,
-              screenshotExtension,
-              debuglog
-            }),
-          // ...prunning the critical css (selector list)
-          page
-            .evaluate(pruneNonCriticalSelectors, {
-              selectors,
-              renderWaitTime
-            })
-            .then(criticalSelectors => {
-              debuglog('pruneNonCriticalSelectors done')
-              return criticalSelectors
-            })
-        ])
-      } catch (err) {
-        debuglog(
-          'grabPageScreenshot OR pruneNonCriticalSelector threw an error: ' +
-            err
-        )
-        cleanupAndExit({ error: err })
-        return
-      }
-
-      debuglog('AST cleanup start')
-      // NOTE: this function mutates the AST
-      cleanupAst({
-        ast,
-        selectorNodeMap,
-        criticalSelectors,
-        propertiesToRemove,
-        maxEmbeddedBase64Length
+      ast = await astFromCss({
+        cssString,
+        strict
       })
-      debuglog('AST cleanup done')
-
-      const css = csstree.generate(ast)
-      debuglog('generated CSS from AST')
-
-      if (takeScreenshots) {
-        debuglog('inline critical styles for after screenshot')
-        await page.evaluate(replacePageCss, { css })
-        await grabPageScreenshot({
-          type: 'after',
-          page,
-          screenshots,
-          screenshotExtension,
-          debuglog
-        })
-      }
-
-      debuglog('generateCriticalCss DONE')
-
-      cleanupAndExit({ returnValue: css })
     } catch (e) {
       cleanupAndExit({ error: e })
+      return
     }
+
+    // 3. Further process the ast [BLOCKING]
+    // Strip out non matching media queries.
+    // Need to be done before buildSelectorProfile;
+    // (very fast but could be done together/in parallel in future)
+    nonMatchingMediaQueryRemover(ast, width, height, keepLargerMediaQueries)
+    debuglog('stripped out non matching media queries')
+
+    // -> [BLOCK FOR] page preparation
+    page = await updatedPagePromise
+
+    // load the page (slow) [NOT BLOCKING]
+    const loadPagePromise = loadPage(page, url, timeout, pageLoadSkipTimeout)
+    // turn css to formatted selectorlist [NOT BLOCKING]
+    debuglog('turn css to formatted selectorlist START')
+    const buildSelectorProfilePromise = buildSelectorProfile(
+      ast,
+      forceInclude
+    ).then(res => {
+      debuglog('turn css to formatted selectorlist DONE')
+      return res
+    })
+
+    // -> [BLOCK FOR] page load
+    await loadPagePromise
+    if (!page) {
+      // in case we timed out
+      debuglog('page load TIMED OUT')
+      cleanupAndExit({ error: new Error('Page load timed out') })
+      return
+    }
+
+    // take before screenshot (optional) [NOT BLOCKING]
+    const beforeScreenshotPromise = takeScreenshots
+      ? grabPageScreenshot({
+        type: 'before',
+        page,
+        screenshots,
+        screenshotExtension,
+        debuglog
+      })
+      : Promise.resolve()
+
+    // -> [BLOCK FOR] css into formatted selectors list with "sourcemap"
+    // latter used to map back to full css rule
+    const { selectors, selectorNodeMap } = await buildSelectorProfilePromise
+
+    // -> [BLOCK FOR] critical css selector pruning (in browser)
+    let criticalSelectors
+    try {
+      criticalSelectors = await page
+        .evaluate(pruneNonCriticalSelectors, {
+          selectors,
+          renderWaitTime
+        })
+        .then(criticalSelectors => {
+          debuglog('pruneNonCriticalSelectors done')
+          return criticalSelectors
+        })
+    } catch (err) {
+      debuglog('pruneNonCriticalSelector threw an error: ' + err)
+      cleanupAndExit({ error: err })
+      return
+    }
+
+    // take after screenshot (optional) [NOT BLOCKING]
+    let afterScreenshotPromise
+    if (takeScreenshots) {
+      // wait for the before screenshot, before start modifying the page
+      afterScreenshotPromise = beforeScreenshotPromise.then(() => {
+        debuglog('inline critical styles for after screenshot')
+        return page.evaluate(replacePageCss, { css }).then(() => {
+          return grabPageScreenshot({
+            type: 'after',
+            page,
+            screenshots,
+            screenshotExtension,
+            debuglog
+          })
+        })
+      })
+    }
+
+    // -> [BLOCK FOR] clean up final ast for critical css
+    debuglog('AST cleanup START')
+    // NOTE: this function mutates the AST
+    cleanupAst({
+      ast,
+      selectorNodeMap,
+      criticalSelectors,
+      propertiesToRemove,
+      maxEmbeddedBase64Length
+    })
+    debuglog('AST cleanup DONE')
+
+    // -> [BLOCK FOR] generate final critical css from critical ast
+    const css = csstree.generate(ast)
+    debuglog('generated CSS from AST')
+
+    // -> [BLOCK FOR] take after screenshot (optional)
+    await afterScreenshotPromise
+    debuglog('generateCriticalCss DONE')
+
+    cleanupAndExit({ returnValue: css })
   })
 }
 
