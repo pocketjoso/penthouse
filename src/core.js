@@ -53,7 +53,7 @@ async function loadPage (page, url, timeout, pageLoadSkipTimeout) {
 }
 
 async function blockJsRequests (page) {
-  await page.setRequestInterceptionEnabled(true)
+  await page.setRequestInterception(true)
   page.on('request', blockinterceptedRequests)
 }
 
