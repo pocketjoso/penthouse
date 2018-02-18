@@ -3,5 +3,5 @@
 /npm-debug.log
 .DS_STORE
 package-lock.json
-/lib/
+#/lib/
 test-puppeteer.js
