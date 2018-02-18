@@ -42,7 +42,7 @@
     "debug": "^3.1.0",
     "jest": "^22.1.4",
     "jsesc": "^1.0.0",
-    "puppeteer": "^1.1"
+    "puppeteer": "^1.1.0"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",

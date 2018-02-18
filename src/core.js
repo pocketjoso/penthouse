@@ -1,29 +1,70 @@
 import csstree from 'css-tree'
 import debug from 'debug'
-import pruneNonCriticalSelectors
-  from './browser-sandbox/pruneNonCriticalSelectors'
+import pruneNonCriticalSelectors from './browser-sandbox/pruneNonCriticalSelectors'
 import replacePageCss from './browser-sandbox/replacePageCss'
 import cleanupAst from './postformatting'
 import buildSelectorProfile from './selectors-profile'
 import nonMatchingMediaQueryRemover from './non-matching-media-query-remover'
+import path from 'path'
+import fs from 'fs'
 
 const debuglog = debug('penthouse:core')
 
-function blockinterceptedRequests (interceptedRequest) {
-  const isJsRequest = /\.js(\?.*)?$/.test(interceptedRequest.url)
-  if (isJsRequest) {
-    interceptedRequest.abort()
-  } else {
-    interceptedRequest.continue()
+function blockinterceptedRequests (blockJSRequests) {
+  return function (interceptedRequest) {
+    const blockRequest =
+      blockJSRequests && /\.js(\?.*)?$/.test(interceptedRequest.url) // block JS files
+
+    if (blockRequest) {
+      interceptedRequest.abort()
+    } else {
+      interceptedRequest.continue()
+    }
   }
 }
 
-async function loadPage (page, url, timeout, pageLoadSkipTimeout) {
+async function loadPage (
+  page,
+  url,
+  timeout,
+  pageLoadSkipTimeout,
+  blockJSRequests
+) {
   debuglog('page load start')
   // set a higher number than the timeout option, in order to make
   // puppeteer’s timeout _never_ happen
   let waitingForPageLoad = true
-  const loadPagePromise = page.goto(url, { timeout: timeout + 1000 })
+
+  if (blockJSRequests) {
+    // NOTE: with JS disabled we cannot use JS timers inside page.evaluate
+    // (setTimeout, setInterval), however requestAnimationFrame works.
+    await page.setJavaScriptEnabled(false)
+    debuglog('blocking js requests')
+  }
+
+  let documentContent
+  if (url.startsWith('file://')) {
+    const file = path.resolve(url.replace(/^file:\/\//, ''))
+    documentContent = fs.readFileSync(file)
+  } else if (url.startsWith('http://') || url.startsWith('https://')) {
+    documentContent = false
+  } else {
+    // use "url" as page content. this allows us to pass html directly to penthouse
+    documentContent = url
+  }
+
+  let loadPagePromise
+  if (documentContent) {
+    page.once('request', request => {
+      request.respond({ body: documentContent })
+      page.on('request', blockinterceptedRequests(blockJSRequests))
+    })
+    await page.goto('http://localhost', { timeout: timeout + 1000 })
+  } else {
+    loadPagePromise = page.goto(url, { timeout: timeout + 1000 })
+    page.on('request', blockinterceptedRequests(blockJSRequests))
+  }
+
   if (pageLoadSkipTimeout) {
     await Promise.race([
       loadPagePromise,
@@ -50,11 +91,6 @@ async function loadPage (page, url, timeout, pageLoadSkipTimeout) {
   }
   waitingForPageLoad = false
   debuglog('page load DONE')
-}
-
-async function blockJsRequests (page) {
-  await page.setRequestInterception(true)
-  page.on('request', blockinterceptedRequests)
 }
 
 async function astFromCss ({ cssString, strict }) {
@@ -95,6 +131,8 @@ async function preparePage ({
   page = await browser.newPage()
   debuglog('new page opened in browser')
 
+  await page.setRequestInterception(true)
+
   await page.setViewport({ width, height })
   debuglog('viewport set')
 
@@ -114,13 +152,6 @@ async function preparePage ({
     }
   }
 
-  if (blockJSRequests) {
-    // NOTE: with JS disabled we cannot use JS timers inside page.evaluate
-    // (setTimeout, setInterval), however requestAnimationFrame works.
-    await page.setJavaScriptEnabled(false)
-    await blockJsRequests(page)
-    debuglog('blocking js requests')
-  }
   page.on('console', msg => {
     const text = msg.text || msg
     // pass through log messages
@@ -172,9 +203,8 @@ async function pruneNonCriticalCssLauncher ({
 }) {
   let _hasExited = false
   const takeScreenshots = screenshots && screenshots.basePath
-  const screenshotExtension = takeScreenshots && screenshots.type === 'jpeg'
-    ? '.jpg'
-    : '.png'
+  const screenshotExtension =
+    takeScreenshots && screenshots.type === 'jpeg' ? '.jpg' : '.png'
 
   return new Promise(async (resolve, reject) => {
     debuglog('Penthouse core start')
@@ -231,7 +261,6 @@ async function pruneNonCriticalCssLauncher ({
           browser,
           userAgent,
           customPageHeaders,
-          blockJSRequests,
           cleanupAndExit
         }),
         astFromCss({
@@ -251,7 +280,7 @@ async function pruneNonCriticalCssLauncher ({
       // in parallel with preformatting the css
       // - for improved performance
       const [, { selectorNodeMap, selectors }] = await Promise.all([
-        loadPage(page, url, timeout, pageLoadSkipTimeout),
+        loadPage(page, url, timeout, pageLoadSkipTimeout, blockJSRequests),
         buildSelectorProfile(ast, forceInclude)
       ])
 
