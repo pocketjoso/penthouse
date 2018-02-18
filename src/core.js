@@ -59,7 +59,7 @@ async function loadPage (
       request.respond({ body: documentContent })
       page.on('request', blockinterceptedRequests(blockJSRequests))
     })
-    await page.goto('http://localhost', { timeout: timeout + 1000 })
+    loadPagePromise = page.goto('http://localhost', { timeout: timeout + 1000 })
   } else {
     loadPagePromise = page.goto(url, { timeout: timeout + 1000 })
     page.on('request', blockinterceptedRequests(blockJSRequests))
