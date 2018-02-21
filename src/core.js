@@ -132,7 +132,12 @@ async function preparePage ({
   page = await browser.newPage()
   debuglog('new page opened in browser')
 
-  await page.setRequestInterception(true)
+  if (typeof page.setRequestInterceptionEnabled === 'function') {
+    // backwards compatibility with puppeteer < 1.x
+    await page.setRequestInterceptionEnabled(true)
+  } else {
+    await page.setRequestInterception(true)
+  }
 
   await page.setViewport({ width, height })
   debuglog('viewport set')
