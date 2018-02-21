@@ -44,6 +44,7 @@ async function loadPage (
 
   let documentContent
   if (url.startsWith('file://')) {
+    // workaround for broken puppeteer
     const file = path.resolve(url.replace(/^file:\/\//, ''))
     documentContent = fs.readFileSync(file)
   } else if (url.startsWith('http://') || url.startsWith('https://')) {
