@@ -34,7 +34,7 @@ function as the second argument.
 
 ```js
 penthouse({
-    url: 'http://google.com',       // can also use file:/// protocol for local files
+    url: 'http://google.com',       // can also use file:/// protocol for local files or html content as string
     cssString: 'body { color; red }', // the original css to extract critcial css from
     // css: 'pathTo/main.css',      // path to original css file on disk
 
