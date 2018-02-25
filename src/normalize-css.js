@@ -1,6 +1,9 @@
 import jsesc from 'jsesc'
+import debug from 'debug'
 
 import normalizeCss from './browser-sandbox/normalizeCss'
+
+const debuglog = debug('penthouse:normalize-css')
 
 function unEscapeCss (css) {
   return css.replace(/(['"])\\\\/g, `$1\\`)
@@ -40,17 +43,17 @@ function escapeHexRefences (css) {
   )
 }
 
-async function normalizeCssLauncher ({ browser, css, debuglog }) {
+async function normalizeCssLauncher ({ browser, css }) {
   debuglog('normalizeCss: ' + css.length)
 
   // escape hex referenced unicode chars in content:'' declarations,
   // i.e. \f091'
   // so they stay in the same format
   const escapedCss = escapeHexRefences(css)
-  debuglog('normalizeCss: escaped hex')
+  debuglog('escaped hex')
 
   const page = await browser.newPage()
-  debuglog('normalizeCss: new page opened in browser')
+  debuglog('new page opened in browser')
 
   page.on('console', msg => {
     // pass through log messages

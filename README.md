@@ -91,6 +91,15 @@ The Penthouse Node module can also be used in Gulp.
 
 ## Troubleshooting
 
+
+### Enable debug logging
+Logging is done via the [`debug`](https://github.com/visionmedia/debug) module under the `penthouse` namespace. You can view more about the logging on their [documentation](https://github.com/visionmedia/debug#usage).
+
+```sh
+# Basic verbose logging for all components
+env DEBUG="penthouse,penthouse:*" node script.js
+```
+
 ### Not working on Linux
 Install missing dependencies to get the headless Chrome to run:
 

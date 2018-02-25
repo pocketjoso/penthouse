@@ -1,6 +1,9 @@
+import debug from 'debug'
 import pruneNonCriticalCss from './browser-sandbox/pruneNonCriticalCss'
 import replacePageCss from './browser-sandbox/replacePageCss'
 import postformatting from './postformatting/'
+
+const debuglog = debug('penthouse:core')
 
 function blockinterceptedRequests (interceptedRequest) {
   const isJsRequest = /\.js(\?.*)?$/.test(interceptedRequest.url)
@@ -12,7 +15,7 @@ function blockinterceptedRequests (interceptedRequest) {
 }
 
 async function blockJsRequests (page) {
-  await page.setRequestInterception(true)
+  await page.setRequestInterceptionEnabled(true)
   page.on('request', blockinterceptedRequests)
 }
 
@@ -31,13 +34,13 @@ async function pruneNonCriticalCssLauncher ({
   customPageHeaders,
   screenshots,
   propertiesToRemove,
-  maxEmbeddedBase64Length,
-  debuglog
+  maxEmbeddedBase64Length
 }) {
   let _hasExited = false
   const takeScreenshots = screenshots && screenshots.basePath
-  const screenshotExtension =
-    takeScreenshots && screenshots.type === 'jpeg' ? '.jpg' : '.png'
+  const screenshotExtension = takeScreenshots && screenshots.type === 'jpeg'
+    ? '.jpg'
+    : '.png'
 
   return new Promise(async (resolve, reject) => {
     debuglog('Penthouse core start')
@@ -80,6 +83,7 @@ async function pruneNonCriticalCssLauncher ({
 
       if (customPageHeaders) {
         try {
+          debuglog('set custom headers')
           await page.setExtraHTTPHeaders(customPageHeaders)
         } catch (e) {
           debuglog('failed setting extra http headers: ' + e)
