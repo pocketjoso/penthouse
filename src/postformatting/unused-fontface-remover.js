@@ -1,68 +1,86 @@
-/*
-module for removing unused fontface rules
-*/
+import csstree from 'css-tree'
+import debug from 'debug'
 
-'use strict'
+const debuglog = debug('penthouse:css-cleanup:unused-font-face-remover')
 
-// extract full @font-face rules
-const fontFaceRegex = /(@font-face[ \s\S]*?\{([\s\S]*?)\})/gm
-
-function unusedFontfaceRemover (css) {
-  const toDeleteSections = []
-
-  let ff = null
-
-  while ((ff = fontFaceRegex.exec(css)) !== null) {
-    // grab the font name declared in the @font-face rule
-    // (can still be in quotes, f.e. 'Lato Web'
-    const t = /font-family[^:]*?:[ ]*([^;]*)/.exec(ff[1])
-    if (!t || typeof t[1] === 'undefined') {
-      continue // no font-family in @fontface rule!
-    }
-
-    // rm quotes
-    const fontName = t[1].replace(/['"]/gm, '')
-
-    // does this fontname appear as a font-family or font (shorthand) value?
-    const fontNameRegex = new RegExp(
-      '([^{}]*?){[^}]*?font(-family)?[^:}]*?:[^;}]*' + fontName + '[^,;]*[,;]',
-      'gmi'
-    )
-
-    let fontFound = false
-    let m = null
-
-    while ((m = fontNameRegex.exec(css)) !== null) {
-      if (m[1].indexOf('@font-face') === -1) {
-        // log('FOUND, keep rule')
-        fontFound = true
-        break
-      }
-    }
-    if (!fontFound) {
-      // NOT FOUND, rm!
-
-      // can't remove rule here as it will screw up ongoing while (exec ...) loop.
-      // instead: save indices and delete AFTER for loop
-      const closeRuleIndex = css.indexOf('}', ff.index)
-      // unshift - add to beginning of array - we need to remove rules in reverse order,
-      // otherwise indeces will become incorrect again.
-      toDeleteSections.unshift({
-        start: ff.index,
-        end: closeRuleIndex + 1
-      })
-    }
+function decodeFontName (node) {
+  let name = csstree.generate(node)
+  // TODO: use string decode
+  if (name[0] === '"' || name[0] === "'") {
+    name = name.substr(1, name.length - 2)
   }
-  // now delete the @fontface rules we registed as having no matches in the css
-  for (let i = 0; i < toDeleteSections.length; i++) {
-    const start = toDeleteSections[i].start
-    const end = toDeleteSections[i].end
-    css = css.substring(0, start) + css.substring(end)
-  }
-
-  return css
+  return name
 }
 
-if (typeof module !== 'undefined') {
-  module.exports = unusedFontfaceRemover
+function getAllFontNameValues (ast) {
+  const fontNameValues = new Set()
+
+  debuglog('getAllFontNameValues')
+  csstree.walk(ast, {
+    visit: 'Declaration',
+    enter: function (node) {
+      // walker pass through `font-family` declarations inside @font-face too
+      // this condition filters them, to walk through declarations inside a rules only
+      if (this.rule) {
+        csstree.lexer
+          .findDeclarationValueFragments(node, 'Type', 'family-name')
+          .forEach(entry => {
+            const familyName = decodeFontName({
+              type: 'Value',
+              children: entry.nodes
+            })
+            debuglog('found used font-family: ' + familyName)
+            fontNameValues.add(familyName)
+          })
+      }
+    }
+  })
+  debuglog('getAllFontNameValues AFTER')
+
+  return fontNameValues
+}
+
+export default function unusedFontfaceRemover (ast) {
+  const fontNameValues = getAllFontNameValues(ast)
+
+  // remove @font-face at-rule when:
+  // - it's never unused
+  // - has no a `src` descriptor
+  csstree.walk(ast, {
+    visit: 'Atrule',
+    enter: (atrule, atruleItem, atruleList) => {
+      if (csstree.keyword(atrule.name).basename !== 'font-face') {
+        return
+      }
+
+      let hasSrc = false
+      let used = true
+
+      csstree.walk(atrule, {
+        visit: 'Declaration',
+        enter: declaration => {
+          const name = csstree.property(declaration.property).name
+
+          if (name === 'font-family') {
+            const familyName = decodeFontName(declaration.value)
+
+            // was this @font-face used?
+            if (!fontNameValues.has(familyName)) {
+              debuglog('drop unused @font-face: ' + familyName)
+              used = false
+            }
+          } else if (name === 'src') {
+            hasSrc = true
+          }
+        }
+      })
+
+      if (!used || !hasSrc) {
+        if (used && !hasSrc) {
+          debuglog('drop @font-face with no src descriptor')
+        }
+        atruleList.remove(atruleItem)
+      }
+    }
+  })
 }

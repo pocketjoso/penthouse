@@ -1,43 +1,47 @@
-import apartment from 'apartment'
-import cssAstFormatter from 'css-fork-pocketjoso'
+import debug from 'debug'
 
+import commentRemover from './comment-remover'
 import embeddedbase64Remover from './embedded-base64-remover'
-import ffRemover from './unused-fontface-remover'
 import unusedKeyframeRemover from './unused-keyframe-remover'
+import unusedFontFaceRemover from './unused-fontface-remover'
+import unwantedPropertiesRemover from './unwanted-properties-remover'
+import ruleSelectorRemover from './rule-selector-remover'
+import finalRuleRemover from './final-rule-remover'
 
-export default function postformatting ({
-  criticalAstRules,
+const debuglog = debug('penthouse:css-cleanup')
+
+// NOTE: mutates the ast
+export default function cleanup ({
+  ast,
+  selectorNodeMap,
+  criticalSelectors,
   propertiesToRemove,
-  maxEmbeddedBase64Length,
-  debuglog
+  maxEmbeddedBase64Length
 }) {
-  const usedCriticalRules = unusedKeyframeRemover(criticalAstRules)
-  debuglog('postformatting: unusedKeyframeRemover')
+  debuglog('start')
 
-  let finalCss = cssAstFormatter.stringify({
-    stylesheet: {
-      rules: usedCriticalRules
-    }
-  })
-  debuglog('postformatting: stringify from ast')
+  commentRemover(ast)
+  debuglog('commentRemover')
+
+  ruleSelectorRemover(ast, selectorNodeMap, criticalSelectors)
+  debuglog('ruleSelectorRemover')
+
+  unusedKeyframeRemover(ast)
+  debuglog('unusedKeyframeRemover')
 
   // remove data-uris that are too long
-  // ..faster if this removal can be combined with @font-face one into same iteration..
-  finalCss = embeddedbase64Remover(finalCss, maxEmbeddedBase64Length)
-  debuglog('postformatting: embeddedbase64Remover')
+  embeddedbase64Remover(ast, maxEmbeddedBase64Length)
+  debuglog('embeddedbase64Remover')
 
-  // remove unused @fontface rules
-  finalCss = ffRemover(finalCss)
-  debuglog('postformatting: ffRemover')
+  // remove bad and unused @fontface rules
+  unusedFontFaceRemover(ast)
+  debuglog('unusedFontFaceRemover')
 
-  debuglog('postformatting: propertiesToRemove')
-  // remove irrelevant css properties
-  finalCss = apartment(finalCss, {
-    properties: propertiesToRemove,
-    // TODO: move into pruneNonCriticalCss script
-    selectors: ['::(-moz-)?selection']
-  })
-  debuglog('postformatting: cleaned css via apartment')
+  // remove irrelevant css properties via rule walking
+  unwantedPropertiesRemover(ast, propertiesToRemove)
+  debuglog('propertiesToRemove')
 
-  return finalCss
+  // remove empty and unwanted rules and at-rules
+  finalRuleRemover(ast)
+  debuglog('finalRuleRemover')
 }

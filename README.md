@@ -55,7 +55,6 @@ penthouse({
     ],
     timeout: 30000,                 // ms; abort critical CSS generation after this timeout
     pageLoadSkipTimeout: 0,         // ms; stop waiting for page load after this timeout (for sites with broken page load event timings)
-    strict: false,                  // set to true to throw on CSS errors (will run faster if no errors)
     maxEmbeddedBase64Length: 1000,  // characters; strip out inline base64 encoded resources larger than this
     userAgent: 'Penthouse Critical Path CSS Generator', // specify which user agent string when loading the page
     renderWaitTime: 100,            // ms; render wait timeout before CSS processing starts (default: 100)
@@ -63,6 +62,7 @@ penthouse({
     customPageHeaders: {
       'Accept-Encoding': 'identity' // add if getting compression errors like 'Data corrupted'
     },
+    strict: false,                  // set to true to throw on CSS errors
     screenshots: {
       // turned off by default
       // basePath: 'homepage', // absolute or relative; excluding file extension
@@ -111,21 +111,22 @@ see [this answer](https://github.com/GoogleChrome/puppeteer/issues/404#issuecomm
 
 ### Problems with generated CSS
 
-Before going further, make sure that you fix any errors in your own CSS, as detected by [this AST explorer](http://astexplorer.net/), as they can cause problems with critical CSS generation.
-
-Also test your url + css in the hosted critical path css generator, to determine whether the problem
+A good first step can be to test your url + css in the hosted critical path css generator, to determine whether the problem
 is with the input your passing (css + url), or with your local setup:
 https://jonassebastianohlsson.com/criticalpathcssgenerator
 
 #### Unstyled content showing when using the critical css
 
-The two most common reasons for this:
+If you see flashes of unstyled content showing after applying your critical css then something is wrong. Below are the most commont causes and some general related advice:
 
-1. You have an element appearing early in the DOM, but with styles applied to move outside of the critical viewport (using absolute position or transforms). Penthouse will does not look at the absolute position and transform values and will just see the element as not being part of the critical viewport, and hence Penthouse will not consider its styles critical.
-Solution: Consider whether it really should appear so early in the DOM, or use the `forceInclude` property.
+##### Your page contains dynamic or JS injected/activated content.
+Generally you have to ensure that all elements you want styled in the critical css appears (visible) in the HTML of your page (with Javascript disabled). The first render of your page, the one critical css helps make much faster, happens _before_ JS has loaded, which is why Penthouse runs with JavaScript disabled. So if your html is essentially empty, or your real content is hidden before a loading spinner or similar you have to adress this before you can get the performance benefits of using critical css.
 
-2. During render with critical css your page contains some content that Penthouse never saw in the HTML during critical css generation. Perhaps you're a logged in user with the page showing extra content, that were never part of it when Penthouse saw it, or perhaps JS injected some extra content to the page before the full CSS (which contains the styles for that content) loaded.
-Solution: Ensure all elements you want styled in the critical css appears in the HTML of the url (or html file) you send Penthouse. You can also use the `forceInclude` parameter to force styles to remain in the critical css.
+If your html is fine, but varies based on things such as the logged in user, third party advertising etc, then you can use the `forceInclude` parameter to force specific extra styles to remain in the critical css, even if Penthouse doesn’t see them on the page during critical css generation.
+
+##### Early DOM content moved out of critical viewport via CSS
+This problem can happen if you have an element appearing early in the DOM, but with styles applied to move outside of the critical viewport (using absolute position or transforms). Penthouse does not look at the absolute position and transform values and will just see the element as not being part of the critical viewport, and hence Penthouse will not consider it’s styles critical (so the unstyled element will show when the critical css is used).
+Solution: Consider whether it really should appear so early in the DOM, or use the `forceInclude` property to make sure the styles to "hide"/move it are left in the critical css.
 
 #### Special glyphs not showing/showing incorrectly
 

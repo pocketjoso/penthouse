@@ -1,51 +1,39 @@
-'use strict'
+import csstree from 'css-tree'
+import debug from 'debug'
 
-function getAllKeyframes (rules) {
-  const matches = []
-  function handleRule (rule) {
-    if (rule.type === 'rule') {
-      // mutation to fix this problem in the ast,
-      // can cause crashes when stringifying it later otherwise.
-      // NOTE: would be better to move this code to
-      // separate function, but since we're already looping through the ast here...
-      rule.declarations = rule.declarations || []
+const debuglog = debug('penthouse:css-cleanup:unused-keyframe-remover')
 
-      rule.declarations.forEach(function (props) {
-        if (
-          props.property === 'animation' ||
-          props.property === 'animation-name'
-        ) {
-          matches.push(props.value.split(' ')[0])
+function getAllKeyframes (ast) {
+  return new Set(
+    csstree.lexer.findAllFragments(ast, 'Type', 'keyframes-name').map(entry => {
+      const keyframeName = csstree.generate(entry.nodes.first())
+      debuglog('found used keyframe animation: ' + keyframeName)
+      return keyframeName
+    })
+  )
+}
+
+export default function unusedKeyframeRemover (ast) {
+  debuglog('getAllAnimationKeyframes')
+  const usedKeyFrames = getAllKeyframes(ast)
+  debuglog(
+    'getAllAnimationKeyframes AFTER, usedKeyFrames: ' + usedKeyFrames.size
+  )
+
+  // remove all unused keyframes
+  csstree.walk(ast, {
+    visit: 'Atrule',
+    enter: (atrule, item, list) => {
+      const keyword = csstree.keyword(atrule.name)
+
+      if (keyword.basename === 'keyframes') {
+        const keyframeName = csstree.generate(atrule.prelude)
+
+        if (!usedKeyFrames.has(keyframeName)) {
+          debuglog(`drop unused @${keyword.name}: ${keyframeName}`)
+          list.remove(item)
         }
-      })
-    } else if (rule.type === 'media') {
-      ;(rule.rules || []).forEach(handleRule)
+      }
     }
-  }
-  rules.forEach(handleRule)
-  return matches
-}
-
-function unusedKeyframeRemover (rules) {
-  const usedKeyFrames = getAllKeyframes(rules)
-
-  function filterUnusedKeyframeRule (rule) {
-    if (rule.type === 'media') {
-      // mutating the original object..
-      rule.rules = rule.rules.filter(filterUnusedKeyframeRule)
-      return rule.rules.length > 0
-    }
-    if (rule.type !== 'keyframes') {
-      return true
-    }
-    // remove unnused keyframes rules
-    return usedKeyFrames.indexOf(rule.name) !== -1
-  }
-
-  // remove all unknown keyframes
-  return rules.filter(filterUnusedKeyframeRule)
-}
-
-if (typeof module !== 'undefined') {
-  module.exports = unusedKeyframeRemover
+  })
 }
