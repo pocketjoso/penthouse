@@ -178,7 +178,7 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
           _browserPagesOpen
       )
       if (!forceTryRestartBrowser && !await browserIsRunning()) {
-        console.error(
+        debuglog(
           'Chromium unexpecedly not opened - crashed? ' +
             '\n_browserPagesOpen: ' +
             (_browserPagesOpen + 1) +
@@ -226,7 +226,6 @@ module.exports = function (options, callback) {
   process.on('SIGINT', exitHandler)
 
   return new Promise(async (resolve, reject) => {
-    // still supporting legacy callback way of calling Penthouse
     const cleanupAndExit = ({ returnValue, error = null }) => {
       if (browser && !options.unstableKeepBrowserAlive) {
         if (_browserPagesOpen > 0) {
@@ -241,6 +240,7 @@ module.exports = function (options, callback) {
         }
       }
 
+      // still supporting legacy callback way of calling Penthouse
       if (callback) {
         callback(error, returnValue)
         return
