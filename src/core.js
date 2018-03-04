@@ -89,10 +89,21 @@ async function preparePage ({
   userAgent,
   customPageHeaders,
   blockJSRequests,
-  cleanupAndExit
+  cleanupAndExit,
+  getHasExited
 }) {
   debuglog('preparePage START')
-  page = await browser.newPage()
+  try {
+    page = await browser.newPage()
+  } catch (e) {
+    if (getHasExited()) {
+      // we already exited (strict mode css parsing erros)
+      // - ignore
+    } else {
+      debuglog('unexpted: could not open browser page' + e)
+    }
+    return
+  }
   debuglog('new page opened in browser')
 
   const setViewportPromise = page
@@ -188,6 +199,9 @@ async function pruneNonCriticalCssLauncher ({
   unstableKeepBrowserAlive
 }) {
   let _hasExited = false
+  // hacky to get around _hasExited only available in the scope of this function
+  const getHasExited = () => _hasExited
+
   const takeScreenshots = screenshots && screenshots.basePath
   const screenshotExtension = takeScreenshots && screenshots.type === 'jpeg'
     ? '.jpg'
@@ -245,7 +259,8 @@ async function pruneNonCriticalCssLauncher ({
       userAgent,
       customPageHeaders,
       blockJSRequests,
-      cleanupAndExit
+      cleanupAndExit,
+      getHasExited
     })
 
     // 2. parse ast
