@@ -14,80 +14,61 @@ The process is automatic and the generated CSS is production ready as is. Behind
 
 ## Usage
 
-Penthouse can be used:
-
-* [as a Node module](#as-a-node-module)
-* via [the online version](#online-version)
-
-### As a Node module
+(If you don’t want to write code, you can use [the online hosted version](https://jonassebastianohlsson.com/criticalpathcssgenerator/).)
 
 ```
 yarn add --dev penthouse
 ```
 (or `npm install`, if not using [yarn](https://yarnpkg.com))
 
-This will add penthouse to the list of dependencies.
-
-`Penthouse` returns a promise (since version `0.11`),
-but if you prefer you can also pass in a traditional node-style `callback`
-function as the second argument.
+### Basic example
 
 ```js
 penthouse({
-    url: 'http://google.com',       // can also use file:/// protocol for local files
-    cssString: 'body { color; red }', // the original css to extract critcial css from
-    // css: 'pathTo/main.css',      // path to original css file on disk
-
-    // OPTIONAL params
-    width: 1300,                    // viewport width
-    height: 900,                    // viewport height
-    keepLargerMediaQueries: false,  // when true, will not filter out larger media queries
-    forceInclude: [ // selectors to keep
-      '.keepMeEvenIfNotSeenInDom',
-      /^\.regexWorksToo/
-    ],
-    propertiesToRemove: [
-      '(.*)transition(.*)',
-      'cursor',
-      'pointer-events',
-      '(-webkit-)?tap-highlight-color',
-      '(.*)user-select'
-    ],
-    timeout: 30000,                 // ms; abort critical CSS generation after this timeout
-    pageLoadSkipTimeout: 0,         // ms; stop waiting for page load after this timeout (for sites with broken page load event timings)
-    maxEmbeddedBase64Length: 1000,  // characters; strip out inline base64 encoded resources larger than this
-    userAgent: 'Penthouse Critical Path CSS Generator', // specify which user agent string when loading the page
-    renderWaitTime: 100,            // ms; render wait timeout before CSS processing starts (default: 100)
-    blockJSRequests: true,          // set to false to load (external) JS (default: true)
-    customPageHeaders: {
-      'Accept-Encoding': 'identity' // add if getting compression errors like 'Data corrupted'
-    },
-    strict: false,                  // set to true to throw on CSS errors
-    screenshots: {
-      // turned off by default
-      // basePath: 'homepage', // absolute or relative; excluding file extension
-      // type: 'jpeg', // jpeg or png, png default
-      // quality: 20 // only applies for jpeg type
-      // -> these settings will produce homepage-before.jpg and homepage-after.jpg
-    },
-    puppeteer: {
-      getBrowser: undefined,        // A function that resolves with a puppeteer browser to use instead of launching a new browser session
-    }
+  url: 'http://google.com',
+  cssString: 'body { color; red }'
 })
 .then(criticalCss => {
-    // use the critical css
-    fs.writeFileSync('outfile.css', criticalCss);
-})
-.catch(err => {
-    // handle the error
+  // use the critical css
+  fs.writeFileSync('outfile.css', criticalCss);
 })
 ```
+Note: `Penthouse` returns a promise (since version `0.11`),
+but if you prefer you can also pass in a traditional node-style `callback`
+function as the second argument.
 
-The Penthouse Node module can also be used in Gulp.
+### More examples
+https://github.com/pocketjoso/penthouse/examples
 
-### Online version
+### Performance when running many jobs
+Penthouse is optimised for running many jobs in parallel.
+One shared browser instance is re-used and each job runs in it’s own browser tab.
+There's only so many jobs you can run in parallel before your machine runs out of resources;
+in this case setup somthing like a queue - see the [many urls example](https://github.com/pocketjoso/penthouse/examples/many-urls.js)
 
-<https://jonassebastianohlsson.com/criticalpathcssgenerator/>
+## Options
+Only `url` and `cssString` are required - all other options are optional.
+
+| Name             | Type               | Default | Description   |
+| ---------------- | ------------------ | ------------- |------------- |
+| url           | `string` | | Accessible url. Use `file:///` protocol for local html files. |
+| cssString     | `string` | | Original css to extract critical css from |
+| css           | `string` | | Path to original css file on disk (if using instead of `cssString`) |
+| width         | `integer` | `1300` | Width for critical viewport |
+| height        | `integer` | `900` | Height for critical viewport |
+| screenshots   | `object` | | Configuration for screenshots (not used by default). See [Screenshot example](https://github.com/pocketjoso/penthouse/examples/screenshots.js)  |
+| keepLargerMediaQueries | `boolean` | `false` | Keep media queries even for width/height values larger than critical viewport. |
+| forceInclude | `array` | `[]` | Array of css selectors to keep in critical css, even if not appearing in critical viewport. Strings or regex (f.e. `['.keepMeEvenIfNotSeenInDom', /^\.button/]`) |
+| propertiesToRemove | `array` | `['(.*)transition(.*)', 'cursor', 'pointer-events', '(-webkit-)?tap-highlight-color', '(.*)user-select']` ] | Css properties to filter out from critical css |
+| timeout       | `integer` | `30000` | Ms; abort critical CSS generation after this time |
+| puppeteer     | `object`  | | Settings for puppeteer. See [https://github.com/pocketjoso/penthouse/examples/custom-browser.js](Custom puppeteer browser example) |
+| pageLoadSkipTimeout | `integer` | `0` | Ms; stop waiting for page load after this time (for sites when page load event is unreliable) |
+| renderWaitTime | `integer` | `100` | ms; wait time after page load before critical css extraction starts |
+| blockJSRequests | `boolean` | `true` | set to false to load JS (not recommended)
+| maxEmbeddedBase64Length | `integer` | `1000` | characters; strip out inline base64 encoded resources larger than this |
+| userAgent | `string` | `'Penthouse Critical Path CSS Generator'` | specify which user agent string when loading the page |
+| customPageHeaders | `object` | | Set extra http headers to be sent with the request for the url. |
+| strict | `boolean` | `false` | Make Penthouse throw on errors parsing the original CSS. Legacy option, not recommended. |
 
 ## Troubleshooting
 
