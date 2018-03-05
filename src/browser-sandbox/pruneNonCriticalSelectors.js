@@ -65,11 +65,11 @@ export default function pruneNonCriticalSelectors ({
   }
 
   function filterSelectors (selectors) {
-    console.log('debug: filterSelectors BEFORE')
+    console.log('debug: filterSelectors START')
 
     selectors = selectors.filter(isSelectorCritical)
 
-    console.log('debug: filterSelectors AFTER')
+    console.log('debug: filterSelectors DONE')
     return selectors
   }
 
