@@ -7,7 +7,10 @@
 import penthouse from 'penthouse'
 import puppeteer from 'puppeteer' // installed by penthouse
 
-const browserPromise = puppeteer.launch()
+const browserPromise = puppeteer.launch({
+  ignoreHTTPSErrors: true,
+  args: ['--disable-setuid-sandbox', '--no-sandbox']
+})
 penthouse({
   url: 'http://google.com',
   cssString: 'body { color; red }',
