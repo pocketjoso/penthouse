@@ -299,7 +299,12 @@ async function pruneNonCriticalCssLauncher ({
     })
 
     // -> [BLOCK FOR] page load
-    await loadPagePromise
+    try {
+      await loadPagePromise
+    } catch (e) {
+      cleanupAndExit({ error: e })
+      return
+    }
     if (!page) {
       // in case we timed out
       debuglog('page load TIMED OUT')
