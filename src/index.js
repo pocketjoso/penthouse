@@ -46,9 +46,6 @@ const launchBrowserIfNeeded = async function ({ getBrowser }) {
     debuglog('no browser instance, launching new browser..')
     _browserLaunchPromise = puppeteer
       .launch({
-        // seems better for detecting (critical) page load then default 'load' event,
-        // for spammy pages that keep on sending (non critcal) requests
-        waitUntil: 'networkidle2',
         ignoreHTTPSErrors: true,
         args: ['--disable-setuid-sandbox', '--no-sandbox']
       })
