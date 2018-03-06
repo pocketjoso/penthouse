@@ -38,13 +38,13 @@ but if you prefer you can also pass in a traditional node-style `callback`
 function as the second argument.
 
 ### More examples
-https://github.com/pocketjoso/penthouse/examples
+https://github.com/pocketjoso/penthouse/tree/master/examples
 
 ### Performance when running many jobs
 Penthouse is optimised for running many jobs in parallel.
 One shared browser instance is re-used and each job runs in it’s own browser tab.
 There's only so many jobs you can run in parallel before your machine runs out of resources;
-in this case setup somthing like a queue - see the [many urls example](https://github.com/pocketjoso/penthouse/examples/many-urls.js)
+in this case setup somthing like a queue - see the [many urls example](https://github.com/pocketjoso/penthouse/tree/master/examples/many-urls.js)
 
 ## Options
 Only `url` and `cssString` are required - all other options are optional.
@@ -56,12 +56,12 @@ Only `url` and `cssString` are required - all other options are optional.
 | css           | `string` | | Path to original css file on disk (if using instead of `cssString`) |
 | width         | `integer` | `1300` | Width for critical viewport |
 | height        | `integer` | `900` | Height for critical viewport |
-| screenshots   | `object` | | Configuration for screenshots (not used by default). See [Screenshot example](https://github.com/pocketjoso/penthouse/examples/screenshots.js)  |
+| screenshots   | `object` | | Configuration for screenshots (not used by default). See [Screenshot example](https://github.com/pocketjoso/penthouse/tree/master/examples/screenshots.js)  |
 | keepLargerMediaQueries | `boolean` | `false` | Keep media queries even for width/height values larger than critical viewport. |
 | forceInclude | `array` | `[]` | Array of css selectors to keep in critical css, even if not appearing in critical viewport. Strings or regex (f.e. `['.keepMeEvenIfNotSeenInDom', /^\.button/]`) |
 | propertiesToRemove | `array` | `['(.*)transition(.*)', 'cursor', 'pointer-events', '(-webkit-)?tap-highlight-color', '(.*)user-select']` ] | Css properties to filter out from critical css |
 | timeout       | `integer` | `30000` | Ms; abort critical CSS generation after this time |
-| puppeteer     | `object`  | | Settings for puppeteer. See [https://github.com/pocketjoso/penthouse/examples/custom-browser.js](Custom puppeteer browser example) |
+| puppeteer     | `object`  | | Settings for puppeteer. See [https://github.com/pocketjoso/penthouse/tree/master/examples/custom-browser.js](Custom puppeteer browser example) |
 | pageLoadSkipTimeout | `integer` | `0` | Ms; stop waiting for page load after this time (for sites when page load event is unreliable) |
 | renderWaitTime | `integer` | `100` | ms; wait time after page load before critical css extraction starts |
 | blockJSRequests | `boolean` | `true` | set to false to load JS (not recommended)
