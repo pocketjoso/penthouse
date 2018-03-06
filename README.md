@@ -42,9 +42,8 @@ https://github.com/pocketjoso/penthouse/tree/master/examples
 
 ### Performance when running many jobs
 Penthouse is optimised for running many jobs in parallel.
-One shared browser instance is re-used and each job runs in it’s own browser tab.
-There's only so many jobs you can run in parallel before your machine runs out of resources;
-in this case setup somthing like a queue - see the [many urls example](https://github.com/pocketjoso/penthouse/tree/master/examples/many-urls.js)
+One shared browser instance is re-used and each job runs in its own browser tab.
+There's only so many jobs you can run in parallel before your machine starts running out of resources. To run many jobs effectively, see the [many urls example](https://github.com/pocketjoso/penthouse/tree/master/examples/many-urls.js).
 
 ## Options
 Only `url` and `cssString` are required - all other options are optional.
