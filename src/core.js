@@ -54,7 +54,7 @@ async function loadPage (page, url, timeout, pageLoadSkipTimeout) {
 
 function setupBlockJsRequests (page) {
   page.on('request', blockinterceptedRequests)
-  return page.setRequestInterceptionEnabled(true)
+  return page.setRequestInterception(true)
 }
 
 async function astFromCss ({ cssString, strict }) {
