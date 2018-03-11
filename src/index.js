@@ -47,7 +47,11 @@ const launchBrowserIfNeeded = async function ({ getBrowser }) {
     _browserLaunchPromise = puppeteer
       .launch({
         ignoreHTTPSErrors: true,
-        args: ['--disable-setuid-sandbox', '--no-sandbox']
+        args: [
+          '--disable-setuid-sandbox',
+          '--no-sandbox',
+          '--ignore-certificate-errors'
+        ]
       })
       .then(browser => {
         debuglog('new browser launched')
