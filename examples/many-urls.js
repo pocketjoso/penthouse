@@ -6,7 +6,7 @@
 // Hence, better to setup a queue -
 // this is just a simple example!
 
-import penthouse from '../lib'
+import penthouse from 'penthouse'
 
 // populate with as many urls as you want,
 // only X will be executed in parallel;
