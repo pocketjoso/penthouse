@@ -1,10 +1,8 @@
 import fs from 'fs'
-import csstree from 'css-tree'
 import puppeteer from 'puppeteer'
 import debug from 'debug'
 
 import generateCriticalCss from './core'
-import nonMatchingMediaQueryRemover from './non-matching-media-query-remover'
 
 const debuglog = debug('penthouse')
 
@@ -37,7 +35,6 @@ let _browserLaunchPromise = null
 // browser.pages is not implemented, so need to count myself to not close browser
 // until all pages used by penthouse are closed (i.e. individual calls are done)
 let _browserPagesOpen = 0
-
 const launchBrowserIfNeeded = async function ({ getBrowser }) {
   if (browser) {
     return
@@ -49,12 +46,12 @@ const launchBrowserIfNeeded = async function ({ getBrowser }) {
     debuglog('no browser instance, launching new browser..')
     _browserLaunchPromise = puppeteer
       .launch({
-        // seems better for detecting (critical) page load then default 'load' event,
-        // for spammy pages that keep on sending (non critcal) requests
-        waitUntil: 'networkidle2',
         ignoreHTTPSErrors: true,
-        args: ['--disable-setuid-sandbox', '--no-sandbox'],
-        dumpio: false
+        args: [
+          '--disable-setuid-sandbox',
+          '--no-sandbox',
+          '--ignore-certificate-errors'
+        ]
       })
       .then(browser => {
         debuglog('new browser launched')
@@ -103,33 +100,9 @@ function prepareForceIncludeForSerialization (forceInclude = []) {
   })
 }
 
-const astFromCss = async function astFromCss (options) {
-  // breaks puppeteer
-  const css = options.cssString.replace(/￿/g, '\f042')
-
-  let parsingErrors = []
-  let ast = csstree.parse(css, {
-    onParseError: error => parsingErrors.push(error.formattedMessage)
-  })
-  debuglog(`parsed ast (with ${parsingErrors.length} errors)`)
-
-  if (parsingErrors.length && options.strict === true) {
-    // NOTE: only informing about first error, even if there were more than one.
-    const parsingErrorMessage = parsingErrors[0]
-    throw new Error(
-      `AST parser (css-tree) found ${parsingErrors.length} errors in CSS.
-    Breaking because in strict mode.
-    The first error was:
-    ` + parsingErrorMessage
-    )
-  }
-  return ast
-}
-
 // const so not hoisted, so can get regeneratorRuntime inlined above, needed for Node 4
 const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
   options,
-  ast,
   { forceTryRestartBrowser } = {}
 ) {
   const width = parseInt(options.width || DEFAULT_VIEWPORT_WIDTH, 10)
@@ -138,15 +111,6 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
   // Merge properties with default ones
   const propertiesToRemove =
     options.propertiesToRemove || DEFAULT_PROPERTIES_TO_REMOVE
-
-  // first strip out non matching media queries
-  nonMatchingMediaQueryRemover(
-    ast,
-    width,
-    height,
-    options.keepLargerMediaQueries
-  )
-  debuglog('stripped out non matching media queries')
 
   // always forceInclude '*', 'html', and 'body' selectors
   const forceInclude = prepareForceIncludeForSerialization(
@@ -180,10 +144,11 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
       formattedCss = await generateCriticalCss({
         browser,
         url: options.url,
-        ast,
+        cssString: options.cssString,
         width,
         height,
         forceInclude,
+        strict: options.strict,
         userAgent: options.userAgent || DEFAULT_USER_AGENT,
         renderWaitTime: options.renderWaitTime || DEFAULT_RENDER_WAIT_TIMEOUT,
         timeout: timeoutWait,
@@ -194,13 +159,15 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
             : DEFAULT_BLOCK_JS_REQUESTS,
         customPageHeaders: options.customPageHeaders,
         screenshots: options.screenshots,
+        keepLargerMediaQueries: options.keepLargerMediaQueries,
         // postformatting
         propertiesToRemove,
         maxEmbeddedBase64Length:
           typeof options.maxEmbeddedBase64Length === 'number'
             ? options.maxEmbeddedBase64Length
             : DEFAULT_MAX_EMBEDDED_BASE64_LENGTH,
-        debuglog
+        debuglog,
+        unstableKeepBrowserAlive: options.unstableKeepBrowserAlive
       })
       _browserPagesOpen--
       debuglog(
@@ -213,14 +180,14 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
           _browserPagesOpen
       )
       if (!forceTryRestartBrowser && !await browserIsRunning()) {
-        console.error(
+        debuglog(
           'Chromium unexpecedly not opened - crashed? ' +
             '\n_browserPagesOpen: ' +
             (_browserPagesOpen + 1) +
             '\nurl: ' +
             options.url +
-            '\nAST children: ' +
-            ast.children.getSize()
+            '\ncss length: ' +
+            options.cssString.length
         )
         // for some reason Chromium is no longer opened;
         // perhaps it crashed
@@ -234,7 +201,7 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         }
         // retry
         resolve(
-          generateCriticalCssWrapped(options, ast, {
+          generateCriticalCssWrapped(options, {
             forceTryRestartBrowser: true
           })
         )
@@ -261,7 +228,6 @@ module.exports = function (options, callback) {
   process.on('SIGINT', exitHandler)
 
   return new Promise(async (resolve, reject) => {
-    // still supporting legacy callback way of calling Penthouse
     const cleanupAndExit = ({ returnValue, error = null }) => {
       if (browser && !options.unstableKeepBrowserAlive) {
         if (_browserPagesOpen > 0) {
@@ -276,6 +242,7 @@ module.exports = function (options, callback) {
         }
       }
 
+      // still supporting legacy callback way of calling Penthouse
       if (callback) {
         callback(error, returnValue)
         return
@@ -308,8 +275,7 @@ module.exports = function (options, callback) {
       getBrowser: options.puppeteer && options.puppeteer.getBrowser
     })
     try {
-      const ast = await astFromCss(options)
-      const criticalCss = await generateCriticalCssWrapped(options, ast)
+      const criticalCss = await generateCriticalCssWrapped(options)
       cleanupAndExit({ returnValue: criticalCss })
     } catch (err) {
       cleanupAndExit({ error: err })

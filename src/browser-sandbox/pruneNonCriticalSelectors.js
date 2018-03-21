@@ -4,7 +4,7 @@ export default function pruneNonCriticalSelectors ({
   selectors,
   renderWaitTime
 }) {
-  console.log('debug: pruneNonCriticalSelectors')
+  console.log('debug: pruneNonCriticalSelectors init')
   var h = window.innerHeight
 
   // cache whether elements are above fold,
@@ -65,11 +65,11 @@ export default function pruneNonCriticalSelectors ({
   }
 
   function filterSelectors (selectors) {
-    console.log('debug: filterSelectors BEFORE')
+    console.log('debug: filterSelectors START')
 
     selectors = selectors.filter(isSelectorCritical)
 
-    console.log('debug: filterSelectors AFTER')
+    console.log('debug: filterSelectors DONE')
     return selectors
   }
 
