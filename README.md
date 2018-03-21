@@ -26,7 +26,7 @@ yarn add --dev penthouse
 ```js
 penthouse({
   url: 'http://google.com',
-  cssString: 'body { color; red }'
+  cssString: 'body { color: red }'
 })
 .then(criticalCss => {
   // use the critical css
