@@ -13,7 +13,7 @@ const browserPromise = puppeteer.launch({
 })
 penthouse({
   url: 'http://google.com',
-  cssString: 'body { color; red }',
+  cssString: 'body { color: red }',
   puppeteer: {
     getBrowser: () => browserPromise
   }
