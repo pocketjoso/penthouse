@@ -10,7 +10,7 @@ import penthouse from 'penthouse'
 // 'homepage-after.jpg'
 penthouse({
   url: 'http://google.com',
-  cssString: 'body { color; red }',
+  cssString: 'body { color: red }',
   screenshots: {
     basePath: 'homepage', // absolute or relative; excluding file extension
     type: 'jpeg', // jpeg or png, png default
