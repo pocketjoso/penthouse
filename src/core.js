@@ -22,9 +22,7 @@ async function loadPage (page, url, timeout, pageLoadSkipTimeout) {
   debuglog('page load start')
   // set a higher number than the timeout option, in order to make
   // puppeteer’s timeout _never_ happen
-  let waitingForPageLoad = true
   let _hasLoaded = false
-  let _hasError = false
   let pageLoadSkipTimeoutPromise = null
   const loadPagePromise = new Promise((resolve, reject) => {
     page
@@ -37,7 +35,6 @@ async function loadPage (page, url, timeout, pageLoadSkipTimeout) {
         return resolve('loadPageResponse')
       })
       .catch(err => {
-        _hasError = err
         // Reject when error because we don't want an errored page
         console.error(err)
         return reject(err)
@@ -75,7 +72,6 @@ async function loadPage (page, url, timeout, pageLoadSkipTimeout) {
               .catch(err => {
                 if (!err.message.includes('Target closed')) {
                   debuglog('page.evaluate - ERROR', err)
-                  _hasError = err
                   return reject(err)
                 }
               })
@@ -92,7 +88,6 @@ async function loadPage (page, url, timeout, pageLoadSkipTimeout) {
       debuglog('RACE RESULT: ', raceResult)
     } catch (err) {
       debuglog('RACE RESULT ERROR: ', err)
-      _hasError = err
       throw new Error(err)
     }
 
@@ -100,7 +95,6 @@ async function loadPage (page, url, timeout, pageLoadSkipTimeout) {
   } else {
     await loadPagePromise
   }
-  waitingForPageLoad = false
   debuglog('page load DONE')
 }
 
