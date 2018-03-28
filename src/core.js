@@ -1,7 +1,6 @@
 import csstree from 'css-tree'
 import debug from 'debug'
-import pruneNonCriticalSelectors
-  from './browser-sandbox/pruneNonCriticalSelectors'
+import pruneNonCriticalSelectors from './browser-sandbox/pruneNonCriticalSelectors'
 import replacePageCss from './browser-sandbox/replacePageCss'
 import cleanupAst from './postformatting'
 import buildSelectorProfile from './selectors-profile'
@@ -23,32 +22,65 @@ async function loadPage (page, url, timeout, pageLoadSkipTimeout) {
   // set a higher number than the timeout option, in order to make
   // puppeteer’s timeout _never_ happen
   let waitingForPageLoad = true
-  const loadPagePromise = page.goto(url, { timeout: timeout + 1000 })
-  if (pageLoadSkipTimeout) {
-    await Promise.race([
-      loadPagePromise,
-      new Promise(resolve => {
-        // instead we manually _abort_ page load after X time,
-        // in order to deal with spammy pages that keep sending non-critical requests
-        // (tracking etc), which would otherwise never load.
-        // With JS disabled it just shouldn't take that many seconds to load what's needed
-        // for critical viewport.
-        setTimeout(() => {
-          if (waitingForPageLoad) {
-            debuglog(
-              'page load waiting ABORTED after ' +
-                pageLoadSkipTimeout / 1000 +
-                's. '
-            )
-            resolve()
-          }
-        }, pageLoadSkipTimeout)
+  let pageLoadSkipTimeoutPromise = null
+  const loadPagePromise = new Promise((resolve, reject) => {
+    page
+      .goto(url, {
+        timeout: timeout + 1000
       })
-    ])
+      .then(response => {
+        // Reject exits the Promise.all call immediately and ensures that the pageload is always higher prio than timout
+        return resolve('loadPageResponse')
+      })
+      .catch(err => {
+        // Reject when error because we don't want an errored page
+        console.error(err)
+        return reject(err)
+      })
+  })
+
+  if (pageLoadSkipTimeout) {
+    pageLoadSkipTimeoutPromise = new Promise((resolve, reject) => {
+      // enables us to control requests(stop, continue, modify)
+      page.on('response', async response => {
+        if (response.url === url) {
+          debuglog('RESPONSE URL: ' + response.url) // TODO: interceptedRequest.url is a function in puppeteer > 0.12
+          if (pageLoadSkipTimeout) {
+            debuglog('pageLoadSkipTimeout injected on dom creation')
+            // instead we manually _abort_ page load after X time,
+            // in order to deal with spammy pages that keep sending non-critical requests
+            // (tracking etc), which would otherwise never load.
+            // With JS disabled it just shouldn't take that many seconds to load what's needed
+            // for critical viewport.
+            setTimeout(() => {
+              if (waitingForPageLoad) {
+                debuglog(
+                  'page load waiting ABORTED after ' +
+                    pageLoadSkipTimeout / 1000 +
+                    's. '
+                )
+                resolve()
+              }
+            }, pageLoadSkipTimeout)
+          }
+        }
+      })
+    })
+
+    try {
+      let raceResult = await Promise.race([
+        pageLoadSkipTimeoutPromise,
+        loadPagePromise
+      ])
+      debuglog('RACE RESULT: ', raceResult)
+    } catch (err) {
+      debuglog('RACE RESULT ERROR: ', err)
+      throw new Error(err)
+    }
+    waitingForPageLoad = false
   } else {
     await loadPagePromise
   }
-  waitingForPageLoad = false
   debuglog('page load DONE')
 }
 
@@ -203,9 +235,8 @@ async function pruneNonCriticalCssLauncher ({
   const getHasExited = () => _hasExited
 
   const takeScreenshots = screenshots && screenshots.basePath
-  const screenshotExtension = takeScreenshots && screenshots.type === 'jpeg'
-    ? '.jpg'
-    : '.png'
+  const screenshotExtension =
+    takeScreenshots && screenshots.type === 'jpeg' ? '.jpg' : '.png'
 
   return new Promise(async (resolve, reject) => {
     debuglog('Penthouse core start')
@@ -287,7 +318,13 @@ async function pruneNonCriticalCssLauncher ({
     page = await updatedPagePromise
 
     // load the page (slow) [NOT BLOCKING]
-    const loadPagePromise = loadPage(page, url, timeout, pageLoadSkipTimeout)
+    let loadPagePromise = null
+    try {
+      loadPagePromise = loadPage(page, url, timeout, pageLoadSkipTimeout)
+    } catch (err) {
+      cleanupAndExit({ error: err })
+    }
+
     // turn css to formatted selectorlist [NOT BLOCKING]
     debuglog('turn css to formatted selectorlist START')
     const buildSelectorProfilePromise = buildSelectorProfile(
@@ -330,6 +367,7 @@ async function pruneNonCriticalCssLauncher ({
     // -> [BLOCK FOR] critical css selector pruning (in browser)
     let criticalSelectors
     try {
+      await page.waitFor(300) // This is needed to  fix the Target closed error of puppeteer
       criticalSelectors = await page
         .evaluate(pruneNonCriticalSelectors, {
           selectors,

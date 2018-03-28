@@ -90,12 +90,17 @@ export default function pruneNonCriticalSelectors ({
     )
   }
 
-  // give some time (renderWaitTime) for sites like facebook that build their page dynamically,
-  // otherwise we can miss some selectors (and therefor rules)
-  // --tradeoff here: if site is too slow with dynamic content,
-  // it doesn't deserve to be in critical path.
-  return sleep(renderWaitTime).then(() => {
-    console.log('debug: waited for renderWaitTime: ' + renderWaitTime)
-    return filterSelectors(selectors)
-  })
+  try {
+    // give some time (renderWaitTime) for sites like facebook that build their page dynamically,
+    // otherwise we can miss some selectors (and therefor rules)
+    // --tradeoff here: if site is too slow with dynamic content,
+    // it doesn't deserve to be in critical path.
+    return sleep(renderWaitTime).then(() => {
+      console.log('debug: waited for renderWaitTime: ' + renderWaitTime)
+      return filterSelectors(selectors)
+    })
+  } catch (err) {
+    console.log('debug: ' + err.message)
+    return []
+  }
 }
