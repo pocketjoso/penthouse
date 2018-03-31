@@ -18,14 +18,14 @@ function blockinterceptedRequests (interceptedRequest) {
   }
 }
 
-async function loadPage (page, url, timeout, pageLoadSkipTimeout) {
+function loadPage (page, url, timeout, pageLoadSkipTimeout) {
   debuglog('page load start')
   // set a higher number than the timeout option, in order to make
   // puppeteer’s timeout _never_ happen
   let waitingForPageLoad = true
-  const loadPagePromise = page.goto(url, { timeout: timeout + 1000 })
+  let loadPagePromise = page.goto(url, { timeout: timeout + 1000 })
   if (pageLoadSkipTimeout) {
-    await Promise.race([
+    loadPagePromise = Promise.race([
       loadPagePromise,
       new Promise(resolve => {
         // instead we manually _abort_ page load after X time,
@@ -45,11 +45,11 @@ async function loadPage (page, url, timeout, pageLoadSkipTimeout) {
         }, pageLoadSkipTimeout)
       })
     ])
-  } else {
-    await loadPagePromise
   }
-  waitingForPageLoad = false
-  debuglog('page load DONE')
+  return loadPagePromise.then(() => {
+    waitingForPageLoad = false
+    debuglog('page load DONE')
+  })
 }
 
 function setupBlockJsRequests (page) {
