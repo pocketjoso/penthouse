@@ -153,20 +153,22 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         renderWaitTime: options.renderWaitTime || DEFAULT_RENDER_WAIT_TIMEOUT,
         timeout: timeoutWait,
         pageLoadSkipTimeout: options.pageLoadSkipTimeout,
-        blockJSRequests: typeof options.blockJSRequests !== 'undefined'
-          ? options.blockJSRequests
-          : DEFAULT_BLOCK_JS_REQUESTS,
+        blockJSRequests:
+          typeof options.blockJSRequests !== 'undefined'
+            ? options.blockJSRequests
+            : DEFAULT_BLOCK_JS_REQUESTS,
         customPageHeaders: options.customPageHeaders,
         screenshots: options.screenshots,
         keepLargerMediaQueries: options.keepLargerMediaQueries,
         // postformatting
         propertiesToRemove,
-        maxEmbeddedBase64Length: typeof options.maxEmbeddedBase64Length ===
-          'number'
-          ? options.maxEmbeddedBase64Length
-          : DEFAULT_MAX_EMBEDDED_BASE64_LENGTH,
+        maxEmbeddedBase64Length:
+          typeof options.maxEmbeddedBase64Length === 'number'
+            ? options.maxEmbeddedBase64Length
+            : DEFAULT_MAX_EMBEDDED_BASE64_LENGTH,
         debuglog,
-        unstableKeepBrowserAlive: options.unstableKeepBrowserAlive
+        unstableKeepBrowserAlive: options.unstableKeepBrowserAlive,
+        waitingForPageLoad: options.waitingForPageLoad
       })
       _browserPagesOpen--
       debuglog(
