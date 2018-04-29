@@ -50,7 +50,10 @@ const launchBrowserIfNeeded = async function ({ getBrowser }) {
         args: [
           '--disable-setuid-sandbox',
           '--no-sandbox',
-          '--ignore-certificate-errors'
+          '--ignore-certificate-errors',
+          // better for Docker:
+          // https://github.com/GoogleChrome/puppeteer/blob/master/docs/troubleshooting.md#tips
+          '--disable-dev-shm-usage'
         ]
       })
       .then(browser => {
@@ -153,18 +156,19 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         renderWaitTime: options.renderWaitTime || DEFAULT_RENDER_WAIT_TIMEOUT,
         timeout: timeoutWait,
         pageLoadSkipTimeout: options.pageLoadSkipTimeout,
-        blockJSRequests: typeof options.blockJSRequests !== 'undefined'
-          ? options.blockJSRequests
-          : DEFAULT_BLOCK_JS_REQUESTS,
+        blockJSRequests:
+          typeof options.blockJSRequests !== 'undefined'
+            ? options.blockJSRequests
+            : DEFAULT_BLOCK_JS_REQUESTS,
         customPageHeaders: options.customPageHeaders,
         screenshots: options.screenshots,
         keepLargerMediaQueries: options.keepLargerMediaQueries,
         // postformatting
         propertiesToRemove,
-        maxEmbeddedBase64Length: typeof options.maxEmbeddedBase64Length ===
-          'number'
-          ? options.maxEmbeddedBase64Length
-          : DEFAULT_MAX_EMBEDDED_BASE64_LENGTH,
+        maxEmbeddedBase64Length:
+          typeof options.maxEmbeddedBase64Length === 'number'
+            ? options.maxEmbeddedBase64Length
+            : DEFAULT_MAX_EMBEDDED_BASE64_LENGTH,
         debuglog,
         unstableKeepBrowserAlive: options.unstableKeepBrowserAlive
       })
@@ -178,7 +182,7 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         'remove browser page for generateCriticalCss after ERROR, now: ' +
           _browserPagesOpen
       )
-      if (!forceTryRestartBrowser && !await browserIsRunning()) {
+      if (!forceTryRestartBrowser && !(await browserIsRunning())) {
         debuglog(
           'Chromium unexpecedly not opened - crashed? ' +
             '\n_browserPagesOpen: ' +
