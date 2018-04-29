@@ -58,7 +58,7 @@
     "gm": "^1.23.1",
     "husky": "^0.14.3",
     "jest": "^22.4.3",
-    "lint-staged": "^7.0.0",
+    "lint-staged": "^7.0.5",
     "prettier": "^1.11.1",
     "prettier-standard": "^8.0.0",
     "rimraf": "^2.6.2"
