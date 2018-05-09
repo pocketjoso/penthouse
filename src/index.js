@@ -39,8 +39,12 @@ const launchBrowserIfNeeded = async function ({ getBrowser }) {
   if (browser) {
     return
   }
-  if (getBrowser && typeof getBrowser === 'function') {
-    _browserLaunchPromise = Promise.resolve(getBrowser())
+  if (
+    getBrowser &&
+    typeof getBrowser === 'function' &&
+    !_browserLaunchPromise
+  ) {
+    _browserLaunchPromise = getBrowser()
   }
   if (!_browserLaunchPromise) {
     debuglog('no browser instance, launching new browser..')
