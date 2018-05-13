@@ -41,7 +41,7 @@
     "css-tree": "1.0.0-alpha.28",
     "debug": "^3.1.0",
     "jsesc": "^2.5.1",
-    "puppeteer": "1.0.0"
+    "puppeteer": "1.4.0"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
