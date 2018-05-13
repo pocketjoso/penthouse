@@ -11,7 +11,7 @@ const FIXTURES = [
   {
     // NOTE: with current test setup, the first test incurs extra cost of launching browser
     // whereas the latter ones re-use it
-    threshold: 1900,
+    threshold: 2200,
     name: 'stripe'
   },
   {
@@ -24,7 +24,7 @@ const FIXTURES = [
   //   name: 'dn'
   // },
   {
-    threshold: 4600,
+    threshold: 4800,
     name: 'guardian'
   },
   {
