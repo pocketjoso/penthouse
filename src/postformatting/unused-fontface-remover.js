@@ -29,8 +29,10 @@ function getAllFontNameValues (ast) {
               type: 'Value',
               children: entry.nodes
             })
-            debuglog('found used font-family: ' + familyName)
-            fontNameValues.add(familyName)
+            if (!fontNameValues.has(familyName)) {
+              debuglog('found used font-family: ' + familyName)
+              fontNameValues.add(familyName)
+            }
           })
       }
     }
