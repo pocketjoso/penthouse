@@ -30,6 +30,10 @@ function matchesForceInclude (selector, forceInclude) {
   })
 }
 
+// returns:
+// true, if selector should be force kept
+// false, if selector should be force removed
+// otherwise the selector string to look for in the critical viewport
 function normalizeSelector (selectorNode, forceInclude) {
   const selector = csstree.generate(selectorNode)
   // some selectors can't be matched on page.
@@ -94,6 +98,17 @@ export default async function buildSelectorProfile (ast, forceInclude) {
       if (rule.prelude.type !== 'SelectorList') {
         return
       }
+
+      const addedRule = rule.block.children.some(declarationNode => {
+        if (declarationNode.property === 'grid-area') {
+          const ruleSelectorList = csstree.generate(rule.prelude)
+          debuglog('rule contains grid-area, keeping: ', ruleSelectorList)
+          selectors.add(ruleSelectorList)
+          selectorNodeMap.set(rule.prelude, ruleSelectorList)
+          return true
+        }
+      })
+      if (addedRule) return
 
       // collect selectors and build a map
       rule.prelude.children.each(selectorNode => {
