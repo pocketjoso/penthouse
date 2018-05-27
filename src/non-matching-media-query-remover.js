@@ -37,7 +37,9 @@ function _isMatchingMediaQuery (mediaQuery, matchConfig) {
     }
     return mq.expressions.some(function ({ modifier, feature, value }) {
       if (modifier === 'min') {
-        const constructedQuery = `${isInverse ? 'not ' : ''}(min-${feature}: ${value})`
+        const constructedQuery = `${
+          isInverse ? 'not ' : ''
+        }(min-${feature}: ${value})`
         return cssMediaQuery.match(constructedQuery, matchConfig)
       } else {
         return true

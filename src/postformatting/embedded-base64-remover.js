@@ -29,7 +29,9 @@ export default function embeddedbase64Remover (ast, maxEmbeddedBase64Length) {
         const value = csstree.generate(declaration.value)
         debuglog(
           'DROP: ' +
-            `${declaration.property}: ${value.slice(0, 50)}..., (${value.length} chars)`
+            `${declaration.property}: ${value.slice(0, 50)}..., (${
+              value.length
+            } chars)`
         )
         list.remove(item)
       }
