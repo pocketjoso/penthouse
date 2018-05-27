@@ -27,7 +27,7 @@
     "test-perf": "jest  --runInBand test/run-sequential/perf.test.js",
     "test-extra": "jest --runInBand test/run-sequential/node-module.test.js",
     "precommit": "lint-staged",
-    "prepublish": "npm run lint && npm run transpile",
+    "prepare": "npm run lint && npm run transpile",
     "transpile": "babel -d lib src/"
   },
   "lint-staged": {
