@@ -343,26 +343,9 @@ async function pruneNonCriticalCssLauncher ({
       return
     }
 
-    // take after screenshot (optional) [NOT BLOCKING]
-    let afterScreenshotPromise
-    if (takeScreenshots) {
-      // wait for the before screenshot, before start modifying the page
-      afterScreenshotPromise = beforeScreenshotPromise.then(() => {
-        debuglog('inline critical styles for after screenshot')
-        return page.evaluate(replacePageCss, { css }).then(() => {
-          return grabPageScreenshot({
-            type: 'after',
-            page,
-            screenshots,
-            screenshotExtension,
-            debuglog
-          })
-        })
-      })
-    }
-
     // -> [BLOCK FOR] clean up final ast for critical css
     debuglog('AST cleanup START')
+
     // NOTE: this function mutates the AST
     cleanupAst({
       ast,
@@ -377,8 +360,21 @@ async function pruneNonCriticalCssLauncher ({
     const css = csstree.generate(ast)
     debuglog('generated CSS from AST')
 
-    // -> [BLOCK FOR] take after screenshot (optional)
-    await afterScreenshotPromise
+    // take after screenshot (optional) [BLOCKING]
+    if (takeScreenshots) {
+      // wait for the before screenshot, before start modifying the page
+      await beforeScreenshotPromise
+      debuglog('inline critical styles for after screenshot')
+      await page.evaluate(replacePageCss, { css }).then(() => {
+        return grabPageScreenshot({
+          type: 'after',
+          page,
+          screenshots,
+          screenshotExtension,
+          debuglog
+        })
+      })
+    }
     debuglog('generateCriticalCss DONE')
 
     cleanupAndExit({ returnValue: css })
