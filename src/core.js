@@ -1,7 +1,6 @@
 import csstree from 'css-tree'
 import debug from 'debug'
-import pruneNonCriticalSelectors
-  from './browser-sandbox/pruneNonCriticalSelectors'
+import pruneNonCriticalSelectors from './browser-sandbox/pruneNonCriticalSelectors'
 import replacePageCss from './browser-sandbox/replacePageCss'
 import cleanupAst from './postformatting'
 import buildSelectorProfile from './selectors-profile'
@@ -203,9 +202,8 @@ async function pruneNonCriticalCssLauncher ({
   const getHasExited = () => _hasExited
 
   const takeScreenshots = screenshots && screenshots.basePath
-  const screenshotExtension = takeScreenshots && screenshots.type === 'jpeg'
-    ? '.jpg'
-    : '.png'
+  const screenshotExtension =
+    takeScreenshots && screenshots.type === 'jpeg' ? '.jpg' : '.png'
 
   return new Promise(async (resolve, reject) => {
     debuglog('Penthouse core start')

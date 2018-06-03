@@ -20,6 +20,15 @@ const DEFAULT_PROPERTIES_TO_REMOVE = [
   '(-webkit-)?tap-highlight-color',
   '(.*)user-select'
 ]
+const DEFAULT_PUPPETEER_LAUNCH_ARGS = [
+  '--disable-setuid-sandbox',
+  '--no-sandbox',
+  '--ignore-certificate-errors'
+  // better for Docker:
+  // https://github.com/GoogleChrome/puppeteer/blob/master/docs/troubleshooting.md#tips
+  // (however caused memory leaks in Penthouse when testing in Ubuntu, hence disabled)
+  // '--disable-dev-shm-usage'
+]
 
 function exitHandler () {
   if (browser && browser.close) {
@@ -51,14 +60,7 @@ const launchBrowserIfNeeded = async function ({ getBrowser }) {
     _browserLaunchPromise = puppeteer
       .launch({
         ignoreHTTPSErrors: true,
-        args: [
-          '--disable-setuid-sandbox',
-          '--no-sandbox',
-          '--ignore-certificate-errors',
-          // better for Docker:
-          // https://github.com/GoogleChrome/puppeteer/blob/master/docs/troubleshooting.md#tips
-          '--disable-dev-shm-usage'
-        ]
+        args: DEFAULT_PUPPETEER_LAUNCH_ARGS
       })
       .then(browser => {
         debuglog('new browser launched')
