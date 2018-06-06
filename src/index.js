@@ -188,7 +188,8 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         'remove browser page for generateCriticalCss after ERROR, now: ' +
           _browserPagesOpen
       )
-      if (!forceTryRestartBrowser && !(await browserIsRunning())) {
+      const runningBrowswer = await browserIsRunning()
+      if (!forceTryRestartBrowser && !runningBrowswer) {
         debuglog(
           'Chromium unexpecedly not opened - crashed? ' +
             '\n_browserPagesOpen: ' +
