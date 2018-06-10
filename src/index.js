@@ -121,11 +121,10 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
   const propertiesToRemove =
     options.propertiesToRemove || DEFAULT_PROPERTIES_TO_REMOVE
 
-  // always forceInclude '*', 'html', and 'body' selectors
+  // always forceInclude '*', 'html', and 'body' selectors;
+  // yields slight performance improvement
   const forceInclude = prepareForceIncludeForSerialization(
-    [{ value: '*' }, { value: 'html' }, { value: 'body' }].concat(
-      options.forceInclude || []
-    )
+    ['*', 'html', 'body'].concat(options.forceInclude || [])
   )
 
   // promise so we can handle errors and reject,
