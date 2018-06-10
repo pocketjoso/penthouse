@@ -168,6 +168,7 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         customPageHeaders: options.customPageHeaders,
         screenshots: options.screenshots,
         keepLargerMediaQueries: options.keepLargerMediaQueries,
+        maxElementsToCheckPerSelector: options.maxElementsToCheckPerSelector,
         // postformatting
         propertiesToRemove,
         maxEmbeddedBase64Length:

@@ -199,6 +199,7 @@ async function pruneNonCriticalCssLauncher ({
   propertiesToRemove,
   maxEmbeddedBase64Length,
   keepLargerMediaQueries,
+  maxElementsToCheckPerSelector,
   unstableKeepBrowserAlive
 }) {
   let _hasExited = false
@@ -335,7 +336,8 @@ async function pruneNonCriticalCssLauncher ({
       criticalSelectors = await page
         .evaluate(pruneNonCriticalSelectors, {
           selectors,
-          renderWaitTime
+          renderWaitTime,
+          maxElementsToCheckPerSelector
         })
         .then(criticalSelectors => {
           debuglog('pruneNonCriticalSelectors done')

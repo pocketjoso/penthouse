@@ -65,6 +65,7 @@ Only `url` and `cssString` are required - all other options are optional.
 | renderWaitTime | `integer` | `100` | ms; wait time after page load before critical css extraction starts |
 | blockJSRequests | `boolean` | `true` | set to false to load JS (not recommended)
 | maxEmbeddedBase64Length | `integer` | `1000` | characters; strip out inline base64 encoded resources larger than this |
+| maxElementsToCheckPerSelector | `integer` | `undefined` | Can be specified to limit nr of elements to inspect per css selector, reducing execution time.
 | userAgent | `string` | `'Penthouse Critical Path CSS Generator'` | specify which user agent string when loading the page |
 | customPageHeaders | `object` | | Set extra http headers to be sent with the request for the url. |
 | strict | `boolean` | `false` | Make Penthouse throw on errors parsing the original CSS. Legacy option, not recommended. |

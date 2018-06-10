@@ -2,7 +2,8 @@
 // no access to scrope outside of function
 export default function pruneNonCriticalSelectors ({
   selectors,
-  renderWaitTime
+  renderWaitTime,
+  maxElementsToCheckPerSelector
 }) {
   console.log('debug: pruneNonCriticalSelectors init')
   var h = window.innerHeight
@@ -46,7 +47,7 @@ export default function pruneNonCriticalSelectors ({
 
   function isSelectorCritical (selector) {
     // we have a selector to test, first grab any matching elements
-    var elements
+    let elements
     try {
       elements = document.querySelectorAll(selector)
     } catch (e) {
@@ -54,8 +55,19 @@ export default function pruneNonCriticalSelectors ({
       return false
     }
 
+    let nrElementsToCheck = elements.length
+    if (
+      maxElementsToCheckPerSelector &&
+      nrElementsToCheck > maxElementsToCheckPerSelector
+    ) {
+      console.log(
+        `debug: isSelectorCritical, selector: ${selector} appearing ${nrElementsToCheck} time on page, ONLY checking first ${maxElementsToCheckPerSelector}...`
+      )
+      nrElementsToCheck = maxElementsToCheckPerSelector
+    }
+
     // only keep selectors that match at least one elements on the page above the fold
-    for (let idx = 0; idx < elements.length; idx++) {
+    for (let idx = 0; idx < nrElementsToCheck; idx++) {
       if (isElementAboveFold(elements[idx])) {
         return true
       }
