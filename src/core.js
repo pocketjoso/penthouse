@@ -140,7 +140,11 @@ async function preparePage ({
     cleanupAndExit({ error })
   })
   page.on('console', msg => {
-    const text = msg.text || msg
+    const text = msg.text
+      ? typeof msg.text === 'function'
+        ? msg.text()
+        : msg.text
+      : msg
     // pass through log messages
     // - the ones sent by penthouse for debugging has 'debug: ' prefix.
     if (/^debug: /.test(text)) {
