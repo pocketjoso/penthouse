@@ -8,7 +8,7 @@ import nonMatchingMediaQueryRemover from './non-matching-media-query-remover'
 
 const debuglog = debug('penthouse:core')
 
-const PAGE_UNLOADED_DURING_EXECUTION_ERROR_MESSAGE =
+export const PAGE_UNLOADED_DURING_EXECUTION_ERROR_MESSAGE =
   'PAGE_UNLOADED_DURING_EXECUTION: Critical css generation script could not be executed.\n\nThis most often happens when the page is navigated away from after load, f.e. window.location or via a meta tag refresh directive. For the critical css generation to work the loaded page must stay: remove any redirects or move them to the server. You can also disable them on your end just for the critical css generation, f.e. via a query parameter.'
 
 function blockinterceptedRequests (interceptedRequest) {

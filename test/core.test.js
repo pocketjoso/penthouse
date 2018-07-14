@@ -3,6 +3,8 @@ import penthouse from '../lib/'
 import { readFileSync as read } from 'fs'
 import normaliseCss from './util/normaliseCss'
 
+import { PAGE_UNLOADED_DURING_EXECUTION_ERROR_MESSAGE } from '../lib/core'
+
 describe('penthouse core tests', () => {
   function staticServerFileUrl (file) {
     return 'file://' + path.join(process.env.PWD, 'test', 'static-server', file)
@@ -187,6 +189,25 @@ describe('penthouse core tests', () => {
     })
       .then(result => {
         expect(result.trim()).toBe('')
+      })
+  })
+
+  it('should throw explicit error if page unloads during critical css generation', done => {
+    return penthouse({
+      url: staticServerFileUrl('infinite-page-refresh.html'),
+      cssString: '.doesNotMatterHere {}',
+      width: 800,
+      height: 450
+    })
+      .then(() => {
+        done(new Error('did not throw explicit page unload error'))
+      })
+      .catch(err => {
+        if (err.message === PAGE_UNLOADED_DURING_EXECUTION_ERROR_MESSAGE) {
+          done()
+        } else {
+          done(new Error('did not throw explicit page unload error, but instead: ' + err))
+        }
       })
   })
 })
