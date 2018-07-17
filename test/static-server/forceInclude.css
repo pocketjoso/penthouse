@@ -15,3 +15,9 @@
   .component__part--modifier {
     color: green;
   }
+
+  /* default forceInclude, ensure gets kept (and also not executed in pruneNonCriticalSelector) */
+  *,
+  *:before {
+    color: red;
+  }

@@ -124,7 +124,9 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
   // always forceInclude '*', 'html', and 'body' selectors;
   // yields slight performance improvement
   const forceInclude = prepareForceIncludeForSerialization(
-    ['*', 'html', 'body'].concat(options.forceInclude || [])
+    ['*', '*:before', '*:after', 'html', 'body'].concat(
+      options.forceInclude || []
+    )
   )
 
   // promise so we can handle errors and reject,
