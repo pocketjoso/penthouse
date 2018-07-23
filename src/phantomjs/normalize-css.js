@@ -180,7 +180,7 @@ function normalizeCss (css) {
   debuglog('escaped hex in normalizeCss')
   prepareNewPage()
   page.content =
-    '<html><head><style>' + css + '</style></head><body></body></html>'
+    '<!DOCTYPE html><html><head><style>' + css + '</style></head><body></body></html>'
   page.evaluate(extractFullCssFromPage, encodeURIComponent(css))
 }
 
