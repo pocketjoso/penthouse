@@ -8,7 +8,7 @@ import nonMatchingMediaQueryRemover from './non-matching-media-query-remover'
 
 const debuglog = debug('penthouse:core')
 
-const PUPPETEER_PAGE_UNLOADED_DURING_EXECUTION_ERROR_REGEX = /(Cannot find context with specified id undefined|Execution context was destroyed)/
+const PUPPETEER_PAGE_UNLOADED_DURING_EXECUTION_ERROR_REGEX = /(Cannot find context with specified id|Execution context was destroyed)/
 export const PAGE_UNLOADED_DURING_EXECUTION_ERROR_MESSAGE =
   'PAGE_UNLOADED_DURING_EXECUTION: Critical css generation script could not be executed.\n\nThis can happen if Penthouse was killed during execution, OR otherwise most commonly if the page navigates away after load, via setting window.location, meta tag refresh directive or similar. For the critical css generation to work the loaded page must stay: remove any redirects or move them to the server. You can also disable them on your end just for the critical css generation, for example via a query parameter.'
 
