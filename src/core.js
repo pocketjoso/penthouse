@@ -330,9 +330,23 @@ async function pruneNonCriticalCssLauncher ({
       })
       : Promise.resolve()
 
+    // give some time (renderWaitTime) for sites like facebook that build their page dynamically,
+    // otherwise we can miss some selectors (and therefor rules)
+    // --tradeoff here: if site is too slow with dynamic content,
+    // it doesn't deserve to be in critical path.
+    const renderWaitPromise = new Promise(resolve => {
+      setTimeout(() => {
+        debuglog('waited for renderWaitTime: ' + renderWaitTime)
+        resolve()
+      }, renderWaitTime)
+    })
+
     // -> [BLOCK FOR] css into formatted selectors list with "sourcemap"
     // latter used to map back to full css rule
     const { selectors, selectorNodeMap } = await buildSelectorProfilePromise
+
+    // -> [BLOCK FOR] renderWaitTime
+    await renderWaitPromise
 
     // -> [BLOCK FOR] critical css selector pruning (in browser)
     let criticalSelectors

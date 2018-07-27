@@ -2,7 +2,6 @@
 // no access to scrope outside of function
 export default function pruneNonCriticalSelectors ({
   selectors,
-  renderWaitTime,
   maxElementsToCheckPerSelector
 }) {
   console.log('debug: pruneNonCriticalSelectors init')
@@ -85,29 +84,5 @@ export default function pruneNonCriticalSelectors ({
     return selectors
   }
 
-  function pollUntilTimePassed (start, timeToPass, callback) {
-    window.requestAnimationFrame(() => {
-      const timePassed = Date.now() - start
-      if (timePassed >= timeToPass) {
-        callback()
-      } else {
-        pollUntilTimePassed(start, timeToPass, callback)
-      }
-    })
-  }
-  // not using timeout because does not work with JS disabled
-  function sleep (time) {
-    return new Promise(resolve =>
-      pollUntilTimePassed(Date.now(), time, resolve)
-    )
-  }
-
-  // give some time (renderWaitTime) for sites like facebook that build their page dynamically,
-  // otherwise we can miss some selectors (and therefor rules)
-  // --tradeoff here: if site is too slow with dynamic content,
-  // it doesn't deserve to be in critical path.
-  return sleep(renderWaitTime).then(() => {
-    console.log('debug: waited for renderWaitTime: ' + renderWaitTime)
-    return filterSelectors(selectors)
-  })
+  return filterSelectors(selectors)
 }
