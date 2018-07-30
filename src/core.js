@@ -8,7 +8,7 @@ import nonMatchingMediaQueryRemover from './non-matching-media-query-remover'
 
 const debuglog = debug('penthouse:core')
 
-const PUPPETEER_PAGE_UNLOADED_DURING_EXECUTION_ERROR_REGEX = /(Cannot find context with specified id undefined|Execution context was destroyed)/
+const PUPPETEER_PAGE_UNLOADED_DURING_EXECUTION_ERROR_REGEX = /(Cannot find context with specified id|Execution context was destroyed)/
 export const PAGE_UNLOADED_DURING_EXECUTION_ERROR_MESSAGE =
   'PAGE_UNLOADED_DURING_EXECUTION: Critical css generation script could not be executed.\n\nThis can happen if Penthouse was killed during execution, OR otherwise most commonly if the page navigates away after load, via setting window.location, meta tag refresh directive or similar. For the critical css generation to work the loaded page must stay: remove any redirects or move them to the server. You can also disable them on your end just for the critical css generation, for example via a query parameter.'
 
@@ -330,9 +330,23 @@ async function pruneNonCriticalCssLauncher ({
       })
       : Promise.resolve()
 
+    // give some time (renderWaitTime) for sites like facebook that build their page dynamically,
+    // otherwise we can miss some selectors (and therefor rules)
+    // --tradeoff here: if site is too slow with dynamic content,
+    // it doesn't deserve to be in critical path.
+    const renderWaitPromise = new Promise(resolve => {
+      setTimeout(() => {
+        debuglog('waited for renderWaitTime: ' + renderWaitTime)
+        resolve()
+      }, renderWaitTime)
+    })
+
     // -> [BLOCK FOR] css into formatted selectors list with "sourcemap"
     // latter used to map back to full css rule
     const { selectors, selectorNodeMap } = await buildSelectorProfilePromise
+
+    // -> [BLOCK FOR] renderWaitTime
+    await renderWaitPromise
 
     // -> [BLOCK FOR] critical css selector pruning (in browser)
     let criticalSelectors
