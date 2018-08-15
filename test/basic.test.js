@@ -16,17 +16,7 @@ describe('basic tests of penthouse functionality', () => {
   var page1cssPath = path.join(process.env.PWD, 'test', 'static-server', 'page1.css')
   var originalCss = read(page1cssPath).toString()
 
-  it('should return css', () => {
-    return penthouse({
-      url: page1FileUrl,
-      css: page1cssPath
-    })
-      .then(result => {
-        expect(result.length).toBeGreaterThan(0)
-      })
-  })
-
-  it('should return a css file whose parsed AST is equal to the the original\'s AST when the viewport is large', () => {
+  function largeViewportTest () {
     var widthLargerThanTotalTestCSS = 1000
     var heightLargerThanTotalTestCSS = 1000
 
@@ -39,9 +29,9 @@ describe('basic tests of penthouse functionality', () => {
       .then(result => {
         expect(result).toEqual(normaliseCss(originalCss))
       })
-  })
+  }
 
-  it('should return a subset of the original AST rules when the viewport is small', () => {
+  function smallViewportTest () {
     var widthLargerThanTotalTestCSS = 1000
     var heightSmallerThanTotalTestCSS = 100
 
@@ -57,6 +47,22 @@ describe('basic tests of penthouse functionality', () => {
         expect(resultRules.length).toBeLessThan(originalRules.length)
         // not be empty
       })
+  }
+
+  it('should return a css file whose parsed AST is equal to the the original\'s AST when the viewport is large', largeViewportTest)
+
+  it('should return a subset of the original AST rules when the viewport is small', smallViewportTest)
+
+  // largeViewportTest will set the default viewport, in the puppeteer browser penthouse
+  // will re-use for the smallViewportTest here (since they run in parallell).
+  // Since this is not the viewport size the second test wants,
+  // penthouse needs to explicitly update the viewport on the browser page during execution.
+  // This test will fail if that doesn't happen.
+  it('should handle updating viewport size between to jobs run at the same time', () => {
+    return Promise.all([
+      largeViewportTest(),
+      smallViewportTest()
+    ])
   })
 
   it('should not crash on invalid css', () => {
