@@ -84,7 +84,7 @@ describe('extra tests for penthouse node module', () => {
     .catch(done)
   })
 
-  it('error should handle parallell jobs, sharing one browser instance, closing afterwards', done => {
+  it('should handle parallell jobs, sharing one browser instance, closing afterwards', done => {
     const urls = [page1FileUrl, page1FileUrl, page1FileUrl]
     const promises = urls.map(url => {
       return penthouse(({url, css: page1cssPath}))

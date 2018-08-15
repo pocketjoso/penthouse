@@ -7,7 +7,13 @@ import puppeteer from 'puppeteer' // installed by penthouse
 
 const browserPromise = puppeteer.launch({
   ignoreHTTPSErrors: true,
-  args: ['--disable-setuid-sandbox', '--no-sandbox']
+  args: ['--disable-setuid-sandbox', '--no-sandbox'],
+  // not required to specify here, but saves Penthouse some work if you will
+  // re-use the same viewport for most penthouse calls.
+  defaultViewport: {
+    width: 1300,
+    height: 900
+  }
 })
 penthouse({
   url: 'http://google.com',
