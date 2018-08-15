@@ -44,7 +44,7 @@ let _browserLaunchPromise = null
 // browser.pages is not implemented, so need to count myself to not close browser
 // until all pages used by penthouse are closed (i.e. individual calls are done)
 let _browserPagesOpen = 0
-const launchBrowserIfNeeded = async function ({ getBrowser }) {
+const launchBrowserIfNeeded = async function ({ getBrowser, width, height }) {
   if (browser) {
     return
   }
@@ -57,10 +57,15 @@ const launchBrowserIfNeeded = async function ({ getBrowser }) {
   }
   if (!_browserLaunchPromise) {
     debuglog('no browser instance, launching new browser..')
+
     _browserLaunchPromise = puppeteer
       .launch({
         ignoreHTTPSErrors: true,
-        args: DEFAULT_PUPPETEER_LAUNCH_ARGS
+        args: DEFAULT_PUPPETEER_LAUNCH_ARGS,
+        defaultViewport: {
+          width,
+          height
+        }
       })
       .then(browser => {
         debuglog('new browser launched')
@@ -211,7 +216,7 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
             'restarting chrome after crash, current job url is: ' + options.url
           )
           browser = null
-          await launchBrowserIfNeeded({})
+          await launchBrowserIfNeeded({ width, height })
         }
         // retry
         resolve(
@@ -285,8 +290,13 @@ module.exports = function (options, callback) {
       return
     }
 
+    const width = parseInt(options.width || DEFAULT_VIEWPORT_WIDTH, 10)
+    const height = parseInt(options.height || DEFAULT_VIEWPORT_HEIGHT, 10)
+    // launch the browser
     await launchBrowserIfNeeded({
-      getBrowser: options.puppeteer && options.puppeteer.getBrowser
+      getBrowser: options.puppeteer && options.puppeteer.getBrowser,
+      width,
+      height
     })
     try {
       const criticalCss = await generateCriticalCssWrapped(options)

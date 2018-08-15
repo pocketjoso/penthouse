@@ -109,9 +109,18 @@ async function preparePage ({
   }
   debuglog('new page opened in browser')
 
-  const setViewportPromise = page
-    .setViewport({ width, height })
-    .then(() => debuglog('viewport set'))
+  // We set the viewport size in the browser when it launches,
+  // and then re-use it for each page (to avoid extra work).
+  // Only if later pages use a different viewport size do we need to
+  // update it here.
+  let setViewportPromise = Promise.resolve
+  const currentViewport = page.viewport()
+  if (currentViewport.width !== width || currentViewport.height !== height) {
+    setViewportPromise = page
+      .setViewport({ width, height })
+      .then(() => debuglog('viewport size updated'))
+  }
+
   const setUserAgentPromise = page
     .setUserAgent(userAgent)
     .then(() => debuglog('userAgent set'))
