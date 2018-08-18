@@ -1,8 +1,15 @@
 import fs from 'fs'
-import puppeteer from 'puppeteer'
 import debug from 'debug'
 
 import generateCriticalCss from './core'
+import {
+  launchBrowserIfNeeded,
+  closeBrowser,
+  restartBrowser,
+  browserIsRunning,
+  getOpenBrowserPage,
+  closeBrowserPage
+} from './browser'
 
 const debuglog = debug('penthouse')
 
@@ -20,98 +27,10 @@ const DEFAULT_PROPERTIES_TO_REMOVE = [
   '(-webkit-)?tap-highlight-color',
   '(.*)user-select'
 ]
-const DEFAULT_PUPPETEER_LAUNCH_ARGS = [
-  '--disable-setuid-sandbox',
-  '--no-sandbox',
-  '--ignore-certificate-errors'
-  // better for Docker:
-  // https://github.com/GoogleChrome/puppeteer/blob/master/docs/troubleshooting.md#tips
-  // (however caused memory leaks in Penthouse when testing in Ubuntu, hence disabled)
-  // '--disable-dev-shm-usage'
-]
 
 function exitHandler () {
-  if (browser && browser.close) {
-    browser.close()
-    browser = null
-  }
+  closeBrowser()
   process.exit(0)
-}
-
-// shared between penthouse calls
-let browser = null
-let _browserLaunchPromise = null
-// browser.pages is not implemented, so need to count myself to not close browser
-// until all pages used by penthouse are closed (i.e. individual calls are done)
-let _browserPagesOpen = 0
-const launchBrowserIfNeeded = async function ({ getBrowser, width, height }) {
-  if (browser) {
-    return
-  }
-  if (
-    getBrowser &&
-    typeof getBrowser === 'function' &&
-    !_browserLaunchPromise
-  ) {
-    _browserLaunchPromise = getBrowser()
-  }
-  if (!_browserLaunchPromise) {
-    debuglog('no browser instance, launching new browser..')
-
-    _browserLaunchPromise = puppeteer
-      .launch({
-        ignoreHTTPSErrors: true,
-        args: DEFAULT_PUPPETEER_LAUNCH_ARGS,
-        defaultViewport: {
-          width,
-          height
-        }
-      })
-      .then(browser => {
-        debuglog('new browser launched')
-        return browser
-      })
-  }
-  browser = await _browserLaunchPromise
-  _browserLaunchPromise = null
-}
-
-async function browserIsRunning () {
-  try {
-    // will throw 'Not opened' error if browser is not running
-    await browser.version()
-    return true
-  } catch (e) {
-    return false
-  }
-}
-
-async function closeBrowserPage ({ page, error, unstableKeepBrowserAlive }) {
-  // TODO: handle page.close
-  // page.close will error if page/browser has already been closed;
-  // try to avoid
-  _browserPagesOpen--
-  debuglog(
-    'remove browser page for generateCriticalCss, now: ' + _browserPagesOpen
-  )
-
-  if (page && !(error && error.toString().indexOf('Target closed') > -1)) {
-    debuglog('cleanupAndExit -> try to close browser page')
-    // Without try/catch if error penthouse will crash if error here,
-    // and wont restart properly
-    try {
-      // must await here, otherwise will receive errors if closing
-      // browser before page is properly closed,
-      // however in unstableKeepBrowserAlive browser is never closed by penthouse.
-      if (unstableKeepBrowserAlive) {
-        page.close()
-      } else {
-        await page.close()
-      }
-    } catch (err) {
-      debuglog('cleanupAndExit -> failed to close browser page (ignoring)')
-    }
-  }
 }
 
 function readFilePromise (filepath, encoding) {
@@ -181,13 +100,9 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
     let formattedCss
     let pagePromise
     try {
-      // TODO: in unstableKeepBrowserAlive, start reusing browser pages.
-      // avoids repeated cost of page open/close
-      pagePromise = browser.newPage()
-      _browserPagesOpen++
-      debuglog(
-        'adding browser page for generateCriticalCss, now: ' + _browserPagesOpen
-      )
+      pagePromise = getOpenBrowserPage({
+        unstableKeepBrowserAlive: options.unstableKeepBrowserAlive
+      })
 
       formattedCss = await generateCriticalCss({
         pagePromise,
@@ -228,26 +143,17 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
       const runningBrowswer = await browserIsRunning()
       if (!forceTryRestartBrowser && !runningBrowswer) {
         debuglog(
-          'Chromium unexpecedly not opened - crashed? ' +
-            '\n_browserPagesOpen: ' +
-            (_browserPagesOpen + 1) +
+          'Browser unexpecedly not opened - crashed? ' +
             '\nurl: ' +
             options.url +
             '\ncss length: ' +
             options.cssString.length
         )
-        // for some reason Chromium is no longer opened;
-        // perhaps it crashed
-        if (_browserLaunchPromise) {
-          // in this case the browser is already restarting
-          await _browserLaunchPromise
-        } else if (!(options.puppeteer && options.puppeteer.getBrowser)) {
-          console.log(
-            'restarting chrome after crash, current job url is: ' + options.url
-          )
-          browser = null
-          await launchBrowserIfNeeded({ width, height })
-        }
+        await restartBrowser({
+          width,
+          height,
+          getBrowser: options.puppeteer && options.puppeteer.getBrowser
+        })
         // retry
         resolve(
           generateCriticalCssWrapped(options, {
@@ -284,18 +190,9 @@ module.exports = function (options, callback) {
 
   return new Promise(async (resolve, reject) => {
     const cleanupAndExit = ({ returnValue, error = null }) => {
-      if (browser && !options.unstableKeepBrowserAlive) {
-        if (_browserPagesOpen > 0) {
-          debuglog(
-            'keeping browser open as _browserPagesOpen: ' + _browserPagesOpen
-          )
-        } else {
-          browser.close()
-          browser = null
-          _browserLaunchPromise = null
-          debuglog('closed browser')
-        }
-      }
+      closeBrowser({
+        unstableKeepBrowserAlive: options.unstableKeepBrowserAlive
+      })
 
       // still supporting legacy callback way of calling Penthouse
       if (callback) {
