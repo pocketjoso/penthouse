@@ -152,12 +152,16 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
     debuglog('call generateCriticalCssWrapped')
     let formattedCss
     try {
+      // TODO: in unstableKeepBrowserAlive, start reusing browser pages.
+      // avoids repeated cost of page open/close
+      const pagePromise = browser.newPage()
       _browserPagesOpen++
       debuglog(
         'adding browser page for generateCriticalCss, now: ' + _browserPagesOpen
       )
+
       formattedCss = await generateCriticalCss({
-        browser,
+        pagePromise,
         url: options.url,
         cssString: options.cssString,
         width,

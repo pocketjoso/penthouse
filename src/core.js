@@ -86,18 +86,17 @@ async function astFromCss ({ cssString, strict }) {
 
 async function preparePage ({
   page,
+  pagePromise,
   width,
   height,
-  browser,
   userAgent,
   customPageHeaders,
   blockJSRequests,
   cleanupAndExit,
   getHasExited
 }) {
-  debuglog('preparePage START')
   try {
-    page = await browser.newPage()
+    page = await pagePromise
   } catch (e) {
     if (getHasExited()) {
       // we already exited (strict mode css parsing erros)
@@ -107,7 +106,7 @@ async function preparePage ({
     }
     return
   }
-  debuglog('new page opened in browser')
+  debuglog('open page ready in browser')
 
   // We set the viewport size in the browser when it launches,
   // and then re-use it for each page (to avoid extra work).
@@ -195,7 +194,7 @@ async function grabPageScreenshot ({
 }
 
 async function pruneNonCriticalCssLauncher ({
-  browser,
+  pagePromise,
   url,
   cssString,
   width,
@@ -269,9 +268,9 @@ async function pruneNonCriticalCssLauncher ({
     // 1. start preparing a browser page (tab) [NOT BLOCKING]
     const updatedPagePromise = preparePage({
       page,
+      pagePromise,
       width,
       height,
-      browser,
       userAgent,
       customPageHeaders,
       blockJSRequests,
