@@ -86,6 +86,34 @@ async function browserIsRunning () {
   }
 }
 
+async function closeBrowserPage ({ page, error, unstableKeepBrowserAlive }) {
+  // TODO: handle page.close
+  // page.close will error if page/browser has already been closed;
+  // try to avoid
+  _browserPagesOpen--
+  debuglog(
+    'remove browser page for generateCriticalCss, now: ' + _browserPagesOpen
+  )
+
+  if (page && !(error && error.toString().indexOf('Target closed') > -1)) {
+    debuglog('cleanupAndExit -> try to close browser page')
+    // Without try/catch if error penthouse will crash if error here,
+    // and wont restart properly
+    try {
+      // must await here, otherwise will receive errors if closing
+      // browser before page is properly closed,
+      // however in unstableKeepBrowserAlive browser is never closed by penthouse.
+      if (unstableKeepBrowserAlive) {
+        page.close()
+      } else {
+        await page.close()
+      }
+    } catch (err) {
+      debuglog('cleanupAndExit -> failed to close browser page (ignoring)')
+    }
+  }
+}
+
 function readFilePromise (filepath, encoding) {
   return new Promise((resolve, reject) => {
     fs.readFile(filepath, encoding, (err, content) => {
@@ -151,10 +179,11 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
 
     debuglog('call generateCriticalCssWrapped')
     let formattedCss
+    let pagePromise
     try {
       // TODO: in unstableKeepBrowserAlive, start reusing browser pages.
       // avoids repeated cost of page open/close
-      const pagePromise = browser.newPage()
+      pagePromise = browser.newPage()
       _browserPagesOpen++
       debuglog(
         'adding browser page for generateCriticalCss, now: ' + _browserPagesOpen
@@ -189,16 +218,13 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         debuglog,
         unstableKeepBrowserAlive: options.unstableKeepBrowserAlive
       })
-      _browserPagesOpen--
-      debuglog(
-        'remove browser page for generateCriticalCss, now: ' + _browserPagesOpen
-      )
     } catch (e) {
-      _browserPagesOpen--
-      debuglog(
-        'remove browser page for generateCriticalCss after ERROR, now: ' +
-          _browserPagesOpen
-      )
+      await closeBrowserPage({
+        page: await pagePromise,
+        error: e,
+        unstableKeepBrowserAlive: options.unstableKeepBrowserAlive
+      })
+
       const runningBrowswer = await browserIsRunning()
       if (!forceTryRestartBrowser && !runningBrowswer) {
         debuglog(
@@ -233,6 +259,12 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
       cleanupAndExit({ error: e })
       return
     }
+
+    await closeBrowserPage({
+      page: await pagePromise,
+      unstableKeepBrowserAlive: options.unstableKeepBrowserAlive
+    })
+
     debuglog('generateCriticalCss done')
     if (formattedCss.trim().length === 0) {
       // TODO: would be good to surface this to user, always

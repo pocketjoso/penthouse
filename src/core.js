@@ -98,12 +98,12 @@ async function preparePage ({
   try {
     page = await pagePromise
   } catch (e) {
-    if (getHasExited()) {
-      // we already exited (strict mode css parsing erros)
-      // - ignore
-    } else {
-      debuglog('unexpted: could not open browser page' + e)
-    }
+    debuglog('unexpected: could not get an open browser page' + e)
+    return
+  }
+  // we already exited while page was opening, stop execution
+  // (strict mode ast css parsing erros)
+  if (getHasExited()) {
     return
   }
   debuglog('open page ready in browser')
@@ -230,30 +230,10 @@ async function pruneNonCriticalCssLauncher ({
       if (_hasExited) {
         return
       }
-      debuglog('cleanupAndExit start')
+      debuglog('cleanupAndExit')
       _hasExited = true
-
       clearTimeout(killTimeout)
-      // page.close will error if page/browser has already been closed;
-      // try to avoid
-      if (page && !(error && error.toString().indexOf('Target closed') > -1)) {
-        debuglog('cleanupAndExit -> try to close browser page')
-        // Without try/catch if error penthouse will crash if error here,
-        // and wont restart properly
-        try {
-          // must await here, otherwise will receive errors if closing
-          // browser before page is properly closed,
-          // however in unstableKeepBrowserAlive browser is never closed by penthouse.
-          if (unstableKeepBrowserAlive) {
-            page.close()
-          } else {
-            await page.close()
-          }
-        } catch (err) {
-          debuglog('cleanupAndExit -> failed to close browser page (ignoring)')
-        }
-      }
-      debuglog('cleanupAndExit end')
+
       if (error) {
         return reject(error)
       }
@@ -300,6 +280,10 @@ async function pruneNonCriticalCssLauncher ({
 
     // -> [BLOCK FOR] page preparation
     page = await updatedPagePromise
+    if (!page) {
+      cleanupAndExit({ error: 'Could not open page in browser' })
+      return
+    }
 
     // load the page (slow) [NOT BLOCKING]
     const loadPagePromise = loadPage(page, url, timeout, pageLoadSkipTimeout)
