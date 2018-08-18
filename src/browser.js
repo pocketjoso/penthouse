@@ -6,9 +6,8 @@ const debuglog = debug('penthouse:browser')
 // shared between penthouse calls
 let browser = null
 let _browserLaunchPromise = null
-// browser.pages is not implemented, so need to count myself to not close browser
-// until all pages used by penthouse are closed (i.e. individual calls are done)
-let _browserPagesOpen = 0
+let reusableBrowserPages = []
+let nrPagesToCloseBrowser = 0
 
 const DEFAULT_PUPPETEER_LAUNCH_ARGS = [
   '--disable-setuid-sandbox',
@@ -24,40 +23,61 @@ export async function launchBrowserIfNeeded ({ getBrowser, width, height }) {
   if (browser) {
     return
   }
-  if (
-    getBrowser &&
-    typeof getBrowser === 'function' &&
-    !_browserLaunchPromise
-  ) {
-    _browserLaunchPromise = getBrowser()
+  const usingCustomGetBrowser = getBrowser && typeof getBrowser === 'function'
+  if (usingCustomGetBrowser && !_browserLaunchPromise) {
+    debuglog('using browser provided via getBrowser option')
+    _browserLaunchPromise = Promise.resolve(getBrowser())
   }
   if (!_browserLaunchPromise) {
     debuglog('no browser instance, launching new browser..')
 
-    _browserLaunchPromise = puppeteer
-      .launch({
-        ignoreHTTPSErrors: true,
-        args: DEFAULT_PUPPETEER_LAUNCH_ARGS,
-        defaultViewport: {
-          width,
-          height
-        }
-      })
-      .then(browser => {
-        debuglog('new browser launched')
-        return browser
-      })
+    _browserLaunchPromise = puppeteer.launch({
+      ignoreHTTPSErrors: true,
+      args: DEFAULT_PUPPETEER_LAUNCH_ARGS,
+      defaultViewport: {
+        width,
+        height
+      }
+    })
   }
+  _browserLaunchPromise.then(async browser => {
+    debuglog('browser ready')
+    const browserPages = await browser.pages()
+    if (browserPages.length > 0) {
+      if (usingCustomGetBrowser) {
+        debuglog(
+          'storing that custom browser provided started with ' +
+            browserPages.length +
+            ' pages'
+        )
+        nrPagesToCloseBrowser = browserPages.length
+      } else {
+        debuglog('re-using the page browser launched with')
+        browserPages.forEach(Page => {
+          if (!reusableBrowserPages.includes(Page)) {
+            reusableBrowserPages.push(Page)
+          } else {
+            debuglog(
+              'ignoring browser page already inside reusableBrowserPages'
+            )
+          }
+        })
+      }
+    }
+    return browser
+  })
+
   browser = await _browserLaunchPromise
   _browserLaunchPromise = null
 }
 
-export async function closeBrowser ({ unstableKeepBrowserAlive }) {
-  debuglog('closeBrowser')
-  if (browser && !unstableKeepBrowserAlive) {
-    if (_browserPagesOpen > 0) {
+export async function closeBrowser ({ forceClose, unstableKeepBrowserAlive }) {
+  debuglog('closeBrowser (maybe)')
+  if (browser && (forceClose || !unstableKeepBrowserAlive)) {
+    const browserPages = await browser.pages()
+    if (browserPages.length > nrPagesToCloseBrowser) {
       debuglog(
-        'keeping browser open as _browserPagesOpen: ' + _browserPagesOpen
+        'keeping browser open as _browserPagesOpen: ' + browserPages.length
       )
     } else if (browser && browser.close) {
       browser.close()
@@ -69,8 +89,14 @@ export async function closeBrowser ({ unstableKeepBrowserAlive }) {
 }
 
 export async function restartBrowser ({ getBrowser, width, height }) {
+  let browserPages
+  if (browser) {
+    browserPages = await browser.pages()
+  }
   debuglog(
-    'restartBrowser called' + '\n_browserPagesOpen: ' + (_browserPagesOpen + 1)
+    'restartBrowser called' + browser &&
+      browserPages &&
+      '\n_browserPagesOpen: ' + browserPages.length
   )
   // for some reason Chromium is no longer opened;
   // perhaps it crashed
@@ -97,11 +123,21 @@ export async function browserIsRunning () {
 }
 
 export async function getOpenBrowserPage ({ unstableKeepBrowserAlive }) {
-  // TODO: in unstableKeepBrowserAlive, start reusing browser pages.
-  // avoids repeated cost of page open/close
-  _browserPagesOpen++
+  const browserPages = await browser.pages()
+
+  // if any re-usable pages to use, avoid unnecessary page open/close calls
+  if (reusableBrowserPages.length > 0) {
+    debuglog(
+      're-using browser page for generateCriticalCss, remaining at: ' +
+        browserPages.length
+    )
+    const reusedPage = reusableBrowserPages.pop()
+    return Promise.resolve(reusedPage)
+  }
+
   debuglog(
-    'adding browser page for generateCriticalCss, now: ' + _browserPagesOpen
+    'adding browser page for generateCriticalCss, before adding was: ' +
+      browserPages.length
   )
   return browser.newPage()
 }
@@ -111,11 +147,13 @@ export async function closeBrowserPage ({
   error,
   unstableKeepBrowserAlive
 }) {
-  // page.close will error if page/browser has already been closed;
-  // try to avoid
-  _browserPagesOpen--
+  if (!browser || !page) {
+    return
+  }
+  const browserPages = await browser.pages()
   debuglog(
-    'remove browser page for generateCriticalCss, now: ' + _browserPagesOpen
+    'remove browser page for generateCriticalCss, before removing was: ' +
+      browserPages.length
   )
 
   if (page && !(error && error.toString().indexOf('Target closed') > -1)) {

@@ -29,7 +29,7 @@ const DEFAULT_PROPERTIES_TO_REMOVE = [
 ]
 
 function exitHandler () {
-  closeBrowser()
+  closeBrowser({ forceClose: true })
   process.exit(0)
 }
 
