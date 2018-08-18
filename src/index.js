@@ -134,8 +134,9 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         unstableKeepBrowserAlive: options.unstableKeepBrowserAlive
       })
     } catch (e) {
+      const page = await pagePromise.then(({ page }) => page)
       await closeBrowserPage({
-        page: await pagePromise,
+        page,
         error: e,
         unstableKeepBrowserAlive: options.unstableKeepBrowserAlive
       })
@@ -166,8 +167,9 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
       return
     }
 
+    const page = await pagePromise.then(({ page }) => page)
     await closeBrowserPage({
-      page: await pagePromise,
+      page,
       unstableKeepBrowserAlive: options.unstableKeepBrowserAlive
     })
 

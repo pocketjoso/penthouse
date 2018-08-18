@@ -95,8 +95,11 @@ async function preparePage ({
   cleanupAndExit,
   getHasExited
 }) {
+  let reusedPage
   try {
-    page = await pagePromise
+    const pagePromiseResult = await pagePromise
+    page = pagePromiseResult.page
+    reusedPage = pagePromiseResult.reused
   } catch (e) {
     debuglog('unexpected: could not get an open browser page' + e)
     return
@@ -133,6 +136,18 @@ async function preparePage ({
     } catch (e) {
       debuglog('failed setting extra http headers: ' + e)
     }
+  }
+
+  // assumes the page was already configured from previous call!
+  if (reusedPage) {
+    return Promise.all([
+      setViewportPromise,
+      setUserAgentPromise,
+      setCustomPageHeadersPromise
+    ]).then(() => {
+      debuglog('preparePage DONE')
+      return page
+    })
   }
 
   let blockJSRequestsPromise

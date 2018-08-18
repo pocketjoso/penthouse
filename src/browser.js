@@ -9,6 +9,8 @@ let _browserLaunchPromise = null
 let reusableBrowserPages = []
 let nrPagesToCloseBrowser = 0
 
+const _UNSTABLE_KEEP_ALIVE_MAX_KEPT_OPEN_PAGES = 4
+
 const DEFAULT_PUPPETEER_LAUNCH_ARGS = [
   '--disable-setuid-sandbox',
   '--no-sandbox',
@@ -72,7 +74,6 @@ export async function launchBrowserIfNeeded ({ getBrowser, width, height }) {
 }
 
 export async function closeBrowser ({ forceClose, unstableKeepBrowserAlive }) {
-  debuglog('closeBrowser (maybe)')
   if (browser && (forceClose || !unstableKeepBrowserAlive)) {
     const browserPages = await browser.pages()
     if (browserPages.length > nrPagesToCloseBrowser) {
@@ -132,14 +133,19 @@ export async function getOpenBrowserPage ({ unstableKeepBrowserAlive }) {
         browserPages.length
     )
     const reusedPage = reusableBrowserPages.pop()
-    return Promise.resolve(reusedPage)
+    return Promise.resolve({
+      page: reusedPage,
+      reused: true
+    })
   }
 
   debuglog(
     'adding browser page for generateCriticalCss, before adding was: ' +
       browserPages.length
   )
-  return browser.newPage()
+  return browser.newPage().then(page => {
+    return { page }
+  })
 }
 
 export async function closeBrowserPage ({
@@ -152,12 +158,11 @@ export async function closeBrowserPage ({
   }
   const browserPages = await browser.pages()
   debuglog(
-    'remove browser page for generateCriticalCss, before removing was: ' +
+    'remove (maybe) browser page for generateCriticalCss, before removing was: ' +
       browserPages.length
   )
 
   if (page && !(error && error.toString().indexOf('Target closed') > -1)) {
-    debuglog('cleanupAndExit -> try to close browser page')
     // Without try/catch if error penthouse will crash if error here,
     // and wont restart properly
     try {
@@ -165,12 +170,18 @@ export async function closeBrowserPage ({
       // browser before page is properly closed,
       // however in unstableKeepBrowserAlive browser is never closed by penthouse.
       if (unstableKeepBrowserAlive) {
-        page.close()
+        if (browserPages.length > _UNSTABLE_KEEP_ALIVE_MAX_KEPT_OPEN_PAGES) {
+          page.close()
+        } else {
+          debuglog('saving page for re-use, instead of closing')
+          reusableBrowserPages.push(page)
+        }
       } else {
+        debuglog('now try to close browser page')
         await page.close()
       }
     } catch (err) {
-      debuglog('cleanupAndExit -> failed to close browser page (ignoring)')
+      debuglog('failed to close browser page (ignoring)')
     }
   }
 }
