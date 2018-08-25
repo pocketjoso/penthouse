@@ -117,36 +117,8 @@ describe('extra tests for penthouse node module', () => {
       .catch(done)
   })
 
-  it('should close browser page even if page execution errored, in unstableKeepBrowserAlive mode', done => {
-    browserPromiseForUnstableKeepOpenTests = puppeteer.launch()
-    penthouse({
-      url: 'http://localhost.does.not.exist',
-      css: page1cssPath,
-      unstableKeepBrowserAlive: true,
-      // so we can kill the browser after
-      // (but after the _next_ test, which also uses unstableKeepBrowserAlive)
-      puppeteer: { getBrowser: () => browserPromiseForUnstableKeepOpenTests }
-    })
-      .catch(() => {
-        // NOTE: this test assumes no other chrome processes are running in this environment
-        setTimeout(() => {
-          chromeProcessesRunning()
-            .then(({pages}) => {
-              // chrome browser opens with an empty page (tab),
-              // which we are just ignoring for now -
-              // did the _extra_ page we opened close, or are we left with 2?
-              if (pages && pages.length > 1) {
-                done(new Error('Chromium seems to not have closed the page we opened, kept nr of pages: ' + pages.length))
-              } else {
-                done()
-              }
-            })
-        }, 1000)
-      })
-  })
-
-
   it('should keep chromium browser instance open, if requested', done => {
+    browserPromiseForUnstableKeepOpenTests = puppeteer.launch()
     penthouse(({
       url: page1FileUrl,
       css: page1cssPath,
