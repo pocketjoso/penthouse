@@ -1,0 +1,187 @@
+import puppeteer from 'puppeteer'
+import debug from 'debug'
+
+const debuglog = debug('penthouse:browser')
+
+// shared between penthouse calls
+let browser = null
+let _browserLaunchPromise = null
+let reusableBrowserPages = []
+let nrPagesToCloseBrowser = 0
+
+const _UNSTABLE_KEEP_ALIVE_MAX_KEPT_OPEN_PAGES = 4
+
+const DEFAULT_PUPPETEER_LAUNCH_ARGS = [
+  '--disable-setuid-sandbox',
+  '--no-sandbox',
+  '--ignore-certificate-errors'
+  // better for Docker:
+  // https://github.com/GoogleChrome/puppeteer/blob/master/docs/troubleshooting.md#tips
+  // (however caused memory leaks in Penthouse when testing in Ubuntu, hence disabled)
+  // '--disable-dev-shm-usage'
+]
+
+export async function launchBrowserIfNeeded ({ getBrowser, width, height }) {
+  if (browser) {
+    return
+  }
+  const usingCustomGetBrowser = getBrowser && typeof getBrowser === 'function'
+  if (usingCustomGetBrowser && !_browserLaunchPromise) {
+    debuglog('using browser provided via getBrowser option')
+    _browserLaunchPromise = Promise.resolve(getBrowser())
+  }
+  if (!_browserLaunchPromise) {
+    debuglog('no browser instance, launching new browser..')
+
+    _browserLaunchPromise = puppeteer.launch({
+      ignoreHTTPSErrors: true,
+      args: DEFAULT_PUPPETEER_LAUNCH_ARGS,
+      defaultViewport: {
+        width,
+        height
+      }
+    })
+  }
+  _browserLaunchPromise.then(async browser => {
+    debuglog('browser ready')
+    const browserPages = await browser.pages()
+    if (browserPages.length > 0) {
+      if (usingCustomGetBrowser) {
+        debuglog(
+          'storing that custom browser provided started with ' +
+            browserPages.length +
+            ' pages'
+        )
+        nrPagesToCloseBrowser = browserPages.length
+      } else {
+        debuglog('re-using the page browser launched with')
+        browserPages.forEach(Page => {
+          if (!reusableBrowserPages.includes(Page)) {
+            reusableBrowserPages.push(Page)
+          } else {
+            debuglog(
+              'ignoring browser page already inside reusableBrowserPages'
+            )
+          }
+        })
+      }
+    }
+    return browser
+  })
+
+  browser = await _browserLaunchPromise
+  _browserLaunchPromise = null
+}
+
+export async function closeBrowser ({ forceClose, unstableKeepBrowserAlive }) {
+  if (browser && (forceClose || !unstableKeepBrowserAlive)) {
+    const browserPages = await browser.pages()
+    if (browserPages.length > nrPagesToCloseBrowser) {
+      debuglog(
+        'keeping browser open as _browserPagesOpen: ' + browserPages.length
+      )
+    } else if (browser && browser.close) {
+      browser.close()
+      browser = null
+      _browserLaunchPromise = null
+      debuglog('closed browser')
+    }
+  }
+}
+
+export async function restartBrowser ({ getBrowser, width, height }) {
+  let browserPages
+  if (browser) {
+    browserPages = await browser.pages()
+  }
+  debuglog(
+    'restartBrowser called' + browser &&
+      browserPages &&
+      '\n_browserPagesOpen: ' + browserPages.length
+  )
+  // for some reason Chromium is no longer opened;
+  // perhaps it crashed
+  if (_browserLaunchPromise) {
+    // in this case the browser is already restarting
+    await _browserLaunchPromise
+    // if getBrowser is specified the user is managing the puppeteer browser themselves,
+    // so we do nothing.
+  } else if (!getBrowser) {
+    console.log('now restarting chrome after crash')
+    browser = null
+    await launchBrowserIfNeeded({ width, height })
+  }
+}
+
+export async function browserIsRunning () {
+  try {
+    // will throw 'Not opened' error if browser is not running
+    await browser.version()
+    return true
+  } catch (e) {
+    return false
+  }
+}
+
+export async function getOpenBrowserPage ({ unstableKeepBrowserAlive }) {
+  const browserPages = await browser.pages()
+
+  // if any re-usable pages to use, avoid unnecessary page open/close calls
+  if (reusableBrowserPages.length > 0) {
+    debuglog(
+      're-using browser page for generateCriticalCss, remaining at: ' +
+        browserPages.length
+    )
+    const reusedPage = reusableBrowserPages.pop()
+    return Promise.resolve({
+      page: reusedPage,
+      reused: true
+    })
+  }
+
+  debuglog(
+    'adding browser page for generateCriticalCss, before adding was: ' +
+      browserPages.length
+  )
+  return browser.newPage().then(page => {
+    return { page }
+  })
+}
+
+export async function closeBrowserPage ({
+  page,
+  error,
+  unstableKeepBrowserAlive
+}) {
+  if (!browser || !page) {
+    return
+  }
+  const browserPages = await browser.pages()
+  debuglog(
+    'remove (maybe) browser page for generateCriticalCss, before removing was: ' +
+      browserPages.length
+  )
+
+  if (page && !(error && error.toString().indexOf('Target closed') > -1)) {
+    // Without try/catch if error penthouse will crash if error here,
+    // and wont restart properly
+    try {
+      // must await here, otherwise will receive errors if closing
+      // browser before page is properly closed,
+      // however in unstableKeepBrowserAlive browser is never closed by penthouse.
+      if (unstableKeepBrowserAlive) {
+        if (browserPages.length > _UNSTABLE_KEEP_ALIVE_MAX_KEPT_OPEN_PAGES) {
+          page.close()
+        } else {
+          debuglog('saving page for re-use, instead of closing')
+          reusableBrowserPages.push(page)
+        }
+      } else {
+        debuglog('now try to close browser page')
+        await page.close()
+      }
+    } catch (err) {
+      debuglog('failed to close browser page (ignoring)')
+    }
+  }
+}

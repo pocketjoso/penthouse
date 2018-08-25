@@ -86,28 +86,30 @@ async function astFromCss ({ cssString, strict }) {
 
 async function preparePage ({
   page,
+  pagePromise,
   width,
   height,
-  browser,
   userAgent,
   customPageHeaders,
   blockJSRequests,
   cleanupAndExit,
   getHasExited
 }) {
-  debuglog('preparePage START')
+  let reusedPage
   try {
-    page = await browser.newPage()
+    const pagePromiseResult = await pagePromise
+    page = pagePromiseResult.page
+    reusedPage = pagePromiseResult.reused
   } catch (e) {
-    if (getHasExited()) {
-      // we already exited (strict mode css parsing erros)
-      // - ignore
-    } else {
-      debuglog('unexpted: could not open browser page' + e)
-    }
+    debuglog('unexpected: could not get an open browser page' + e)
     return
   }
-  debuglog('new page opened in browser')
+  // we already exited while page was opening, stop execution
+  // (strict mode ast css parsing erros)
+  if (getHasExited()) {
+    return
+  }
+  debuglog('open page ready in browser')
 
   // We set the viewport size in the browser when it launches,
   // and then re-use it for each page (to avoid extra work).
@@ -134,6 +136,18 @@ async function preparePage ({
     } catch (e) {
       debuglog('failed setting extra http headers: ' + e)
     }
+  }
+
+  // assumes the page was already configured from previous call!
+  if (reusedPage) {
+    return Promise.all([
+      setViewportPromise,
+      setUserAgentPromise,
+      setCustomPageHeadersPromise
+    ]).then(() => {
+      debuglog('preparePage DONE')
+      return page
+    })
   }
 
   let blockJSRequestsPromise
@@ -195,7 +209,7 @@ async function grabPageScreenshot ({
 }
 
 async function pruneNonCriticalCssLauncher ({
-  browser,
+  pagePromise,
   url,
   cssString,
   width,
@@ -231,30 +245,10 @@ async function pruneNonCriticalCssLauncher ({
       if (_hasExited) {
         return
       }
-      debuglog('cleanupAndExit start')
+      debuglog('cleanupAndExit')
       _hasExited = true
-
       clearTimeout(killTimeout)
-      // page.close will error if page/browser has already been closed;
-      // try to avoid
-      if (page && !(error && error.toString().indexOf('Target closed') > -1)) {
-        debuglog('cleanupAndExit -> try to close browser page')
-        // Without try/catch if error penthouse will crash if error here,
-        // and wont restart properly
-        try {
-          // must await here, otherwise will receive errors if closing
-          // browser before page is properly closed,
-          // however in unstableKeepBrowserAlive browser is never closed by penthouse.
-          if (unstableKeepBrowserAlive) {
-            page.close()
-          } else {
-            await page.close()
-          }
-        } catch (err) {
-          debuglog('cleanupAndExit -> failed to close browser page (ignoring)')
-        }
-      }
-      debuglog('cleanupAndExit end')
+
       if (error) {
         return reject(error)
       }
@@ -269,9 +263,9 @@ async function pruneNonCriticalCssLauncher ({
     // 1. start preparing a browser page (tab) [NOT BLOCKING]
     const updatedPagePromise = preparePage({
       page,
+      pagePromise,
       width,
       height,
-      browser,
       userAgent,
       customPageHeaders,
       blockJSRequests,
@@ -301,6 +295,10 @@ async function pruneNonCriticalCssLauncher ({
 
     // -> [BLOCK FOR] page preparation
     page = await updatedPagePromise
+    if (!page) {
+      cleanupAndExit({ error: 'Could not open page in browser' })
+      return
+    }
 
     // load the page (slow) [NOT BLOCKING]
     const loadPagePromise = loadPage(page, url, timeout, pageLoadSkipTimeout)
