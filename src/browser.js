@@ -174,6 +174,17 @@ export async function closeBrowserPage ({
           page.close()
         } else {
           debuglog('saving page for re-use, instead of closing')
+          if (error) {
+            // When a penthouse job execution errors,
+            // in some conditions when later re-use the page
+            // certain methods don't work,
+            // such as Page.setUserAgent never resolving.
+            // "resetting" the page by navigation to about:blank first fixes this.
+            debuglog('Reset page first..')
+            await page.goto('about:blank').then(() => {
+              debuglog('... page reset DONE')
+            })
+          }
           reusableBrowserPages.push(page)
         }
       } else {
