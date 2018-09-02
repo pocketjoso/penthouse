@@ -356,6 +356,10 @@ async function pruneNonCriticalCssLauncher ({
     // -> [BLOCK FOR] renderWaitTime
     await renderWaitPromise
 
+    if (getHasExited()) {
+      return
+    }
+
     // -> [BLOCK FOR] critical css selector pruning (in browser)
     let criticalSelectors
     try {
@@ -379,6 +383,9 @@ async function pruneNonCriticalCssLauncher ({
           ? new Error(PAGE_UNLOADED_DURING_EXECUTION_ERROR_MESSAGE)
           : err
       })
+      return
+    }
+    if (getHasExited()) {
       return
     }
 
