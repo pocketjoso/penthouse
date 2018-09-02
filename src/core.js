@@ -23,15 +23,13 @@ function blockinterceptedRequests (interceptedRequest) {
 
 function loadPage (page, url, timeout, pageLoadSkipTimeout) {
   debuglog('page load start')
-  // set a higher number than the timeout option, in order to make
-  // puppeteer’s timeout _never_ happen
   let waitingForPageLoad = true
-  let loadPagePromise = page.goto(url, { timeout: timeout + 1000 })
+  let loadPagePromise = page.goto(url)
   if (pageLoadSkipTimeout) {
     loadPagePromise = Promise.race([
       loadPagePromise,
       new Promise(resolve => {
-        // instead we manually _abort_ page load after X time,
+        // _abort_ page load after X time,
         // in order to deal with spammy pages that keep sending non-critical requests
         // (tracking etc), which would otherwise never load.
         // With JS disabled it just shouldn't take that many seconds to load what's needed
@@ -149,6 +147,9 @@ async function preparePage ({
       return page
     })
   }
+  // disable Puppeteer navigation timeouts;
+  // Penthouse tracks these internally instead.
+  page.setDefaultNavigationTimeout(0)
 
   let blockJSRequestsPromise
   if (blockJSRequests) {
