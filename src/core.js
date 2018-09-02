@@ -113,7 +113,7 @@ async function preparePage ({
   // and then re-use it for each page (to avoid extra work).
   // Only if later pages use a different viewport size do we need to
   // update it here.
-  let setViewportPromise = Promise.resolve
+  let setViewportPromise = Promise.resolve()
   const currentViewport = page.viewport()
   if (currentViewport.width !== width || currentViewport.height !== height) {
     setViewportPromise = page
@@ -125,7 +125,7 @@ async function preparePage ({
     .setUserAgent(userAgent)
     .then(() => debuglog('userAgent set'))
 
-  let setCustomPageHeadersPromise
+  let setCustomPageHeadersPromise = Promise.resolve()
   if (customPageHeaders) {
     try {
       setCustomPageHeadersPromise = page
