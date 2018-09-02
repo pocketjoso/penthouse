@@ -14,7 +14,10 @@ const _UNSTABLE_KEEP_ALIVE_MAX_KEPT_OPEN_PAGES = 4
 const DEFAULT_PUPPETEER_LAUNCH_ARGS = [
   '--disable-setuid-sandbox',
   '--no-sandbox',
-  '--ignore-certificate-errors'
+  '--ignore-certificate-errors',
+  // workaround for issues when using ignoreHTTPSErrors and Page.setRequestInterception:
+  // https://github.com/GoogleChrome/puppeteer/issues/3118#issuecomment-417754246
+  '--enable-features=NetworkService'
   // better for Docker:
   // https://github.com/GoogleChrome/puppeteer/blob/master/docs/troubleshooting.md#tips
   // (however caused memory leaks in Penthouse when testing in Ubuntu, hence disabled)
@@ -34,8 +37,8 @@ export async function launchBrowserIfNeeded ({ getBrowser, width, height }) {
     debuglog('no browser instance, launching new browser..')
 
     _browserLaunchPromise = puppeteer.launch({
-      ignoreHTTPSErrors: true,
       args: DEFAULT_PUPPETEER_LAUNCH_ARGS,
+      ignoreHTTPSErrors: true,
       defaultViewport: {
         width,
         height
