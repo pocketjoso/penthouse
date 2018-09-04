@@ -23,15 +23,13 @@ function blockinterceptedRequests (interceptedRequest) {
 
 function loadPage (page, url, timeout, pageLoadSkipTimeout) {
   debuglog('page load start')
-  // set a higher number than the timeout option, in order to make
-  // puppeteer’s timeout _never_ happen
   let waitingForPageLoad = true
-  let loadPagePromise = page.goto(url, { timeout: timeout + 1000 })
+  let loadPagePromise = page.goto(url)
   if (pageLoadSkipTimeout) {
     loadPagePromise = Promise.race([
       loadPagePromise,
       new Promise(resolve => {
-        // instead we manually _abort_ page load after X time,
+        // _abort_ page load after X time,
         // in order to deal with spammy pages that keep sending non-critical requests
         // (tracking etc), which would otherwise never load.
         // With JS disabled it just shouldn't take that many seconds to load what's needed
@@ -115,7 +113,7 @@ async function preparePage ({
   // and then re-use it for each page (to avoid extra work).
   // Only if later pages use a different viewport size do we need to
   // update it here.
-  let setViewportPromise = Promise.resolve
+  let setViewportPromise = Promise.resolve()
   const currentViewport = page.viewport()
   if (currentViewport.width !== width || currentViewport.height !== height) {
     setViewportPromise = page
@@ -127,7 +125,7 @@ async function preparePage ({
     .setUserAgent(userAgent)
     .then(() => debuglog('userAgent set'))
 
-  let setCustomPageHeadersPromise
+  let setCustomPageHeadersPromise = Promise.resolve()
   if (customPageHeaders) {
     try {
       setCustomPageHeadersPromise = page
@@ -149,6 +147,9 @@ async function preparePage ({
       return page
     })
   }
+  // disable Puppeteer navigation timeouts;
+  // Penthouse tracks these internally instead.
+  page.setDefaultNavigationTimeout(0)
 
   let blockJSRequestsPromise
   if (blockJSRequests) {
@@ -355,6 +356,10 @@ async function pruneNonCriticalCssLauncher ({
     // -> [BLOCK FOR] renderWaitTime
     await renderWaitPromise
 
+    if (getHasExited()) {
+      return
+    }
+
     // -> [BLOCK FOR] critical css selector pruning (in browser)
     let criticalSelectors
     try {
@@ -378,6 +383,9 @@ async function pruneNonCriticalCssLauncher ({
           ? new Error(PAGE_UNLOADED_DURING_EXECUTION_ERROR_MESSAGE)
           : err
       })
+      return
+    }
+    if (getHasExited()) {
       return
     }
 

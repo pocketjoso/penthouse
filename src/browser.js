@@ -14,7 +14,10 @@ const _UNSTABLE_KEEP_ALIVE_MAX_KEPT_OPEN_PAGES = 4
 const DEFAULT_PUPPETEER_LAUNCH_ARGS = [
   '--disable-setuid-sandbox',
   '--no-sandbox',
-  '--ignore-certificate-errors'
+  '--ignore-certificate-errors',
+  // workaround for issues when using ignoreHTTPSErrors and Page.setRequestInterception:
+  // https://github.com/GoogleChrome/puppeteer/issues/3118#issuecomment-417754246
+  '--enable-features=NetworkService'
   // better for Docker:
   // https://github.com/GoogleChrome/puppeteer/blob/master/docs/troubleshooting.md#tips
   // (however caused memory leaks in Penthouse when testing in Ubuntu, hence disabled)
@@ -34,8 +37,8 @@ export async function launchBrowserIfNeeded ({ getBrowser, width, height }) {
     debuglog('no browser instance, launching new browser..')
 
     _browserLaunchPromise = puppeteer.launch({
-      ignoreHTTPSErrors: true,
       args: DEFAULT_PUPPETEER_LAUNCH_ARGS,
+      ignoreHTTPSErrors: true,
       defaultViewport: {
         width,
         height
@@ -174,6 +177,17 @@ export async function closeBrowserPage ({
           page.close()
         } else {
           debuglog('saving page for re-use, instead of closing')
+          if (error) {
+            // When a penthouse job execution errors,
+            // in some conditions when later re-use the page
+            // certain methods don't work,
+            // such as Page.setUserAgent never resolving.
+            // "resetting" the page by navigation to about:blank first fixes this.
+            debuglog('Reset page first..')
+            await page.goto('about:blank').then(() => {
+              debuglog('... page reset DONE')
+            })
+          }
           reusableBrowserPages.push(page)
         }
       } else {
