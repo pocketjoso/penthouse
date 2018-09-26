@@ -28,9 +28,9 @@ const DEFAULT_PROPERTIES_TO_REMOVE = [
   '(.*)user-select'
 ]
 
-function exitHandler () {
+function exitHandler (exitCode) {
   closeBrowser({ forceClose: true })
-  process.exit(0)
+  process.exit(typeof exitCode === 'number' ? exitCode : 0)
 }
 
 function readFilePromise (filepath, encoding) {
