@@ -84,18 +84,6 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
   // promise so we can handle errors and reject,
   // instead of throwing what would otherwise be uncaught errors in node process
   return new Promise(async (resolve, reject) => {
-    const cleanupAndExit = ({ returnValue, error }) => {
-      process.removeListener('exit', exitHandler)
-      process.removeListener('SIGTERM', exitHandler)
-      process.removeListener('SIGINT', exitHandler)
-
-      if (error) {
-        reject(error)
-      } else {
-        resolve(returnValue)
-      }
-    }
-
     debuglog('call generateCriticalCssWrapped')
     let formattedCss
     let pagePromise
@@ -163,7 +151,7 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         )
         return
       }
-      cleanupAndExit({ error: e })
+      reject(e)
       return
     }
 
@@ -177,11 +165,11 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
     if (formattedCss.trim().length === 0) {
       // TODO: would be good to surface this to user, always
       debuglog('Note: Generated critical css was empty for URL: ' + options.url)
-      cleanupAndExit({ returnValue: '' })
+      resolve('')
       return
     }
 
-    cleanupAndExit({ returnValue: formattedCss })
+    resolve(formattedCss)
   })
 }
 
@@ -191,7 +179,11 @@ module.exports = function (options, callback) {
   process.on('SIGINT', exitHandler)
 
   return new Promise(async (resolve, reject) => {
-    const cleanupAndExit = ({ returnValue, error = null }) => {
+    function cleanupAndExit ({ returnValue, error = null }) {
+      process.removeListener('exit', exitHandler)
+      process.removeListener('SIGTERM', exitHandler)
+      process.removeListener('SIGINT', exitHandler)
+
       closeBrowser({
         unstableKeepBrowserAlive: options.unstableKeepBrowserAlive
       })
