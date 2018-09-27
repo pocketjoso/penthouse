@@ -81,7 +81,7 @@ export async function closeBrowser ({ forceClose, unstableKeepBrowserAlive }) {
         'keeping browser open as _browserPagesOpen: ' + browserPages.length
       )
     } else if (browser && browser.close) {
-      browser.close()
+      await browser.close()
       browser = null
       _browserLaunchPromise = null
       debuglog('closed browser')
