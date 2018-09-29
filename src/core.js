@@ -147,6 +147,7 @@ async function preparePage ({
       return page
     })
   }
+
   // disable Puppeteer navigation timeouts;
   // Penthouse tracks these internally instead.
   page.setDefaultNavigationTimeout(0)

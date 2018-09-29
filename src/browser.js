@@ -57,6 +57,7 @@ export async function launchBrowserIfNeeded ({ getBrowser, width, height }) {
         debuglog('re-using the page browser launched with')
         browserPages.forEach(Page => {
           if (!reusableBrowserPages.includes(Page)) {
+            Page.notSetupForPenthouse = true
             reusableBrowserPages.push(Page)
           } else {
             debuglog(
@@ -133,9 +134,17 @@ export async function getOpenBrowserPage ({ unstableKeepBrowserAlive }) {
         browserPages.length
     )
     const reusedPage = reusableBrowserPages.pop()
+    let reused = true
+    // if we haven't yet run any penthouse jobs with this page,
+    // don't consider it reused - i.e. it will need to be configured.
+    if (reusedPage.notSetupForPenthouse) {
+      reused = false
+      // but only once
+      delete reusedPage.notSetupForPenthouse
+    }
     return Promise.resolve({
       page: reusedPage,
-      reused: true
+      reused
     })
   }
 
