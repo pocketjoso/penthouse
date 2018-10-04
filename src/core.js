@@ -328,6 +328,31 @@ async function pruneNonCriticalCssLauncher ({
       return
     }
 
+    // Penthouse waits for the `load` event to fire
+    // (before loadPagePromise resolves; except for very slow loading pages)
+    // (via default puppeteer page.goto options.waitUntil setting,
+    //  https://github.com/GoogleChrome/puppeteer/blob/v1.8.0/docs/api.md#pagegotourl-options)
+    // This means "all of the objects in the document are in the DOM, and all the images...
+    // have finished loading".
+    // This is necessary for Penthouse to know the correct layout of the critical viewport
+    // (well really, we would only need to load the critical viewport.. not possible?)
+
+    // However, @font-face's can be available later,
+    // and for this reason it can be useful to delay further - if screenshots are used.
+    // For this `renderWaitTime` can be used.
+
+    // Note: `renderWaitTime` is not a very good name,
+    // and just setting a time is also not the most effective solution to f.e. wait for fonts.
+    // In future probably deprecate and allow for a custom function instead (returning a promise).
+
+    // -> [BLOCK FOR] renderWaitTime - needs to be done before we take any screenshots
+    await new Promise(resolve => {
+      setTimeout(() => {
+        debuglog('waited for renderWaitTime: ' + renderWaitTime)
+        resolve()
+      }, renderWaitTime)
+    })
+
     // take before screenshot (optional) [NOT BLOCKING]
     const beforeScreenshotPromise = takeScreenshots
       ? grabPageScreenshot({
@@ -339,23 +364,9 @@ async function pruneNonCriticalCssLauncher ({
       })
       : Promise.resolve()
 
-    // give some time (renderWaitTime) for sites like facebook that build their page dynamically,
-    // otherwise we can miss some selectors (and therefor rules)
-    // --tradeoff here: if site is too slow with dynamic content,
-    // it doesn't deserve to be in critical path.
-    const renderWaitPromise = new Promise(resolve => {
-      setTimeout(() => {
-        debuglog('waited for renderWaitTime: ' + renderWaitTime)
-        resolve()
-      }, renderWaitTime)
-    })
-
     // -> [BLOCK FOR] css into formatted selectors list with "sourcemap"
     // latter used to map back to full css rule
     const { selectors, selectorNodeMap } = await buildSelectorProfilePromise
-
-    // -> [BLOCK FOR] renderWaitTime
-    await renderWaitPromise
 
     if (getHasExited()) {
       return

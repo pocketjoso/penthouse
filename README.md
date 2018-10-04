@@ -62,7 +62,7 @@ Only `url` and `cssString` are required - all other options are optional.
 | timeout       | `integer` | `30000` | Ms; abort critical CSS generation after this time |
 | puppeteer     | `object`  | | Settings for puppeteer. See [Custom puppeteer browser example](https://github.com/pocketjoso/penthouse/tree/master/examples/custom-browser.js) |
 | pageLoadSkipTimeout | `integer` | `0` | Ms; stop waiting for page load after this time (for sites when page load event is unreliable) |
-| renderWaitTime | `integer` | `100` | ms; wait time after page load before critical css extraction starts |
+| renderWaitTime | `integer` | `100` | ms; wait time after page load before critical css extraction starts (also before "before" screenshot is taken, if used) |
 | blockJSRequests | `boolean` | `true` | set to false to load JS (not recommended)
 | maxEmbeddedBase64Length | `integer` | `1000` | characters; strip out inline base64 encoded resources larger than this |
 | maxElementsToCheckPerSelector | `integer` | `undefined` | Can be specified to limit nr of elements to inspect per css selector, reducing execution time.
