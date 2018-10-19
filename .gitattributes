@@ -22,3 +22,5 @@
 *.mp3 binary
 *.ogg binary
 *.flv binary
+
+test/* linguist-vendored
