@@ -165,7 +165,7 @@ async function preparePage ({
   }
 
   page.on('error', error => {
-    debuglog('page crashed: ' + error)
+    debuglog('page error: ' + error)
     cleanupAndExit({ error })
   })
   page.on('console', msg => {
@@ -327,6 +327,7 @@ async function pruneNonCriticalCssLauncher ({
       cleanupAndExit({ error: new Error('Page load timed out') })
       return
     }
+    if (_hasExited) return
 
     // Penthouse waits for the `load` event to fire
     // (before loadPagePromise resolves; except for very slow loading pages)
