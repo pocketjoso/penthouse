@@ -87,6 +87,7 @@ async function preparePage ({
   pagePromise,
   width,
   height,
+  cookies,
   userAgent,
   customPageHeaders,
   blockJSRequests,
@@ -126,13 +127,26 @@ async function preparePage ({
     .then(() => debuglog('userAgent set'))
 
   let setCustomPageHeadersPromise = Promise.resolve()
-  if (customPageHeaders) {
+  if (customPageHeaders && Object.keys(customPageHeaders).length) {
     try {
       setCustomPageHeadersPromise = page
         .setExtraHTTPHeaders(customPageHeaders)
-        .then(() => debuglog('customPageHeaders set'))
+        .then(() =>
+          debuglog('customPageHeaders set:' + JSON.stringify(customPageHeaders))
+        )
     } catch (e) {
       debuglog('failed setting extra http headers: ' + e)
+    }
+  }
+
+  let setCookiesPromise = Promise.resolve()
+  if (cookies) {
+    try {
+      setCookiesPromise = page
+        .setCookie(...cookies)
+        .then(() => debuglog('cookie(s) set: ' + JSON.stringify(cookies)))
+    } catch (e) {
+      debuglog('failed to set cookies: ' + e)
     }
   }
 
@@ -141,7 +155,8 @@ async function preparePage ({
     return Promise.all([
       setViewportPromise,
       setUserAgentPromise,
-      setCustomPageHeadersPromise
+      setCustomPageHeadersPromise,
+      setCookiesPromise
     ]).then(() => {
       debuglog('preparePage DONE')
       return page
@@ -186,6 +201,7 @@ async function preparePage ({
     setViewportPromise,
     setUserAgentPromise,
     setCustomPageHeadersPromise,
+    setCookiesPromise,
     blockJSRequestsPromise
   ]).then(() => {
     debuglog('preparePage DONE')
@@ -224,6 +240,7 @@ async function pruneNonCriticalCssLauncher ({
   pageLoadSkipTimeout,
   blockJSRequests,
   customPageHeaders,
+  cookies,
   screenshots,
   propertiesToRemove,
   maxEmbeddedBase64Length,
@@ -254,6 +271,37 @@ async function pruneNonCriticalCssLauncher ({
       if (error) {
         return reject(error)
       }
+
+      if (page) {
+        let resetPromises = []
+        // reset page headers and cookies,
+        // since we re-use the page
+        if (customPageHeaders && Object.keys(customPageHeaders).length) {
+          try {
+            resetPromises.push(
+              page
+                .setExtraHTTPHeaders({})
+                .then(() => debuglog('customPageHeaders reset'))
+            )
+          } catch (e) {
+            debuglog('failed resetting extra http headers: ' + e)
+          }
+        }
+        // reset cookies
+        if (cookies && cookies.length) {
+          try {
+            resetPromises.push(
+              page
+                .deleteCookie(...cookies)
+                .then(() => debuglog('cookie(s) reset: '))
+            )
+          } catch (e) {
+            debuglog('failed to reset cookies: ' + e)
+          }
+        }
+        await Promise.all(resetPromises)
+      }
+
       return resolve(returnValue)
     }
     killTimeout = setTimeout(() => {
@@ -269,6 +317,7 @@ async function pruneNonCriticalCssLauncher ({
       width,
       height,
       userAgent,
+      cookies,
       customPageHeaders,
       blockJSRequests,
       cleanupAndExit,
@@ -304,6 +353,7 @@ async function pruneNonCriticalCssLauncher ({
 
     // load the page (slow) [NOT BLOCKING]
     const loadPagePromise = loadPage(page, url, timeout, pageLoadSkipTimeout)
+
     // turn css to formatted selectorlist [NOT BLOCKING]
     debuglog('turn css to formatted selectorlist START')
     const buildSelectorProfilePromise = buildSelectorProfile(
