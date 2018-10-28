@@ -171,7 +171,14 @@ export async function closeBrowserPage ({
       browserPages.length
   )
 
-  if (page && !(error && error.toString().indexOf('Target closed') > -1)) {
+  const badErrors = ['Target closed', 'Page crashed']
+  if (
+    page &&
+    !(
+      error &&
+      badErrors.some(badError => error.toString().indexOf(badError) > -1)
+    )
+  ) {
     // Without try/catch if error penthouse will crash if error here,
     // and wont restart properly
     try {

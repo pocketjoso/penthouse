@@ -109,6 +109,7 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
             ? options.blockJSRequests
             : DEFAULT_BLOCK_JS_REQUESTS,
         customPageHeaders: options.customPageHeaders,
+        cookies: options.cookies,
         screenshots: options.screenshots,
         keepLargerMediaQueries: options.keepLargerMediaQueries,
         maxElementsToCheckPerSelector: options.maxElementsToCheckPerSelector,
