@@ -58,7 +58,7 @@ describe('basic tests of penthouse functionality', () => {
   // Since this is not the viewport size the second test wants,
   // penthouse needs to explicitly update the viewport on the browser page during execution.
   // This test will fail if that doesn't happen.
-  it('should handle updating viewport size between to jobs run at the same time', () => {
+  it('should handle updating viewport size between two jobs run at the same time', () => {
     return Promise.all([
       largeViewportTest(),
       smallViewportTest()
