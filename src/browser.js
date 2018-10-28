@@ -124,7 +124,7 @@ export async function browserIsRunning () {
   }
 }
 
-export async function getOpenBrowserPage ({ unstableKeepBrowserAlive }) {
+export async function getOpenBrowserPage () {
   const browserPages = await browser.pages()
 
   // if any re-usable pages to use, avoid unnecessary page open/close calls

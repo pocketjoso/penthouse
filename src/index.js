@@ -88,9 +88,7 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
     let formattedCss
     let pagePromise
     try {
-      pagePromise = getOpenBrowserPage({
-        unstableKeepBrowserAlive: options.unstableKeepBrowserAlive
-      })
+      pagePromise = getOpenBrowserPage()
 
       formattedCss = await generateCriticalCss({
         pagePromise,
