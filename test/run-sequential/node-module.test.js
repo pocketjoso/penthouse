@@ -57,15 +57,16 @@ describe('extra tests for penthouse node module', () => {
   })
 
   it('should use the browser given in options', async (done) => {
-    let newPageCalled = false
+    let browserUsed = false
 
     const browser = await puppeteer.launch()
 
-    // Spy on browser.newPage method to check if it's called
-    let originalNewPage = browser.newPage
-    browser.newPage = (...args) => {
-      newPageCalled = true
-      return originalNewPage.call(browser, args)
+    // Spy on browser.pages method as a means to see if this browser instance
+    // is used
+    let originalPagesMethod = browser.pages
+    browser.pages = (...args) => {
+      browserUsed = true
+      return originalPagesMethod.call(browser, args)
     }
     return penthouse({
       url: page1FileUrl,
@@ -75,7 +76,7 @@ describe('extra tests for penthouse node module', () => {
       }
     })
     .then(() => {
-      if (!newPageCalled) {
+      if (!browserUsed) {
         done(new Error('Did not use the browser passed in options'))
       } else {
         done()
