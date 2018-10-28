@@ -3,13 +3,13 @@
 // `-before`, of original page
 // `-after`, with all css on page replaced by the generated critical css
 
-import penthouse from 'penthouse'
+const penthouse = require('penthouse')
 
 // These settings will produce two screenshots:
 // 'homepage-before.jpg'
 // 'homepage-after.jpg'
 penthouse({
-  url: 'http://google.com',
+  url: 'https://google.com',
   cssString: 'body { color: red }',
   screenshots: {
     basePath: 'homepage', // absolute or relative; excluding file extension

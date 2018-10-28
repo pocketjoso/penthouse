@@ -6,7 +6,7 @@
 // Hence, better to setup a queue -
 // this is just a simple example!
 
-import penthouse from 'penthouse'
+const penthouse = require('penthouse')
 
 // populate with as many urls as you want,
 // only X will be executed in parallel;
@@ -32,11 +32,11 @@ function startNewJob () {
     url,
     ...penthouseOptions
   })
-  .then(criticalCss => {
-    // do something with your criticalCSS here!
-    // Then call to see if there are more jobs to process
-    return startNewJob()
-  })
+    .then(criticalCss => {
+      // do something with your criticalCSS here!
+      // Then call to see if there are more jobs to process
+      return startNewJob()
+    })
 }
 
 // how many jobs do we want to handle in paralell?
@@ -48,6 +48,6 @@ Promise.all([
   startNewJob(),
   startNewJob()
 ])
-.then(() => {
-  console.log('all done!')
-})
+  .then(() => {
+    console.log('all done!')
+  })

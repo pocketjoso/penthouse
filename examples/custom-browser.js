@@ -2,8 +2,8 @@
 // Can be used to setup custom configuration, and more.
 // See puppeteer docs for more options:
 // https://github.com/GoogleChrome/puppeteer).
-import penthouse from 'penthouse'
-import puppeteer from 'puppeteer' // installed by penthouse
+const penthouse = require('penthouse')
+const puppeteer = require('puppeteer') // installed by penthouse
 
 const browserPromise = puppeteer.launch({
   ignoreHTTPSErrors: true,
@@ -16,15 +16,16 @@ const browserPromise = puppeteer.launch({
   }
 })
 penthouse({
-  url: 'http://google.com',
+  url: 'https://google.com',
   cssString: 'body { color: red }',
   puppeteer: {
     getBrowser: () => browserPromise
   }
 })
-.then(criticalCss => {
-  // use it
-})
+  .then(criticalCss => {
+    // use it
+    console.log('got critical css with nr chars:', criticalCss.length)
+  })
 
 // NOTE: by default Penthouse closes the browser it uses as soon as there are no ongoing jobs,
 // even when a custom `getBrowser` function is used. You can currently override this behavior

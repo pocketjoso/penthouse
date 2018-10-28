@@ -1,11 +1,11 @@
-import penthouse from 'penthouse'
-import fs from 'fs'
+const penthouse = require('penthouse')
+const fs = require('fs')
 
 penthouse({
-  url: 'http://google.com',
+  url: 'https://google.com',
   cssString: 'body { color: red }'
 })
-.then(criticalCss => {
-  // use the critical css
-  fs.writeFileSync('outfile.css', criticalCss);
-})
+  .then(criticalCss => {
+    // use the critical css
+    fs.writeFileSync('outfile.css', criticalCss)
+  })
