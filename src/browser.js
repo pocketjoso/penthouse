@@ -7,7 +7,15 @@ const debuglog = debug('penthouse:browser')
 let browser = null
 let _browserLaunchPromise = null
 let reusableBrowserPages = []
-let nrPagesToCloseBrowser = 0
+// keep track of when we can close the browser penthouse uses;
+// kept open by continuous use
+let ongoingJobs = 0
+export function addJob () {
+  ongoingJobs = ongoingJobs + 1
+}
+export function removeJob () {
+  ongoingJobs = ongoingJobs - 1
+}
 
 const _UNSTABLE_KEEP_ALIVE_MAX_KEPT_OPEN_PAGES = 4
 
@@ -46,26 +54,15 @@ export async function launchBrowserIfNeeded ({ getBrowser, width, height }) {
     debuglog('browser ready')
     const browserPages = await browser.pages()
     if (browserPages.length > 0) {
-      if (usingCustomGetBrowser) {
-        debuglog(
-          'storing that custom browser provided started with ' +
-            browserPages.length +
-            ' pages'
-        )
-        nrPagesToCloseBrowser = browserPages.length
-      } else {
-        debuglog('re-using the page browser launched with')
-        browserPages.forEach(Page => {
-          if (!reusableBrowserPages.includes(Page)) {
-            Page.notSetupForPenthouse = true
-            reusableBrowserPages.push(Page)
-          } else {
-            debuglog(
-              'ignoring browser page already inside reusableBrowserPages'
-            )
-          }
-        })
-      }
+      debuglog('re-using the page browser launched with')
+      browserPages.forEach(Page => {
+        if (!reusableBrowserPages.includes(Page)) {
+          Page.notSetupForPenthouse = true
+          reusableBrowserPages.push(Page)
+        } else {
+          debuglog('ignoring browser page already inside reusableBrowserPages')
+        }
+      })
     }
     return browser
   })
@@ -76,11 +73,8 @@ export async function launchBrowserIfNeeded ({ getBrowser, width, height }) {
 
 export async function closeBrowser ({ forceClose, unstableKeepBrowserAlive }) {
   if (browser && (forceClose || !unstableKeepBrowserAlive)) {
-    const browserPages = await browser.pages()
-    if (browserPages.length > nrPagesToCloseBrowser) {
-      debuglog(
-        'keeping browser open as _browserPagesOpen: ' + browserPages.length
-      )
+    if (ongoingJobs > 0) {
+      debuglog('keeping browser open as ongoingJobs: ' + ongoingJobs)
     } else if (browser && browser.close) {
       browser.close()
       browser = null
