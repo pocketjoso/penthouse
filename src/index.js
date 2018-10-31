@@ -8,7 +8,9 @@ import {
   restartBrowser,
   browserIsRunning,
   getOpenBrowserPage,
-  closeBrowserPage
+  closeBrowserPage,
+  addJob,
+  removeJob
 } from './browser'
 
 const debuglog = debug('penthouse')
@@ -178,10 +180,12 @@ module.exports = function (options, callback) {
   process.on('SIGINT', exitHandler)
 
   return new Promise(async (resolve, reject) => {
+    addJob()
     function cleanupAndExit ({ returnValue, error = null }) {
       process.removeListener('exit', exitHandler)
       process.removeListener('SIGTERM', exitHandler)
       process.removeListener('SIGINT', exitHandler)
+      removeJob()
 
       closeBrowser({
         unstableKeepBrowserAlive: options.unstableKeepBrowserAlive
