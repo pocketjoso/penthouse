@@ -33,9 +33,6 @@ penthouse({
   fs.writeFileSync('outfile.css', criticalCss);
 })
 ```
-Note: `Penthouse` returns a promise (since version `0.11`),
-but if you prefer you can also pass in a traditional node-style `callback`
-function as the second argument.
 
 ### More examples
 https://github.com/pocketjoso/penthouse/tree/master/examples
@@ -46,7 +43,7 @@ One shared browser instance is re-used and each job runs in its own browser tab.
 There's only so many jobs you can run in parallel before your machine starts running out of resources. To run many jobs effectively, see the [many urls example](https://github.com/pocketjoso/penthouse/tree/master/examples/many-urls.js).
 
 ## Options
-Only `url` and `cssString` are required - all other options are optional.
+Only `url` and `cssString` are required - all other options are optional. Note that the html file found via `url` is expected to be styled; `penthouse` does not inject any styles, it just uses `cssString` (or `css`) to prune into critical css.
 
 | Name             | Type               | Default | Description   |
 | ---------------- | ------------------ | ------------- |------------- |
