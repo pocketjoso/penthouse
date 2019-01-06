@@ -139,17 +139,21 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
             '\ncss length: ' +
             options.cssString.length
         )
-        await restartBrowser({
-          width,
-          height,
-          getBrowser: options.puppeteer && options.puppeteer.getBrowser
-        })
-        // retry
-        resolve(
-          generateCriticalCssWrapped(options, {
-            forceTryRestartBrowser: true
+        try {
+          await restartBrowser({
+            width,
+            height,
+            getBrowser: options.puppeteer && options.puppeteer.getBrowser
           })
-        )
+          // retry
+          resolve(
+            generateCriticalCssWrapped(options, {
+              forceTryRestartBrowser: true
+            })
+          )
+        } catch (e) {
+          reject(e)
+        }
         return
       }
       reject(e)
@@ -222,13 +226,13 @@ module.exports = function (options, callback) {
 
     const width = parseInt(options.width || DEFAULT_VIEWPORT_WIDTH, 10)
     const height = parseInt(options.height || DEFAULT_VIEWPORT_HEIGHT, 10)
-    // launch the browser
-    await launchBrowserIfNeeded({
-      getBrowser: options.puppeteer && options.puppeteer.getBrowser,
-      width,
-      height
-    })
     try {
+      // launch the browser
+      await launchBrowserIfNeeded({
+        getBrowser: options.puppeteer && options.puppeteer.getBrowser,
+        width,
+        height
+      })
       const criticalCss = await generateCriticalCssWrapped(options)
       cleanupAndExit({ returnValue: criticalCss })
     } catch (err) {
