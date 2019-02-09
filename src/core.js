@@ -47,10 +47,17 @@ function loadPage (page, url, timeout, pageLoadSkipTimeout) {
       })
     ])
   }
-  return loadPagePromise.then(() => {
+  return loadPagePromise.then(response => {
+    checkResponseStatus(response)
     waitingForPageLoad = false
     debuglog('page load DONE')
   })
+}
+
+function checkResponseStatus (response) {
+  if (!response.ok()) {
+    throw new Error(`Server response status: ${response.status()}`)
+  }
 }
 
 function setupBlockJsRequests (page) {
