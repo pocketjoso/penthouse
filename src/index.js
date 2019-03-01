@@ -29,6 +29,7 @@ const DEFAULT_PROPERTIES_TO_REMOVE = [
   '(-webkit-)?tap-highlight-color',
   '(.*)user-select'
 ]
+const _UNSTABLE_KEEP_ALIVE_MAX_KEPT_OPEN_PAGES = 4
 
 function exitHandler (exitCode) {
   closeBrowser({ forceClose: true })
@@ -120,14 +121,18 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
             ? options.maxEmbeddedBase64Length
             : DEFAULT_MAX_EMBEDDED_BASE64_LENGTH,
         debuglog,
-        unstableKeepBrowserAlive: options.unstableKeepBrowserAlive
+        unstableKeepBrowserAlive: options.unstableKeepBrowserAlive,
+        unstableKeepOpenNrPages:
+          options.unstableKeepOpenNrPages ||
+          _UNSTABLE_KEEP_ALIVE_MAX_KEPT_OPEN_PAGES
       })
     } catch (e) {
       const page = await pagePromise.then(({ page }) => page)
       await closeBrowserPage({
         page,
         error: e,
-        unstableKeepBrowserAlive: options.unstableKeepBrowserAlive
+        unstableKeepBrowserAlive: options.unstableKeepBrowserAlive,
+        unstableKeepOpenNrPages: options.unstableKeepOpenNrPages
       })
 
       const runningBrowswer = await browserIsRunning()
@@ -163,7 +168,8 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
     const page = await pagePromise.then(({ page }) => page)
     await closeBrowserPage({
       page,
-      unstableKeepBrowserAlive: options.unstableKeepBrowserAlive
+      unstableKeepBrowserAlive: options.unstableKeepBrowserAlive,
+      unstableKeepOpenNrPages: options.unstableKeepOpenNrPages
     })
 
     debuglog('generateCriticalCss done')
