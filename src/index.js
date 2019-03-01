@@ -122,8 +122,8 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
             : DEFAULT_MAX_EMBEDDED_BASE64_LENGTH,
         debuglog,
         unstableKeepBrowserAlive: options.unstableKeepBrowserAlive,
-        unstableKeepOpenNrPages:
-          options.unstableKeepOpenNrPages ||
+        unstableKeepOpenPages:
+          options.unstableKeepOpenPages ||
           _UNSTABLE_KEEP_ALIVE_MAX_KEPT_OPEN_PAGES
       })
     } catch (e) {
@@ -132,7 +132,7 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         page,
         error: e,
         unstableKeepBrowserAlive: options.unstableKeepBrowserAlive,
-        unstableKeepOpenNrPages: options.unstableKeepOpenNrPages
+        unstableKeepOpenPages: options.unstableKeepOpenPages
       })
 
       const runningBrowswer = await browserIsRunning()
@@ -169,7 +169,7 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
     await closeBrowserPage({
       page,
       unstableKeepBrowserAlive: options.unstableKeepBrowserAlive,
-      unstableKeepOpenNrPages: options.unstableKeepOpenNrPages
+      unstableKeepOpenPages: options.unstableKeepOpenPages
     })
 
     debuglog('generateCriticalCss done')

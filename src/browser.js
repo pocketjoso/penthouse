@@ -153,7 +153,7 @@ export async function closeBrowserPage ({
   page,
   error,
   unstableKeepBrowserAlive,
-  unstableKeepOpenNrPages
+  unstableKeepOpenPages
 }) {
   if (!browser || !page) {
     return
@@ -179,7 +179,10 @@ export async function closeBrowserPage ({
       // browser before page is properly closed,
       // however in unstableKeepBrowserAlive browser is never closed by penthouse.
       if (unstableKeepBrowserAlive) {
-        if (browserPages.length > unstableKeepOpenNrPages) {
+        if (
+          unstableKeepOpenPages !== 'all' &&
+          browserPages.length > unstableKeepOpenPages
+        ) {
           page.close()
         } else {
           debuglog('saving page for re-use, instead of closing')
