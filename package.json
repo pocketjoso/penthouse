@@ -1,7 +1,7 @@
 {
   "name": "penthouse",
   "description": "Generate critical path CSS for web pages",
-  "version": "1.11.0",
+  "version": "1.11.1",
   "homepage": "https://github.com/pocketjoso/penthouse",
   "author": {
     "name": "Jonas Ohlsson Aden",
