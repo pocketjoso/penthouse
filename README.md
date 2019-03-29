@@ -49,6 +49,7 @@ Only `url` and `cssString` are required - all other options are optional. Note t
 | ---------------- | ------------------ | ------------- |------------- |
 | url           | `string` | | Accessible url. Use `file:///` protocol for local html files. |
 | cssString     | `string` | | Original css to extract critical css from |
+| htmlString     | `string` | | HTML content of the page (if using instead of `url`) |
 | css           | `string` | | Path to original css file on disk (if using instead of `cssString`) |
 | width         | `integer` | `1300` | Width for critical viewport |
 | height        | `integer` | `900` | Height for critical viewport |
@@ -67,6 +68,14 @@ Only `url` and `cssString` are required - all other options are optional. Note t
 | customPageHeaders | `object` | | Set extra http headers to be sent with the request for the url. |
 | cookies | `array` | `[]` | For formatting of each cookie, see [Puppeteer setCookie docs](https://github.com/GoogleChrome/puppeteer/blob/v1.9.0/docs/api.md#pagesetcookiecookies) |
 | strict | `boolean` | `false` | Make Penthouse throw on errors parsing the original CSS. Legacy option, not recommended. |
+
+## Note on htmlString
+
+If using htmlString, all included files need to be absolute web urls and cannot be serverd via file method. E.g..
+`<link rel="stylesheet" href="yeoman-full.css">` or `<link rel="stylesheet" href="file://yeoman-full.css">` does not work, 
+instead use 
+`<link rel="stylesheet" href="https://cdn.website.com/yeoman-full.css">`.
+or `<style>content of css</style>`
 
 ## Troubleshooting
 

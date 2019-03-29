@@ -21,16 +21,16 @@ function blockinterceptedRequests (interceptedRequest) {
   }
 }
 
-function loadPage (page, url, timeout, pageLoadSkipTimeout) {
+function loadPage (page, url, htmlString, timeout, pageLoadSkipTimeout) {
   debuglog('page load start')
   let waitingForPageLoad = true
   let loadPagePromise
-  if (url.startsWith('data:text/html;charset=UTF-8,')) {
-    loadPagePromise = page.setContent(url.substr('data:text/html;charset=UTF-8,'.length + 1))
-  } else if (url.startsWith('data:text/html;')) {
-    loadPagePromise = page.setContent(url.substr('data:text/html;'.length + 1))
-  } else {
+  if (htmlString) {
+    loadPagePromise = page.setContent(htmlString)
+  } else if (url) {
     loadPagePromise = page.goto(url)
+  } else {
+    throw new Error("Missing parameters. Provide 'url' or 'htmlString'.")
   }
   if (pageLoadSkipTimeout) {
     loadPagePromise = Promise.race([
@@ -236,6 +236,7 @@ async function grabPageScreenshot ({
 async function pruneNonCriticalCssLauncher ({
   pagePromise,
   url,
+  htmlString,
   cssString,
   width,
   height,
@@ -359,7 +360,13 @@ async function pruneNonCriticalCssLauncher ({
     }
 
     // load the page (slow) [NOT BLOCKING]
-    const loadPagePromise = loadPage(page, url, timeout, pageLoadSkipTimeout)
+    const loadPagePromise = loadPage(
+      page,
+      url,
+      htmlString,
+      timeout,
+      pageLoadSkipTimeout
+    )
 
     // turn css to formatted selectorlist [NOT BLOCKING]
     debuglog('turn css to formatted selectorlist START')
@@ -414,12 +421,12 @@ async function pruneNonCriticalCssLauncher ({
     // take before screenshot (optional) [NOT BLOCKING]
     const beforeScreenshotPromise = takeScreenshots
       ? grabPageScreenshot({
-        type: 'before',
-        page,
-        screenshots,
-        screenshotExtension,
-        debuglog
-      })
+          type: 'before',
+          page,
+          screenshots,
+          screenshotExtension,
+          debuglog
+        })
       : Promise.resolve()
 
     // -> [BLOCK FOR] css into formatted selectors list with "sourcemap"

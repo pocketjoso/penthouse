@@ -27,6 +27,26 @@ describe('penthouse core tests', () => {
       })
   })
 
+  it('should match exactly the css in the yeoman test via setContent methode', () => {
+    var yeomanFullHtmlFilePath = path.join(process.env.PWD, 'test', 'static-server', 'yeoman.html')
+    var yeomanFullCssFilePath = path.join(process.env.PWD, 'test', 'static-server', 'yeoman-full.css')
+    var yeomanExpectedCssFilePath = path.join(process.env.PWD, 'test', 'static-server', 'yeoman-medium--expected.css')
+    var yeomanCss = read(yeomanFullCssFilePath).toString()
+    var yeomanExpectedCss = read(yeomanExpectedCssFilePath).toString()
+    var yeomonHTML = read(yeomanFullHtmlFilePath).toString()
+      .replace("<link rel=\"stylesheet\" href=\"yeoman-full.css\">", "<style>" + yeomanCss + "</style>"); // inline css
+
+    return penthouse({
+      htmlString: yeomonHTML,
+      css: yeomanFullCssFilePath,
+      width: 800,
+      height: 450,
+    })
+      .then(result => {
+        expect(result).toEqual(normaliseCss(yeomanExpectedCss))
+      })
+  })
+
   it('should remove non critical selectors from individual rules', () => {
     var testFixtureCss = read(path.join(__dirname, 'static-server', 'rm-non-critical-selectors.css')).toString()
     var expected = read(path.join(__dirname, 'static-server', 'rm-non-critical-selectors--expected.css')).toString()

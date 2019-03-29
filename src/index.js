@@ -96,6 +96,7 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
       formattedCss = await generateCriticalCss({
         pagePromise,
         url: options.url,
+        htmlString: options.htmlString,
         cssString: options.cssString,
         width,
         height,
@@ -140,9 +141,11 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         debuglog(
           'Browser unexpecedly not opened - crashed? ' +
             '\nurl: ' +
-            options.url +
-            '\ncss length: ' +
-            options.cssString.length
+            options.url ||
+            (options.htmlString &&
+              'using htmlString with length of ' + options.htmlString.length) +
+              '\ncss length: ' +
+              options.cssString.length
         )
         try {
           await restartBrowser({
@@ -175,7 +178,11 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
     debuglog('generateCriticalCss done')
     if (formattedCss.trim().length === 0) {
       // TODO: would be good to surface this to user, always
-      debuglog('Note: Generated critical css was empty for URL: ' + options.url)
+      debuglog(
+        'Note: Generated critical css was empty for URL: ' + options.url ||
+          (options.htmlString &&
+            'using htmlString with length of ' + options.htmlString.length)
+      )
       resolve('')
       return
     }
