@@ -24,13 +24,13 @@ function blockinterceptedRequests (interceptedRequest) {
 function loadPage (page, url, timeout, pageLoadSkipTimeout) {
   debuglog('page load start')
   let waitingForPageLoad = true
-  let loadPagePromise;
-  if (url.startsWith("data:text/html;charset=UTF-8,")) {
-    loadPagePromise = page.setContent(url.substr("data:text/html;charset=UTF-8,".length+1))
-  } else if (url.startsWith("data:text/html;")) {
-    loadPagePromise = page.setContent(url.substr("data:text/html;".length+1))
+  let loadPagePromise
+  if (url.startsWith('data:text/html;charset=UTF-8,')) {
+    loadPagePromise = page.setContent(url.substr('data:text/html;charset=UTF-8,'.length + 1))
+  } else if (url.startsWith('data:text/html;')) {
+    loadPagePromise = page.setContent(url.substr('data:text/html;'.length + 1))
   } else {
-    loadPagePromise = page.goto(url);
+    loadPagePromise = page.goto(url)
   }
   if (pageLoadSkipTimeout) {
     loadPagePromise = Promise.race([
