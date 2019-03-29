@@ -421,12 +421,12 @@ async function pruneNonCriticalCssLauncher ({
     // take before screenshot (optional) [NOT BLOCKING]
     const beforeScreenshotPromise = takeScreenshots
       ? grabPageScreenshot({
-          type: 'before',
-          page,
-          screenshots,
-          screenshotExtension,
-          debuglog
-        })
+        type: 'before',
+        page,
+        screenshots,
+        screenshotExtension,
+        debuglog
+      })
       : Promise.resolve()
 
     // -> [BLOCK FOR] css into formatted selectors list with "sourcemap"
