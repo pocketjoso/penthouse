@@ -15,7 +15,7 @@ function staticServerFileUrl (file) {
   return 'file://' + path.join(process.env.PWD, 'test', 'static-server', file)
 }
 
-function responseSatusUrl (code) {
+function responseStatusUrl (code) {
   return 'http://localhost:' + serverPort + '?responseStatus=' + code
 }
 
@@ -156,7 +156,7 @@ describe('basic tests of penthouse functionality', () => {
 
   it('should not throw an error on 200-299 response status', done => {
     penthouse({
-      url: responseSatusUrl(200),
+      url: responseStatusUrl(200),
       css: page1cssPath
     }).then(() => {
       done();
@@ -170,7 +170,7 @@ describe('basic tests of penthouse functionality', () => {
     var errorMessage = 'Didn\'t throw an error on ' + code + ' response';
 
     penthouse({
-      url: responseSatusUrl(code),
+      url: responseStatusUrl(code),
       css: page1cssPath
     }).then(() => {
         done(new Error(errorMessage))
