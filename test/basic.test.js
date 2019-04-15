@@ -9,7 +9,8 @@ import url from 'url'
 
 import normaliseCss from './util/normaliseCss'
 
-const serverPort = 8888;
+const serverPort = 8888
+const allowedResponseCodeError = /Server response status/
 
 function staticServerFileUrl (file) {
   return 'file://' + path.join(process.env.PWD, 'test', 'static-server', file)
@@ -19,12 +20,39 @@ function responseStatusUrl (code) {
   return 'http://localhost:' + serverPort + '?responseStatus=' + code
 }
 
+function testAllowedResponseCode(shouldMatch, responseCode, allowedResponseCode, done) {
+  var errorMessage
+  if (shouldMatch) {
+    errorMessage = 'Did throw an error while allowedResponseCode was matching the response code'
+  } else {
+    errorMessage = 'Didn\'t throw an error while allowedResponseCode wasn\'t matching the response code'
+  }
+
+  penthouse({
+    url: responseStatusUrl(responseCode),
+    allowedResponseCode: allowedResponseCode,
+    cssString: 'body {}'
+  }).then(() => {
+    if (shouldMatch) {
+      done()
+    } else {
+      done(new Error(errorMessage))
+    }
+  }).catch((err) => {
+    if (!shouldMatch && err.message.match(allowedResponseCodeError)) {
+      done()
+    } else if(shouldMatch) {
+      done(new Error(errorMessage))
+    }
+  })
+}
+
 
 describe('basic tests of penthouse functionality', () => {
   var page1FileUrl = staticServerFileUrl('page1.html')
   var page1cssPath = path.join(process.env.PWD, 'test', 'static-server', 'page1.css')
   var originalCss = read(page1cssPath).toString()
-  var httpServer;
+  var httpServer
 
   beforeAll(function() {
     httpServer = http.createServer(function(request, response) {
@@ -32,10 +60,10 @@ describe('basic tests of penthouse functionality', () => {
       response.writeHead(query.responseStatus)
       response.end()
     }).listen(serverPort)
-  });
+  })
 
   afterAll(function() {
-    httpServer.close();
+    httpServer.close()
   })
 
   function largeViewportTest () {
@@ -154,32 +182,56 @@ describe('basic tests of penthouse functionality', () => {
       })
   })
 
-  it('should not throw an error on 200-299 response status', done => {
+
+  it('should not throw an error on a 401 without allowedResponseCode option', done => {
     penthouse({
-      url: responseStatusUrl(200),
+      url: responseStatusUrl(401),
       css: page1cssPath
     }).then(() => {
-      done();
-    }).catch(() => {
-      done(new Error('Thrown an error on a 200-299 response status'))
-    })
-  });
-
-  it('should throw an error on error server response', done => {
-    var code = 401;
-    var errorMessage = 'Didn\'t throw an error on ' + code + ' response';
-
-    penthouse({
-      url: responseStatusUrl(code),
-      css: page1cssPath
-    }).then(() => {
-        done(new Error(errorMessage))
+      done()
     }).catch((err) => {
-      if (err.message.match(code)) {
-        done()
+      if (err && err.message.match(allowedResponseCodeError)) {
+        done(new Error('Error thrown on a 401 without allowedResponseCode option'))
       } else {
-        done(new Error(errorMessage))
+        done()
       }
     })
-  });
+  })
+
+  // allowedResponseCode not matching
+  it('should throw an error on non matching allowedResponseCode (number) option', done => {
+    testAllowedResponseCode(false, 401, 200, done)
+  })
+
+  it('should throw an error on non matching allowedResponseCode (regex) option', done => {
+    testAllowedResponseCode(false, 401, /2\d+/, done)
+  })
+
+  it('should throw an error on non matching allowedResponseCode (function) option', done => {
+    const responseCode = 401
+    function nonMatchFunction(response) {
+      return response.status() === (responseCode + 1)
+    }
+
+    testAllowedResponseCode(false, 401, nonMatchFunction, done)
+
+  })
+
+  // matching allowedResponseCode
+  it('shouldn\'t throw an error on matching allowedResponseCode (number) option', done => {
+    testAllowedResponseCode(true, 401, 401, done)
+  })
+
+  it('shouldn\'t throw an error on matching allowedResponseCode (regex) option', done => {
+    testAllowedResponseCode(true, 401, /4\d+/, done)
+  })
+
+  it('shouldn\'t throw an error on matching allowedResponseCode (function) option', done => {
+    const responseCode = 401
+    function matchFunction(response) {
+      return response.status() === responseCode
+    }
+
+    testAllowedResponseCode(true, 401, matchFunction, done)
+  })
 })

@@ -120,7 +120,8 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
             ? options.maxEmbeddedBase64Length
             : DEFAULT_MAX_EMBEDDED_BASE64_LENGTH,
         debuglog,
-        unstableKeepBrowserAlive: options.unstableKeepBrowserAlive
+        unstableKeepBrowserAlive: options.unstableKeepBrowserAlive,
+        allowedResponseCode: options.allowedResponseCode
       })
     } catch (e) {
       const page = await pagePromise.then(({ page }) => page)

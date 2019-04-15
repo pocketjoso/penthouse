@@ -21,7 +21,13 @@ function blockinterceptedRequests (interceptedRequest) {
   }
 }
 
-function loadPage (page, url, timeout, pageLoadSkipTimeout) {
+function loadPage (
+  page,
+  url,
+  timeout,
+  pageLoadSkipTimeout,
+  allowedResponseCode
+) {
   debuglog('page load start')
   let waitingForPageLoad = true
   let loadPagePromise = page.goto(url)
@@ -48,15 +54,40 @@ function loadPage (page, url, timeout, pageLoadSkipTimeout) {
     ])
   }
   return loadPagePromise.then(response => {
-    checkResponseStatus(response)
+    if (typeof allowedResponseCode !== 'undefined') {
+      checkResponseStatus(allowedResponseCode, response)
+    }
+
     waitingForPageLoad = false
     debuglog('page load DONE')
   })
 }
 
-function checkResponseStatus (response) {
-  if (!response.ok()) {
-    throw new Error(`Server response status: ${response.status()}`)
+function checkResponseStatus (allowedResponseCode, response) {
+  var errorMessage
+  if (
+    typeof allowedResponseCode === 'number' &&
+    response.status() !== allowedResponseCode
+  ) {
+    errorMessage = `Server response status ${response.status()} isn't matching allowedResponseCode: ${allowedResponseCode}.`
+  } else if (
+    typeof allowedResponseCode === 'object' &&
+    allowedResponseCode.constructor.name === 'RegExp' &&
+    !response
+      .status()
+      .toString()
+      .match(allowedResponseCode)
+  ) {
+    errorMessage = `Server response status ${response.status()} isn't matching allowedResponseCode: ${allowedResponseCode.toString()}.`
+  } else if (
+    typeof allowedResponseCode === 'function' &&
+    !allowedResponseCode.call(this, response)
+  ) {
+    errorMessage = `Server response status ${response.status()} isn't matching allowedResponseCode.`
+  }
+
+  if (errorMessage) {
+    throw new Error(errorMessage)
   }
 }
 
@@ -253,7 +284,8 @@ async function pruneNonCriticalCssLauncher ({
   maxEmbeddedBase64Length,
   keepLargerMediaQueries,
   maxElementsToCheckPerSelector,
-  unstableKeepBrowserAlive
+  unstableKeepBrowserAlive,
+  allowedResponseCode
 }) {
   let _hasExited = false
   // hacky to get around _hasExited only available in the scope of this function
@@ -359,7 +391,13 @@ async function pruneNonCriticalCssLauncher ({
     }
 
     // load the page (slow) [NOT BLOCKING]
-    const loadPagePromise = loadPage(page, url, timeout, pageLoadSkipTimeout)
+    const loadPagePromise = loadPage(
+      page,
+      url,
+      timeout,
+      pageLoadSkipTimeout,
+      allowedResponseCode
+    )
 
     // turn css to formatted selectorlist [NOT BLOCKING]
     debuglog('turn css to formatted selectorlist START')
