@@ -17,8 +17,6 @@ export function removeJob () {
   ongoingJobs = ongoingJobs - 1
 }
 
-const _UNSTABLE_KEEP_ALIVE_MAX_KEPT_OPEN_PAGES = 4
-
 const DEFAULT_PUPPETEER_LAUNCH_ARGS = [
   '--disable-setuid-sandbox',
   '--no-sandbox',
@@ -154,7 +152,8 @@ export async function getOpenBrowserPage () {
 export async function closeBrowserPage ({
   page,
   error,
-  unstableKeepBrowserAlive
+  unstableKeepBrowserAlive,
+  unstableKeepOpenPages
 }) {
   if (!browser || !page) {
     return
@@ -180,7 +179,10 @@ export async function closeBrowserPage ({
       // browser before page is properly closed,
       // however in unstableKeepBrowserAlive browser is never closed by penthouse.
       if (unstableKeepBrowserAlive) {
-        if (browserPages.length > _UNSTABLE_KEEP_ALIVE_MAX_KEPT_OPEN_PAGES) {
+        if (
+          unstableKeepOpenPages !== 'all' &&
+          browserPages.length > unstableKeepOpenPages
+        ) {
           page.close()
         } else {
           debuglog('saving page for re-use, instead of closing')

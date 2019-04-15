@@ -29,6 +29,7 @@ const DEFAULT_PROPERTIES_TO_REMOVE = [
   '(-webkit-)?tap-highlight-color',
   '(.*)user-select'
 ]
+const _UNSTABLE_KEEP_ALIVE_MAX_KEPT_OPEN_PAGES = 4
 
 function exitHandler (exitCode) {
   closeBrowser({ forceClose: true })
@@ -121,14 +122,18 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
             : DEFAULT_MAX_EMBEDDED_BASE64_LENGTH,
         debuglog,
         unstableKeepBrowserAlive: options.unstableKeepBrowserAlive,
-        allowedResponseCode: options.allowedResponseCode
+        allowedResponseCode: options.allowedResponseCode,
+        unstableKeepOpenPages:
+          options.unstableKeepOpenPages ||
+          _UNSTABLE_KEEP_ALIVE_MAX_KEPT_OPEN_PAGES
       })
     } catch (e) {
       const page = await pagePromise.then(({ page }) => page)
       await closeBrowserPage({
         page,
         error: e,
-        unstableKeepBrowserAlive: options.unstableKeepBrowserAlive
+        unstableKeepBrowserAlive: options.unstableKeepBrowserAlive,
+        unstableKeepOpenPages: options.unstableKeepOpenPages
       })
 
       const runningBrowswer = await browserIsRunning()
@@ -140,17 +145,21 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
             '\ncss length: ' +
             options.cssString.length
         )
-        await restartBrowser({
-          width,
-          height,
-          getBrowser: options.puppeteer && options.puppeteer.getBrowser
-        })
-        // retry
-        resolve(
-          generateCriticalCssWrapped(options, {
-            forceTryRestartBrowser: true
+        try {
+          await restartBrowser({
+            width,
+            height,
+            getBrowser: options.puppeteer && options.puppeteer.getBrowser
           })
-        )
+          // retry
+          resolve(
+            generateCriticalCssWrapped(options, {
+              forceTryRestartBrowser: true
+            })
+          )
+        } catch (e) {
+          reject(e)
+        }
         return
       }
       reject(e)
@@ -160,7 +169,8 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
     const page = await pagePromise.then(({ page }) => page)
     await closeBrowserPage({
       page,
-      unstableKeepBrowserAlive: options.unstableKeepBrowserAlive
+      unstableKeepBrowserAlive: options.unstableKeepBrowserAlive,
+      unstableKeepOpenPages: options.unstableKeepOpenPages
     })
 
     debuglog('generateCriticalCss done')
@@ -223,13 +233,13 @@ module.exports = function (options, callback) {
 
     const width = parseInt(options.width || DEFAULT_VIEWPORT_WIDTH, 10)
     const height = parseInt(options.height || DEFAULT_VIEWPORT_HEIGHT, 10)
-    // launch the browser
-    await launchBrowserIfNeeded({
-      getBrowser: options.puppeteer && options.puppeteer.getBrowser,
-      width,
-      height
-    })
     try {
+      // launch the browser
+      await launchBrowserIfNeeded({
+        getBrowser: options.puppeteer && options.puppeteer.getBrowser,
+        width,
+        height
+      })
       const criticalCss = await generateCriticalCssWrapped(options)
       cleanupAndExit({ returnValue: criticalCss })
     } catch (err) {
