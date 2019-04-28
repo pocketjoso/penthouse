@@ -122,6 +122,7 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
             : DEFAULT_MAX_EMBEDDED_BASE64_LENGTH,
         debuglog,
         unstableKeepBrowserAlive: options.unstableKeepBrowserAlive,
+        allowedResponseCode: options.allowedResponseCode,
         unstableKeepOpenPages:
           options.unstableKeepOpenPages ||
           _UNSTABLE_KEEP_ALIVE_MAX_KEPT_OPEN_PAGES

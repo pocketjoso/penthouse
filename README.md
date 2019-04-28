@@ -67,6 +67,7 @@ Only `url` and `cssString` are required - all other options are optional. Note t
 | customPageHeaders | `object` | | Set extra http headers to be sent with the request for the url. |
 | cookies | `array` | `[]` | For formatting of each cookie, see [Puppeteer setCookie docs](https://github.com/GoogleChrome/puppeteer/blob/v1.9.0/docs/api.md#pagesetcookiecookies) |
 | strict | `boolean` | `false` | Make Penthouse throw on errors parsing the original CSS. Legacy option, not recommended. |
+| allowedResponseCode | <code>number&#124;regex&#124;function</code> | | Let Penthouse stop if the server response code is not matching this value. `number` and `regex` types are tested against the [response.status()](https://github.com/GoogleChrome/puppeteer/blob/v1.14.0/docs/api.md#responsestatus). A `function` is also allowed and gets [Response](https://github.com/GoogleChrome/puppeteer/blob/v1.14.0/docs/api.md#class-response) as argument. The function should return a `boolean`.|
 
 ## Troubleshooting
 
