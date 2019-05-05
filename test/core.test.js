@@ -27,17 +27,17 @@ describe('penthouse core tests', () => {
       })
   })
 
-  it('should match exactly the css in the yeoman test via setContent methode', () => {
+  it('should match exactly the css in the yeoman test via setContent method', () => {
     var yeomanFullHtmlFilePath = path.join(process.env.PWD, 'test', 'static-server', 'yeoman.html')
     var yeomanFullCssFilePath = path.join(process.env.PWD, 'test', 'static-server', 'yeoman-full.css')
     var yeomanExpectedCssFilePath = path.join(process.env.PWD, 'test', 'static-server', 'yeoman-medium--expected.css')
     var yeomanCss = read(yeomanFullCssFilePath).toString()
     var yeomanExpectedCss = read(yeomanExpectedCssFilePath).toString()
-    var yeomonHTML = read(yeomanFullHtmlFilePath).toString()
+    var yeomanHTML = read(yeomanFullHtmlFilePath).toString()
       .replace("<link rel=\"stylesheet\" href=\"yeoman-full.css\">", "<style>" + yeomanCss + "</style>"); // inline css
 
     return penthouse({
-      htmlString: yeomonHTML,
+      htmlString: yeomanHTML,
       css: yeomanFullCssFilePath,
       width: 800,
       height: 450,
