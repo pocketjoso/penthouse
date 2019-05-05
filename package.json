@@ -24,7 +24,7 @@
     "lint": "eslint src",
     "test": "jest test/core.test.js",
     "test-all": "jest test/*.test.js && yarn test-extra && yarn test-perf",
-    "test-perf": "jest  --runInBand test/run-sequential/perf.test.js",
+    "test-perf": "jest  --runInBand test/run-sequential/perf.filepath.test.js && jest  --runInBand test/run-sequential/perf.htmlstring.test.js",
     "test-extra": "jest --runInBand test/run-sequential/node-module.test.js",
     "prepare": "npm run lint && npm run transpile",
     "transpile": "babel -d lib src/"
@@ -34,14 +34,14 @@
     "css-tree": "1.0.0-alpha.28",
     "debug": "^4.1.1",
     "jsesc": "^2.5.2",
-    "puppeteer": "1.13.0"
+    "puppeteer": "1.15.0"
   },
   "devDependencies": {
-    "babel-cli": "^6.26.0",
-    "babel-core": "^6.26.3",
+    "@babel/cli": "^7.4.4",
+    "@babel/core": "^7.4.4",
+    "@babel/plugin-transform-spread": "^7.2.2",
+    "@babel/preset-env": "^7.4.4",
     "babel-jest": "^24.8.0",
-    "babel-plugin-transform-object-rest-spread": "^6.26.0",
-    "babel-preset-env": "^1.7.0",
     "eslint": "^5.16.0",
     "eslint-config-prettier": "^4.2.0",
     "eslint-config-prettier-standard": "^2.0.0",
@@ -69,21 +69,6 @@
   "files": [
     "lib/**/*.js"
   ],
-  "babel": {
-    "presets": [
-      [
-        "env",
-        {
-          "targets": {
-            "node": "8"
-          }
-        }
-      ]
-    ],
-    "plugins": [
-      "transform-object-rest-spread"
-    ]
-  },
   "husky": {
     "hooks": {
       "pre-commit": "npm run lint"
