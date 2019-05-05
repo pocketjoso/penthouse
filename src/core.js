@@ -24,7 +24,7 @@ function blockinterceptedRequests (interceptedRequest) {
 function loadPage (
   page,
   url,
-  htmlString
+  htmlString,
   timeout,
   pageLoadSkipTimeout,
   allowedResponseCode
@@ -406,7 +406,7 @@ async function pruneNonCriticalCssLauncher ({
       htmlString,
       timeout,
       pageLoadSkipTimeout,
-      allowedResponseCode,
+      allowedResponseCode
     )
 
     // turn css to formatted selectorlist [NOT BLOCKING]
@@ -462,12 +462,12 @@ async function pruneNonCriticalCssLauncher ({
     // take before screenshot (optional) [NOT BLOCKING]
     const beforeScreenshotPromise = takeScreenshots
       ? grabPageScreenshot({
-        type: 'before',
-        page,
-        screenshots,
-        screenshotExtension,
-        debuglog
-      })
+          type: 'before',
+          page,
+          screenshots,
+          screenshotExtension,
+          debuglog
+        })
       : Promise.resolve()
 
     // -> [BLOCK FOR] css into formatted selectors list with "sourcemap"
