@@ -8,7 +8,7 @@ const debuglog = debug('penthouse:preformatting:nonMatchingMediaQueryRemover')
 //  - @print
 //  - min-width > width OR min-height > height
 // and the latter only if !keepLargerMediaQueries (which is the default)
-function _isMatchingMediaQuery (mediaQuery, matchConfig) {
+function _isMatchingMediaQuery(mediaQuery, matchConfig) {
   // TODO: use the media query parsing from css-tree instead
   let mediaAST
   try {
@@ -18,7 +18,7 @@ function _isMatchingMediaQuery (mediaQuery, matchConfig) {
     return false
   }
 
-  var keep = mediaAST.some(function (mq) {
+  var keep = mediaAST.some(function(mq) {
     // not sure why css-mediaquery library sometimes flags the inverse as type,
     // rather than the inverse field, but for our purposes we want to treat
     // them the same.
@@ -35,7 +35,7 @@ function _isMatchingMediaQuery (mediaQuery, matchConfig) {
     if (mq.expressions.length === 0) {
       return true
     }
-    return mq.expressions.some(function ({ modifier, feature, value }) {
+    return mq.expressions.some(function({ modifier, feature, value }) {
       if (modifier === 'min') {
         const constructedQuery = `${
           isInverse ? 'not ' : ''
@@ -50,7 +50,7 @@ function _isMatchingMediaQuery (mediaQuery, matchConfig) {
   return keep
 }
 
-function nonMatchingMediaQueryRemover (
+function nonMatchingMediaQueryRemover(
   ast,
   width,
   height,

@@ -3,7 +3,7 @@ import debug from 'debug'
 
 const debuglog = debug('penthouse:css-cleanup:unused-keyframe-remover')
 
-function getAllKeyframes (ast) {
+function getAllKeyframes(ast) {
   return new Set(
     csstree.lexer.findAllFragments(ast, 'Type', 'keyframes-name').map(entry => {
       const keyframeName = csstree.generate(entry.nodes.first())
@@ -13,7 +13,7 @@ function getAllKeyframes (ast) {
   )
 }
 
-export default function unusedKeyframeRemover (ast) {
+export default function unusedKeyframeRemover(ast) {
   debuglog('getAllAnimationKeyframes')
   const usedKeyFrames = getAllKeyframes(ast)
   debuglog(

@@ -29,12 +29,6 @@
     "prepare": "npm run lint && npm run transpile",
     "transpile": "babel -d lib src/"
   },
-  "lint-staged": {
-    "src/**/*.js": [
-      "prettier-standard \"src/**/*.js\"",
-      "git add"
-    ]
-  },
   "dependencies": {
     "css-mediaquery": "^0.1.2",
     "css-tree": "1.0.0-alpha.28",
@@ -60,7 +54,6 @@
     "gm": "^1.23.1",
     "husky": "^2.2.0",
     "jest": "^24.8.0",
-    "lint-staged": "^8.1.6",
     "prettier": "^1.17.0",
     "prettier-standard": "^9.1.1",
     "rimraf": "^2.6.3"
@@ -93,7 +86,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "lint-staged"
+      "pre-commit": "npm run lint"
     }
   }
 }

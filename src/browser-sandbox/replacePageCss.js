@@ -1,14 +1,14 @@
-export default function replacePageCss ({ css }) {
+export default function replacePageCss({ css }) {
   console.log('debug: replacePageCss')
-  function removeStyles () {
+  function removeStyles() {
     var styleElements = document.querySelectorAll(
       'link[rel="stylesheet"], style'
     )
-    Array.prototype.forEach.call(styleElements, function (element) {
+    Array.prototype.forEach.call(styleElements, function(element) {
       element.parentNode.removeChild(element)
     })
   }
-  function insertStyles (styles) {
+  function insertStyles(styles) {
     var styleTag = document.createElement('style')
     styleTag.type = 'text/css'
     // inject defaultWhiteBg to match before-render

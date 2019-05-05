@@ -12,7 +12,7 @@ const PUPPETEER_PAGE_UNLOADED_DURING_EXECUTION_ERROR_REGEX = /(Cannot find conte
 export const PAGE_UNLOADED_DURING_EXECUTION_ERROR_MESSAGE =
   'PAGE_UNLOADED_DURING_EXECUTION: Critical css generation script could not be executed.\n\nThis can happen if Penthouse was killed during execution, OR otherwise most commonly if the page navigates away after load, via setting window.location, meta tag refresh directive or similar. For the critical css generation to work the loaded page must stay: remove any redirects or move them to the server. You can also disable them on your end just for the critical css generation, for example via a query parameter.'
 
-function blockinterceptedRequests (interceptedRequest) {
+function blockinterceptedRequests(interceptedRequest) {
   const isJsRequest = /\.js(\?.*)?$/.test(interceptedRequest.url)
   if (isJsRequest) {
     interceptedRequest.abort()
@@ -21,7 +21,7 @@ function blockinterceptedRequests (interceptedRequest) {
   }
 }
 
-function loadPage (
+function loadPage(
   page,
   url,
   htmlString,
@@ -71,7 +71,7 @@ function loadPage (
   })
 }
 
-function checkResponseStatus (allowedResponseCode, response) {
+function checkResponseStatus(allowedResponseCode, response) {
   var errorMessage
   if (
     typeof allowedResponseCode === 'number' &&
@@ -99,12 +99,12 @@ function checkResponseStatus (allowedResponseCode, response) {
   }
 }
 
-function setupBlockJsRequests (page) {
+function setupBlockJsRequests(page) {
   page.on('request', blockinterceptedRequests)
   return page.setRequestInterception(true)
 }
 
-async function astFromCss ({ cssString, strict }) {
+async function astFromCss({ cssString, strict }) {
   // breaks puppeteer
   const css = cssString.replace(/￿/g, '\f042')
 
@@ -128,7 +128,7 @@ async function astFromCss ({ cssString, strict }) {
   return ast
 }
 
-async function preparePage ({
+async function preparePage({
   page,
   pagePromise,
   width,
@@ -255,7 +255,7 @@ async function preparePage ({
   })
 }
 
-async function grabPageScreenshot ({
+async function grabPageScreenshot({
   type,
   page,
   screenshots,
@@ -272,7 +272,7 @@ async function grabPageScreenshot ({
     .then(() => debuglog(`take ${type} screenshot DONE, path: ${path}`))
 }
 
-async function pruneNonCriticalCssLauncher ({
+async function pruneNonCriticalCssLauncher({
   pagePromise,
   url,
   htmlString,
@@ -308,7 +308,7 @@ async function pruneNonCriticalCssLauncher ({
     debuglog('Penthouse core start')
     let page
     let killTimeout
-    async function cleanupAndExit ({ error, returnValue }) {
+    async function cleanupAndExit({ error, returnValue }) {
       if (_hasExited) {
         return
       }

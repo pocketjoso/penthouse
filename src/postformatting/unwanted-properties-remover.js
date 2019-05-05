@@ -1,6 +1,6 @@
 import csstree from 'css-tree'
 
-export default function unwantedPropertiesRemover (ast, propertiesToRemove) {
+export default function unwantedPropertiesRemover(ast, propertiesToRemove) {
   const propertiesToRemoveRegexes = propertiesToRemove.map(
     text => new RegExp(text)
   )

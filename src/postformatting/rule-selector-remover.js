@@ -1,11 +1,11 @@
 import csstree from 'css-tree'
 
-export default function ruleSelectorRemover (ast, selectorNodeMap, selectors) {
+export default function ruleSelectorRemover(ast, selectorNodeMap, selectors) {
   selectors = new Set(selectors)
 
   csstree.walk(ast, {
     visit: 'Rule',
-    enter: function (rule, item, list) {
+    enter: function(rule, item, list) {
       // remove a rule with a bad selector
       if (rule.prelude.type !== 'SelectorList') {
         list.remove(item)

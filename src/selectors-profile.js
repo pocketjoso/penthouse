@@ -12,15 +12,15 @@ var pseudoSelectorsToKeep = [
 ]
 // detect these selectors regardless of whether one or two semicolons are used
 var pseudoSelectorsToKeepRegex = pseudoSelectorsToKeep
-  .map(function (s) {
+  .map(function(s) {
     return ':?' + s
   })
   .join('|') // separate in regular expression
 // we will replace all instances of these pseudo selectors; hence global flag
 var PSUEDO_SELECTOR_REGEXP = new RegExp(pseudoSelectorsToKeepRegex, 'g')
 
-function matchesForceInclude (selector, forceInclude) {
-  return forceInclude.some(function (includeSelector) {
+function matchesForceInclude(selector, forceInclude) {
+  return forceInclude.some(function(includeSelector) {
     if (includeSelector.type === 'RegExp') {
       const { source, flags } = includeSelector
       const re = new RegExp(source, flags)
@@ -34,7 +34,7 @@ function matchesForceInclude (selector, forceInclude) {
 // true, if selector should be force kept
 // false, if selector should be force removed
 // otherwise the selector string to look for in the critical viewport
-function normalizeSelector (selectorNode, forceInclude) {
+function normalizeSelector(selectorNode, forceInclude) {
   const selector = csstree.generate(selectorNode)
   // some selectors can't be matched on page.
   // In these cases we test a slightly modified selector instead
@@ -78,14 +78,14 @@ function normalizeSelector (selectorNode, forceInclude) {
   return modifiedSelector
 }
 
-export default async function buildSelectorProfile (ast, forceInclude) {
+export default async function buildSelectorProfile(ast, forceInclude) {
   debuglog('buildSelectorProfile START')
   const selectors = new Set()
   const selectorNodeMap = new WeakMap()
 
   csstree.walk(ast, {
     visit: 'Rule',
-    enter: function (rule, item, list) {
+    enter: function(rule, item, list) {
       // ignore rules inside @keyframes at-rule
       if (
         this.atrule &&

@@ -11,7 +11,7 @@ import finalRuleRemover from './final-rule-remover'
 const debuglog = debug('penthouse:css-cleanup')
 
 // NOTE: mutates the ast
-export default function cleanup ({
+export default function cleanup({
   ast,
   selectorNodeMap,
   criticalSelectors,

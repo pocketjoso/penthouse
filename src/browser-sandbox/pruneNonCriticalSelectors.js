@@ -1,6 +1,6 @@
 // executed inside sandboxed browser environment,
 // no access to scrope outside of function
-export default function pruneNonCriticalSelectors ({
+export default function pruneNonCriticalSelectors({
   selectors,
   maxElementsToCheckPerSelector
 }) {
@@ -12,7 +12,7 @@ export default function pruneNonCriticalSelectors ({
   // and some stylesheets have lots of generic selectors (like '.button', '.fa' etc)
   var isElementAboveFoldCache = new Map()
 
-  function isElementAboveFold (element) {
+  function isElementAboveFold(element) {
     if (isElementAboveFoldCache.has(element)) {
       return isElementAboveFoldCache.get(element)
     }
@@ -44,7 +44,7 @@ export default function pruneNonCriticalSelectors ({
     return aboveFold
   }
 
-  function isSelectorCritical (selector) {
+  function isSelectorCritical(selector) {
     // we have a selector to test, first grab any matching elements
     let elements
     try {
@@ -75,7 +75,7 @@ export default function pruneNonCriticalSelectors ({
     return false
   }
 
-  function filterSelectors (selectors) {
+  function filterSelectors(selectors) {
     console.log('debug: filterSelectors START')
 
     selectors = selectors.filter(isSelectorCritical)

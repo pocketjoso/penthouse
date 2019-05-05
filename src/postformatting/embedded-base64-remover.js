@@ -5,7 +5,7 @@ const debuglog = debug('penthouse:css-cleanup:embeddedbase64Remover')
 
 const BASE64_ENCODE_PATTERN = /data:[^,]*;base64,/
 
-export default function embeddedbase64Remover (ast, maxEmbeddedBase64Length) {
+export default function embeddedbase64Remover(ast, maxEmbeddedBase64Length) {
   debuglog('config: maxEmbeddedBase64Length = ' + maxEmbeddedBase64Length)
   csstree.walk(ast, {
     visit: 'Declaration',
@@ -14,7 +14,7 @@ export default function embeddedbase64Remover (ast, maxEmbeddedBase64Length) {
 
       csstree.walk(declaration, {
         visit: 'Url',
-        enter: function (url) {
+        enter: function(url) {
           const value = url.value.value
           if (
             BASE64_ENCODE_PATTERN.test(value) &&

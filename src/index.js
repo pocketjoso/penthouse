@@ -31,12 +31,12 @@ const DEFAULT_PROPERTIES_TO_REMOVE = [
 ]
 const _UNSTABLE_KEEP_ALIVE_MAX_KEPT_OPEN_PAGES = 4
 
-function exitHandler (exitCode) {
+function exitHandler(exitCode) {
   closeBrowser({ forceClose: true })
   process.exit(typeof exitCode === 'number' ? exitCode : 0)
 }
 
-function readFilePromise (filepath, encoding) {
+function readFilePromise(filepath, encoding) {
   return new Promise((resolve, reject) => {
     fs.readFile(filepath, encoding, (err, content) => {
       if (err) {
@@ -47,9 +47,9 @@ function readFilePromise (filepath, encoding) {
   })
 }
 
-function prepareForceIncludeForSerialization (forceInclude = []) {
+function prepareForceIncludeForSerialization(forceInclude = []) {
   // need to annotate forceInclude values to allow RegExp to pass through JSON serialization
-  return forceInclude.map(function (forceIncludeValue) {
+  return forceInclude.map(function(forceIncludeValue) {
     if (
       typeof forceIncludeValue === 'object' &&
       forceIncludeValue.constructor.name === 'RegExp'
@@ -65,7 +65,7 @@ function prepareForceIncludeForSerialization (forceInclude = []) {
 }
 
 // const so not hoisted, so can get regeneratorRuntime inlined above, needed for Node 4
-const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
+const generateCriticalCssWrapped = async function generateCriticalCssWrapped(
   options,
   { forceTryRestartBrowser } = {}
 ) {
@@ -192,14 +192,14 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
   })
 }
 
-module.exports = function (options, callback) {
+module.exports = function(options, callback) {
   process.on('exit', exitHandler)
   process.on('SIGTERM', exitHandler)
   process.on('SIGINT', exitHandler)
 
   return new Promise(async (resolve, reject) => {
     addJob()
-    function cleanupAndExit ({ returnValue, error = null }) {
+    function cleanupAndExit({ returnValue, error = null }) {
       process.removeListener('exit', exitHandler)
       process.removeListener('SIGTERM', exitHandler)
       process.removeListener('SIGINT', exitHandler)

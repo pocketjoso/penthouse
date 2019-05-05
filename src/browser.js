@@ -10,10 +10,10 @@ let reusableBrowserPages = []
 // keep track of when we can close the browser penthouse uses;
 // kept open by continuous use
 let ongoingJobs = 0
-export function addJob () {
+export function addJob() {
   ongoingJobs = ongoingJobs + 1
 }
-export function removeJob () {
+export function removeJob() {
   ongoingJobs = ongoingJobs - 1
 }
 
@@ -27,7 +27,7 @@ const DEFAULT_PUPPETEER_LAUNCH_ARGS = [
   // '--disable-dev-shm-usage'
 ]
 
-export async function launchBrowserIfNeeded ({ getBrowser, width, height }) {
+export async function launchBrowserIfNeeded({ getBrowser, width, height }) {
   if (browser) {
     return
   }
@@ -69,7 +69,7 @@ export async function launchBrowserIfNeeded ({ getBrowser, width, height }) {
   _browserLaunchPromise = null
 }
 
-export async function closeBrowser ({ forceClose, unstableKeepBrowserAlive }) {
+export async function closeBrowser({ forceClose, unstableKeepBrowserAlive }) {
   if (browser && (forceClose || !unstableKeepBrowserAlive)) {
     if (ongoingJobs > 0) {
       debuglog('keeping browser open as ongoingJobs: ' + ongoingJobs)
@@ -82,7 +82,7 @@ export async function closeBrowser ({ forceClose, unstableKeepBrowserAlive }) {
   }
 }
 
-export async function restartBrowser ({ getBrowser, width, height }) {
+export async function restartBrowser({ getBrowser, width, height }) {
   let browserPages
   if (browser) {
     browserPages = await browser.pages()
@@ -106,7 +106,7 @@ export async function restartBrowser ({ getBrowser, width, height }) {
   }
 }
 
-export async function browserIsRunning () {
+export async function browserIsRunning() {
   try {
     // will throw 'Not opened' error if browser is not running
     await browser.version()
@@ -116,7 +116,7 @@ export async function browserIsRunning () {
   }
 }
 
-export async function getOpenBrowserPage () {
+export async function getOpenBrowserPage() {
   const browserPages = await browser.pages()
 
   // if any re-usable pages to use, avoid unnecessary page open/close calls
@@ -149,7 +149,7 @@ export async function getOpenBrowserPage () {
   })
 }
 
-export async function closeBrowserPage ({
+export async function closeBrowserPage({
   page,
   error,
   unstableKeepBrowserAlive,

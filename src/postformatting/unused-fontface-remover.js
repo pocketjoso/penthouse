@@ -3,7 +3,7 @@ import debug from 'debug'
 
 const debuglog = debug('penthouse:css-cleanup:unused-font-face-remover')
 
-function decodeFontName (node) {
+function decodeFontName(node) {
   let name = csstree.generate(node)
   // TODO: use string decode
   if (name[0] === '"' || name[0] === "'") {
@@ -12,13 +12,13 @@ function decodeFontName (node) {
   return name
 }
 
-function getAllFontNameValues (ast) {
+function getAllFontNameValues(ast) {
   const fontNameValues = new Set()
 
   debuglog('getAllFontNameValues')
   csstree.walk(ast, {
     visit: 'Declaration',
-    enter: function (node) {
+    enter: function(node) {
       // walker pass through `font-family` declarations inside @font-face too
       // this condition filters them, to walk through declarations inside a rules only
       if (this.rule) {
@@ -42,7 +42,7 @@ function getAllFontNameValues (ast) {
   return fontNameValues
 }
 
-export default function unusedFontfaceRemover (ast) {
+export default function unusedFontfaceRemover(ast) {
   const fontNameValues = getAllFontNameValues(ast)
 
   // remove @font-face at-rule when:
