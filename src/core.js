@@ -21,7 +21,14 @@ function blockinterceptedRequests (interceptedRequest) {
   }
 }
 
-function loadPage (page, url, htmlString, timeout, pageLoadSkipTimeout) {
+function loadPage (
+  page,
+  url,
+  htmlString
+  timeout,
+  pageLoadSkipTimeout,
+  allowedResponseCode
+) {
   debuglog('page load start')
   let waitingForPageLoad = true
   let loadPagePromise
@@ -54,10 +61,42 @@ function loadPage (page, url, htmlString, timeout, pageLoadSkipTimeout) {
       })
     ])
   }
-  return loadPagePromise.then(() => {
+  return loadPagePromise.then(response => {
+    if (typeof allowedResponseCode !== 'undefined') {
+      checkResponseStatus(allowedResponseCode, response)
+    }
+
     waitingForPageLoad = false
     debuglog('page load DONE')
   })
+}
+
+function checkResponseStatus (allowedResponseCode, response) {
+  var errorMessage
+  if (
+    typeof allowedResponseCode === 'number' &&
+    response.status() !== allowedResponseCode
+  ) {
+    errorMessage = `Server response status ${response.status()} isn't matching allowedResponseCode: ${allowedResponseCode}.`
+  } else if (
+    typeof allowedResponseCode === 'object' &&
+    allowedResponseCode.constructor.name === 'RegExp' &&
+    !response
+      .status()
+      .toString()
+      .match(allowedResponseCode)
+  ) {
+    errorMessage = `Server response status ${response.status()} isn't matching allowedResponseCode: ${allowedResponseCode.toString()}.`
+  } else if (
+    typeof allowedResponseCode === 'function' &&
+    !allowedResponseCode.call(this, response)
+  ) {
+    errorMessage = `Server response status ${response.status()} isn't matching allowedResponseCode.`
+  }
+
+  if (errorMessage) {
+    throw new Error(errorMessage)
+  }
 }
 
 function setupBlockJsRequests (page) {
@@ -254,7 +293,8 @@ async function pruneNonCriticalCssLauncher ({
   maxEmbeddedBase64Length,
   keepLargerMediaQueries,
   maxElementsToCheckPerSelector,
-  unstableKeepBrowserAlive
+  unstableKeepBrowserAlive,
+  allowedResponseCode
 }) {
   let _hasExited = false
   // hacky to get around _hasExited only available in the scope of this function
@@ -365,7 +405,8 @@ async function pruneNonCriticalCssLauncher ({
       url,
       htmlString,
       timeout,
-      pageLoadSkipTimeout
+      pageLoadSkipTimeout,
+      allowedResponseCode,
     )
 
     // turn css to formatted selectorlist [NOT BLOCKING]
