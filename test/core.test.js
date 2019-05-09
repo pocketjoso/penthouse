@@ -179,6 +179,22 @@ describe('penthouse core tests', () => {
       })
   })
 
+  it('should force remove specified selectors', () => {
+    var forceExcludeCssFilePath = path.join(__dirname, 'static-server', 'forceExclude.css')
+    var forceExcludeCss = read(forceExcludeCssFilePath).toString()
+
+    return penthouse({
+      url: page1FileUrl,
+      css: forceExcludeCssFilePath,
+      forceExclude: [
+        '.box1'
+      ]
+    })
+      .then(result => {
+        expect(result).toEqual(normaliseCss(forceExcludeCss))
+      })
+  })
+
   // non essential
   it('should remove empty rules', () => {
     var emptyRemoveCssFilePath = path.join(__dirname, 'static-server', 'empty-rules--remove.css')
