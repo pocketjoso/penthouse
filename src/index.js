@@ -64,6 +64,23 @@ function prepareForceIncludeForSerialization (forceInclude = []) {
   })
 }
 
+function prepareForceExcludeForSerialization (forceExclude = []) {
+  // need to annotate forceExclude values to allow RegExp to pass through JSON serialization
+  return forceExclude.map(function (forceExcludeValue) {
+    if (
+      typeof forceExcludeValue === 'object' &&
+      forceExcludeValue.constructor.name === 'RegExp'
+    ) {
+      return {
+        type: 'RegExp',
+        source: forceExcludeValue.source,
+        flags: forceExcludeValue.flags
+      }
+    }
+    return { value: forceExcludeValue }
+  })
+}
+
 // const so not hoisted, so can get regeneratorRuntime inlined above, needed for Node 4
 const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
   options,
@@ -83,6 +100,11 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
       options.forceInclude || []
     )
   )
+  const forceExclude = prepareForceExcludeForSerialization(
+    ['someStyle'].concat(
+      options.forceExclude || []
+    )
+  )
 
   // promise so we can handle errors and reject,
   // instead of throwing what would otherwise be uncaught errors in node process
@@ -100,6 +122,7 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
         width,
         height,
         forceInclude,
+        forceExclude,
         strict: options.strict,
         userAgent: options.userAgent || DEFAULT_USER_AGENT,
         renderWaitTime: options.renderWaitTime || DEFAULT_RENDER_WAIT_TIMEOUT,

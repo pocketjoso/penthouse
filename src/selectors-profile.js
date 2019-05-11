@@ -30,11 +30,22 @@ function matchesForceInclude (selector, forceInclude) {
   })
 }
 
+function matchesForceExclude (selector, forceExclude) {
+  return forceExclude.some(function (excludeSelector) {
+    if (excludeSelector.type === 'RegExp') {
+      const { source, flags } = excludeSelector
+      const re = new RegExp(source, flags)
+      return re.test(selector)
+    }
+    return excludeSelector.value === selector
+  })
+}
+
 // returns:
 // true, if selector should be force kept
 // false, if selector should be force removed
 // otherwise the selector string to look for in the critical viewport
-function normalizeSelector (selectorNode, forceInclude) {
+function normalizeSelector (selectorNode, forceInclude, forceExclude) {
   const selector = csstree.generate(selectorNode)
   // some selectors can't be matched on page.
   // In these cases we test a slightly modified selector instead
@@ -42,6 +53,10 @@ function normalizeSelector (selectorNode, forceInclude) {
 
   if (matchesForceInclude(modifiedSelector, forceInclude)) {
     return true
+  }
+
+  if (matchesForceExclude(modifiedSelector, forceExclude)) {
+    return false
   }
 
   if (modifiedSelector.indexOf(':') > -1) {
@@ -78,7 +93,7 @@ function normalizeSelector (selectorNode, forceInclude) {
   return modifiedSelector
 }
 
-export default async function buildSelectorProfile (ast, forceInclude) {
+export default async function buildSelectorProfile (ast, forceInclude, forceExclude) {
   debuglog('buildSelectorProfile START')
   const selectors = new Set()
   const selectorNodeMap = new WeakMap()
@@ -112,7 +127,7 @@ export default async function buildSelectorProfile (ast, forceInclude) {
 
       // collect selectors and build a map
       rule.prelude.children.each(selectorNode => {
-        const selector = normalizeSelector(selectorNode, forceInclude)
+        const selector = normalizeSelector(selectorNode, forceInclude, forceExclude)
         if (typeof selector === 'string') {
           selectors.add(selector)
         }

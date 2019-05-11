@@ -55,6 +55,7 @@ Only `url` and `cssString` are required - all other options are optional. Note t
 | screenshots   | `object` | | Configuration for screenshots (not used by default). See [Screenshot example](https://github.com/pocketjoso/penthouse/tree/master/examples/screenshots.js)  |
 | keepLargerMediaQueries | `boolean` | `false` | Keep media queries even for width/height values larger than critical viewport. |
 | forceInclude | `array` | `[]` | Array of css selectors to keep in critical css, even if not appearing in critical viewport. Strings or regex (f.e. `['.keepMeEvenIfNotSeenInDom', /^\.button/]`) |
+| forceExclude | `array` | `[]` | Array of css selectors to remove in critical css, even if appearing in critical viewport. Strings or regex (f.e. `['.doNotKeepMeEvenIfNotSeenInDom', /^\.button/]`) |
 | propertiesToRemove | `array` | `['(.*)transition(.*)', 'cursor', 'pointer-events', '(-webkit-)?tap-highlight-color', '(.*)user-select']` ] | Css properties to filter out from critical css |
 | timeout       | `integer` | `30000` | Ms; abort critical CSS generation after this time |
 | puppeteer     | `object`  | | Settings for puppeteer. See [Custom puppeteer browser example](https://github.com/pocketjoso/penthouse/tree/master/examples/custom-browser.js) |
