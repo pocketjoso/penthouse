@@ -179,7 +179,7 @@ describe('penthouse core tests', () => {
       })
   })
 
-  it('should force remove specified selectors', () => {
+  it('should force exclude specified selectors', () => {
     var forceExcludeCssFilePath = path.join(__dirname, 'static-server', 'forceExclude.css')
     var forceExcludeCss = read(forceExcludeCssFilePath).toString()
 
@@ -187,11 +187,12 @@ describe('penthouse core tests', () => {
       url: page1FileUrl,
       css: forceExcludeCssFilePath,
       forceExclude: [
-        '.box1'
+        '#box2', /#box2\d/
       ]
     })
       .then(result => {
-        expect(result).toEqual(normaliseCss(forceExcludeCss))
+        // forceExcluded all selectors in forceExclude css file
+        expect(result).toEqual('')
       })
   })
 
