@@ -47,37 +47,20 @@ function readFilePromise (filepath, encoding) {
   })
 }
 
-function prepareForceIncludeForSerialization (forceInclude = []) {
+function prepareForceSelectorsForSerialization (forceSelectors = []) {
   // need to annotate forceInclude values to allow RegExp to pass through JSON serialization
-  return forceInclude.map(function (forceIncludeValue) {
+  return forceSelectors.map(function (forceSelectorValue) {
     if (
-      typeof forceIncludeValue === 'object' &&
-      forceIncludeValue.constructor.name === 'RegExp'
+      typeof forceSelectorValue === 'object' &&
+      forceSelectorValue.constructor.name === 'RegExp'
     ) {
       return {
         type: 'RegExp',
-        source: forceIncludeValue.source,
-        flags: forceIncludeValue.flags
+        source: forceSelectorValue.source,
+        flags: forceSelectorValue.flags
       }
     }
-    return { value: forceIncludeValue }
-  })
-}
-
-function prepareForceExcludeForSerialization (forceExclude = []) {
-  // need to annotate forceExclude values to allow RegExp to pass through JSON serialization
-  return forceExclude.map(function (forceExcludeValue) {
-    if (
-      typeof forceExcludeValue === 'object' &&
-      forceExcludeValue.constructor.name === 'RegExp'
-    ) {
-      return {
-        type: 'RegExp',
-        source: forceExcludeValue.source,
-        flags: forceExcludeValue.flags
-      }
-    }
-    return { value: forceExcludeValue }
+    return { value: forceSelectorValue }
   })
 }
 
@@ -95,15 +78,13 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
 
   // always forceInclude '*', 'html', and 'body' selectors;
   // yields slight performance improvement
-  const forceInclude = prepareForceIncludeForSerialization(
+  const forceInclude = prepareForceSelectorsForSerialization(
     ['*', '*:before', '*:after', 'html', 'body'].concat(
       options.forceInclude || []
     )
   )
-  const forceExclude = prepareForceExcludeForSerialization(
-    ['someStyle'].concat(
-      options.forceExclude || []
-    )
+  const forceExclude = prepareForceSelectorsForSerialization(
+    options.forceExclude || []
   )
 
   // promise so we can handle errors and reject,

@@ -19,25 +19,14 @@ var pseudoSelectorsToKeepRegex = pseudoSelectorsToKeep
 // we will replace all instances of these pseudo selectors; hence global flag
 var PSUEDO_SELECTOR_REGEXP = new RegExp(pseudoSelectorsToKeepRegex, 'g')
 
-function matchesForceInclude (selector, forceInclude) {
-  return forceInclude.some(function (includeSelector) {
-    if (includeSelector.type === 'RegExp') {
-      const { source, flags } = includeSelector
+function matchesSelectors (selector, selectors) {
+  return selectors.some(function (toMatchSelector) {
+    if (toMatchSelector.type === 'RegExp') {
+      const { source, flags } = toMatchSelector
       const re = new RegExp(source, flags)
       return re.test(selector)
     }
-    return includeSelector.value === selector
-  })
-}
-
-function matchesForceExclude (selector, forceExclude) {
-  return forceExclude.some(function (excludeSelector) {
-    if (excludeSelector.type === 'RegExp') {
-      const { source, flags } = excludeSelector
-      const re = new RegExp(source, flags)
-      return re.test(selector)
-    }
-    return excludeSelector.value === selector
+    return toMatchSelector.value === selector
   })
 }
 
@@ -51,11 +40,11 @@ function normalizeSelector (selectorNode, forceInclude, forceExclude) {
   // In these cases we test a slightly modified selector instead
   let modifiedSelector = selector.trim()
 
-  if (matchesForceInclude(modifiedSelector, forceInclude)) {
+  if (matchesSelectors(modifiedSelector, forceInclude)) {
     return true
   }
 
-  if (matchesForceExclude(modifiedSelector, forceExclude)) {
+  if (matchesSelectors(modifiedSelector, forceExclude)) {
     return false
   }
 
@@ -93,7 +82,11 @@ function normalizeSelector (selectorNode, forceInclude, forceExclude) {
   return modifiedSelector
 }
 
-export default async function buildSelectorProfile (ast, forceInclude, forceExclude) {
+export default async function buildSelectorProfile (
+  ast,
+  forceInclude,
+  forceExclude
+) {
   debuglog('buildSelectorProfile START')
   const selectors = new Set()
   const selectorNodeMap = new WeakMap()
@@ -127,7 +120,11 @@ export default async function buildSelectorProfile (ast, forceInclude, forceExcl
 
       // collect selectors and build a map
       rule.prelude.children.each(selectorNode => {
-        const selector = normalizeSelector(selectorNode, forceInclude, forceExclude)
+        const selector = normalizeSelector(
+          selectorNode,
+          forceInclude,
+          forceExclude
+        )
         if (typeof selector === 'string') {
           selectors.add(selector)
         }
