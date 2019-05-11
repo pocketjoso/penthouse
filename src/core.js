@@ -404,8 +404,8 @@ async function pruneNonCriticalCssLauncher ({
     debuglog('turn css to formatted selectorlist START')
     const buildSelectorProfilePromise = buildSelectorProfile(
       ast,
-      forceInclude,
-      forceExclude
+      forceInclude && forceInclude.length ? forceInclude : null,
+      forceExclude && forceExclude.length ? forceExclude : null
     ).then(res => {
       debuglog('turn css to formatted selectorlist DONE')
       return res
