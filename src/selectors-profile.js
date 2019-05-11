@@ -41,10 +41,12 @@ function normalizeSelector (selectorNode, forceInclude, forceExclude) {
   let modifiedSelector = selector.trim()
 
   if (matchesSelectors(modifiedSelector, forceInclude)) {
+    debuglog('forceInclude', modifiedSelector)
     return true
   }
 
   if (matchesSelectors(modifiedSelector, forceExclude)) {
+    debuglog('forceExclude', modifiedSelector)
     return false
   }
 
