@@ -10,7 +10,7 @@ function staticServerPerfHtmlUrl(file) {
   );
 }
 
-describe("performance tests for penthouse via file", () => {
+describe("performance tests for penthouse via url", () => {
   jest.setTimeout(15000);
   const browserPromise = puppeteer.launch();
 

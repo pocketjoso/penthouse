@@ -37,7 +37,7 @@ function getServerPerfHtml(file) {
   return simpleHtmlCache[file];
 }
 
-describe("performance tests for penthouse via htmlString", () => {
+describe("performance tests for penthouse via setContent method", () => {
   jest.setTimeout(15000);
   const browserPromise = puppeteer.launch();
 
