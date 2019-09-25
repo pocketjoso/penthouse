@@ -91,11 +91,11 @@ describe('penthouse pre formatting tests', () => {
         remove: false
       }
     ]
-    // const largeErrors = testMediaQueryRemoval(largeTest, 1600, 1200)
-    // if (largeErrors.length) {
-    //   done(new Error('largeErrors:\n' + largeErrors.join('\n')))
-    //   return
-    // }
+    const largeErrors = testMediaQueryRemoval(largeTest, 1600, 1200)
+    if (largeErrors.length) {
+      done(new Error('largeErrors:\n' + largeErrors.join('\n')))
+      return
+    }
 
     // test keepLargeMediaQueries - to be moved
     const keepLargeMediaQueriesTest = [
@@ -108,11 +108,11 @@ describe('penthouse pre formatting tests', () => {
         remove: false
       }
     ]
-    // let keepLargeMediaQueriesErrors = testMediaQueryRemoval(keepLargeMediaQueriesTest, 1300, 900, true)
-    // if (keepLargeMediaQueriesErrors.length) {
-    //   done(new Error('keepLargeMediaQueriesErrors:\n' + keepLargeMediaQueriesErrors.join('\n')))
-    //   return
-    // }
+    let keepLargeMediaQueriesErrors = testMediaQueryRemoval(keepLargeMediaQueriesTest, 1300, 900, true)
+    if (keepLargeMediaQueriesErrors.length) {
+      done(new Error('keepLargeMediaQueriesErrors:\n' + keepLargeMediaQueriesErrors.join('\n')))
+      return
+    }
 
     done()
   })
