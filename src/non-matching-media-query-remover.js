@@ -7,8 +7,13 @@ const debuglog = debug('penthouse:preformatting:nonMatchingMediaQueryRemover')
 // only filters out:
 //  - @print
 //  - min-width > width OR min-height > height
-// and the latter only if !keepLargerMediaQueries (which is the default)
-function _isMatchingMediaQuery (mediaQuery, matchConfig) {
+//    (the latter only if !keepLargerMediaQueries -- which is the default)
+//  - min-width > width AND max-width < width
+function _isMatchingMediaQuery (
+  mediaQuery,
+  matchConfig,
+  keepLargerMediaQueries
+) {
   // TODO: use the media query parsing from css-tree instead
   let mediaAST
   try {
@@ -35,16 +40,39 @@ function _isMatchingMediaQuery (mediaQuery, matchConfig) {
     if (mq.expressions.length === 0) {
       return true
     }
-    return mq.expressions.some(function ({ modifier, feature, value }) {
-      if (modifier === 'min') {
-        const constructedQuery = `${
-          isInverse ? 'not ' : ''
-        }(min-${feature}: ${value})`
-        return cssMediaQuery.match(constructedQuery, matchConfig)
-      } else {
-        return true
-      }
-    })
+
+    // shortcut for keepLargerMediaQueries option
+    if (keepLargerMediaQueries) {
+      return true
+    }
+
+    /*
+    costructing the test to match against the mediaquery
+    if the mediaquery (mq) has "AND" conditions, mq.expressions is an array of feature objects { modifier, feature, value }
+      mq.expressions.length > 1
+    if the mediaquery (mq) has "OR"  conditions, the mediaquery is split in _n_ mq objects,
+      each having an expressions array of 1 feature objects { modifier, feature, value }
+    */
+    if (mq.expressions.length > 1) {
+      const constructedQuery = mq.expressions
+        .map(
+          ({ modifier, feature, value }) =>
+            `${isInverse ? 'not ' : ''}(${modifier}-${feature}: ${value})`
+        )
+        .join(' and ')
+      return cssMediaQuery.match(constructedQuery, matchConfig)
+    } else {
+      return mq.expressions.some(function ({ modifier, feature, value }) {
+        if (modifier === 'min') {
+          const constructedQuery = `${
+            isInverse ? 'not ' : ''
+          }(min-${feature}: ${value})`
+          return cssMediaQuery.match(constructedQuery, matchConfig)
+        } else {
+          return true
+        }
+      })
+    }
   })
 
   return keep
@@ -54,15 +82,21 @@ function nonMatchingMediaQueryRemover (
   ast,
   width,
   height,
-  keepLargerMediaQueries
+  keepLargerMediaQueries = false
 ) {
   debuglog('BEFORE')
   const matchConfig = {
     type: 'screen',
-    width: (keepLargerMediaQueries ? 9999999999 : width) + 'px',
-    height: (keepLargerMediaQueries ? 9999999999 : height) + 'px'
+    width: width + 'px',
+    height: height + 'px'
   }
-  debuglog('matchConfig: ' + JSON.stringify(matchConfig, null, 2))
+  debuglog(
+    'matchConfig: ' +
+      JSON.stringify(matchConfig, null, 2) +
+      '\n' +
+      'keepLargerMediaQueries: ' +
+      keepLargerMediaQueries
+  )
 
   csstree.walk(ast, {
     visit: 'Atrule',
@@ -77,10 +111,18 @@ function nonMatchingMediaQueryRemover (
         return
       }
       const mediaQuery = csstree.generate(atrule.prelude)
-      const isMatching = _isMatchingMediaQuery(mediaQuery, matchConfig)
+      // ismatching true when mq must be kept
+      // if keep larger mq, keep if matching OR matching matchKeepLargeConfig
+      const isMatching = _isMatchingMediaQuery(
+        mediaQuery,
+        matchConfig,
+        keepLargerMediaQueries
+      )
       if (!isMatching) {
         debuglog('DROP: ' + `(${mediaQuery}), `)
         list.remove(item)
+      } else {
+        debuglog('KEEP: ' + `(${mediaQuery}), `)
       }
     }
   })
