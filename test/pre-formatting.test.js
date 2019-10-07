@@ -33,13 +33,13 @@ describe('penthouse pre formatting tests', () => {
       `@media oiasjdoiasd {}`,
       // covering combined queries
       `@media (min-width: 320px) and (max-width: 400px) {}`,
-      `@media (min-width: 150px) and (max-width: 1700px) {}`,
+      `@media (min-width: 150px) and (max-width: 1700px) {}`
     ]
     // 1300, 1600
     const mediaToRemoveAlways = [
       `@media print {}`,
       `@media not screen {}`,
-      `@media not (min-width: 1px) {}`,
+      `@media not (min-width: 1px) {}`
     ]
     // 1600
     const mediaToRemoveUnlessLarge = [
@@ -48,12 +48,12 @@ describe('penthouse pre formatting tests', () => {
       `@media screen and (min-width: 93.75rem) {}`,
       // covering combined queries
       `@media (min-width: 1500px) and (max-width: 1700px) {}`,
-      `@media screen and (min-width: 1500px) and (max-width: 1800px) {}`,
+      `@media screen and (min-width: 1500px) and (max-width: 1800px) {}`
     ]
     const mediaToRemoveUnlessKeepLarge = [
       `@media (min-width: 99999px) {}`,
       // covering combined queries
-      `@media (min-width: 1800px) and (max-width: 2800px) {}`,
+      `@media (min-width: 1800px) and (max-width: 2800px) {}`
     ]
 
     // test default settings

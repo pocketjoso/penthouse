@@ -8,7 +8,7 @@ const debuglog = debug('penthouse:preformatting:nonMatchingMediaQueryRemover')
 //  - @print
 //  - min-width > width OR min-height > height
 //    (the latter only if !keepLargerMediaQueries -- which is the default)
-//  - min-width > width AND max-width < width
+//  - min-width > width AND max-width > width
 function _isMatchingMediaQuery (mediaQuery, matchConfig) {
   // TODO: use the media query parsing from css-tree instead
   let mediaAST
