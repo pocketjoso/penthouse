@@ -6,7 +6,7 @@ const debuglog = debug('penthouse:browser')
 // shared between penthouse calls
 let browser = null
 let _browserLaunchPromise = null
-let reusableBrowserPages = []
+const reusableBrowserPages = []
 // keep track of when we can close the browser penthouse uses;
 // kept open by continuous use
 let ongoingJobs = 0

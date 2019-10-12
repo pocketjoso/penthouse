@@ -100,9 +100,9 @@ async function astFromCss ({ cssString, strict }) {
   // breaks puppeteer
   const css = cssString.replace(/￿/g, '\f042')
 
-  let parsingErrors = []
+  const parsingErrors = []
   debuglog('parse ast START')
-  let ast = csstree.parse(css, {
+  const ast = csstree.parse(css, {
     onParseError: error => parsingErrors.push(error.formattedMessage)
   })
   debuglog(`parse ast DONE (with ${parsingErrors.length} errors)`)
@@ -296,10 +296,13 @@ async function pruneNonCriticalCssLauncher ({
   const screenshotExtension =
     takeScreenshots && screenshots.type === 'jpeg' ? '.jpg' : '.png'
 
+  // NOTE: would need a refactor to killTimeout logic to be able to remove promise here.
+  /* eslint-disable no-async-promise-executor */
   return new Promise(async (resolve, reject) => {
+    /* eslint-enable no-async-promise-executor */
     debuglog('Penthouse core start')
-    let page
-    let killTimeout
+    let page = null
+    let killTimeout = null
     async function cleanupAndExit ({ error, returnValue }) {
       if (_hasExited) {
         return
@@ -313,7 +316,7 @@ async function pruneNonCriticalCssLauncher ({
       }
 
       if (page) {
-        let resetPromises = []
+        const resetPromises = []
         // reset page headers and cookies,
         // since we re-use the page
         if (customPageHeaders && Object.keys(customPageHeaders).length) {
