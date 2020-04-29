@@ -24,16 +24,17 @@ function _isMatchingMediaQuery (mediaQuery, matchConfig) {
     // rather than the inverse field, but for our purposes we want to treat
     // them the same.
     const isInverse = mq.inverse || mq.type === 'not'
-    if (
-      (!isInverse && mq.type === 'print') ||
-      (isInverse && mq.type === 'screen')
-    ) {
-      return false
-    }
     // f.e. @media all {}
     // go for false positives over false negatives,
     // i.e. accept @media randomThing {}
     if (mq.expressions.length === 0) {
+      // the checks below are only valid if the media query has no other properties other than the media type
+      if (
+        (!isInverse && mq.type === 'print') ||
+        (isInverse && mq.type === 'screen')
+      ) {
+        return false
+      }
       return true
     }
 
@@ -46,19 +47,27 @@ function _isMatchingMediaQuery (mediaQuery, matchConfig) {
     */
     return mq.expressions.some(function ({ modifier, feature, value }) {
       if (modifier === 'min') {
-        const constructedQuery = `${
-          isInverse ? 'not ' : ''
-        }(min-${feature}: ${value})`
-        return cssMediaQuery.match(constructedQuery, matchConfig)
+        const constructedQuery = `(min-${feature}: ${value})`
+        // css-mediaquery does not match inversed queries correctly, hence the if..else below
+        if (!isInverse) {
+          return cssMediaQuery.match(constructedQuery, matchConfig)
+        } else {
+          return !cssMediaQuery.match(constructedQuery, matchConfig)
+        }
       } else {
         if (mq.expressions.length > 1) {
           const constructedQuery = mq.expressions
             .map(
               ({ modifier, feature, value }) =>
-                `${isInverse ? 'not ' : ''}(${modifier}-${feature}: ${value})`
+                `(${modifier}-${feature}: ${value})`
             )
             .join(' and ')
-          return cssMediaQuery.match(constructedQuery, matchConfig)
+          // css-mediaquery does not match inversed queries correctly, hence the if..else below
+          if (!isInverse) {
+            return cssMediaQuery.match(constructedQuery, matchConfig)
+          } else {
+            return !cssMediaQuery.match(constructedQuery, matchConfig)
+          }
         } else {
           return true
         }
