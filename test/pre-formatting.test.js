@@ -33,13 +33,17 @@ describe('penthouse pre formatting tests', () => {
       `@media oiasjdoiasd {}`,
       // covering combined queries
       `@media (min-width: 320px) and (max-width: 400px) {}`,
-      `@media (min-width: 150px) and (max-width: 1700px) {}`
+      `@media (min-width: 150px) and (max-width: 1700px) {}`,
+      `@media not screen and (min-width: 1800px) {}`,
+      `@media not all and (min-width: 101em) {}`
     ]
     // 1300, 1600
     const mediaToRemoveAlways = [
       `@media print {}`,
       `@media not screen {}`,
-      `@media not (min-width: 1px) {}`
+      `@media not (min-width: 1px) {}`,
+      `@media not screen and (min-width: 800px) {}`,
+      `@media not all and (min-width: 50em) {}`
     ]
     // 1600
     const mediaToRemoveUnlessLarge = [
