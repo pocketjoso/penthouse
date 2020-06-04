@@ -18,7 +18,7 @@
   "license": "MIT",
   "main": "./lib/index.js",
   "engines": {
-    "node": ">=8.0"
+    "node": ">=8.16.0"
   },
   "scripts": {
     "lint": "eslint src",
@@ -40,7 +40,7 @@
     "css-tree": "1.0.0-alpha.28",
     "debug": "^4.1.1",
     "jsesc": "^2.5.2",
-    "puppeteer": "1.15.0"
+    "puppeteer": "2.1.1"
   },
   "devDependencies": {
     "@babel/cli": "^7.6.0",
