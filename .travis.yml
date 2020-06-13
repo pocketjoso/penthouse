@@ -1,6 +1,6 @@
 language: node_js
 node_js:
-    - "8"
+    - "8.16.0"
     - "10"
 dist: trusty
 addons:
