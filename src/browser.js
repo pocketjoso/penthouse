@@ -28,15 +28,17 @@ const DEFAULT_PUPPETEER_LAUNCH_ARGS = [
 ]
 
 export async function launchBrowserIfNeeded ({ getBrowser, width, height }) {
-  if (browser) {
-    return
-  }
   const usingCustomGetBrowser = getBrowser && typeof getBrowser === 'function'
   if (usingCustomGetBrowser && !_browserLaunchPromise) {
     debuglog('using browser provided via getBrowser option')
     _browserLaunchPromise = Promise.resolve(getBrowser())
   }
   if (!_browserLaunchPromise) {
+    if (browser) {
+      // we have already a running browser
+      return
+    }
+
     debuglog('no browser instance, launching new browser..')
 
     _browserLaunchPromise = puppeteer.launch({
