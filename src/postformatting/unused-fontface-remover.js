@@ -28,7 +28,7 @@ function getAllFontNameValues (ast) {
             const familyName = decodeFontName({
               type: 'Value',
               children: entry.nodes
-            })
+            }).toLowerCase()
             if (!fontNameValues.has(familyName)) {
               debuglog('found used font-family: ' + familyName)
               fontNameValues.add(familyName)
@@ -64,7 +64,7 @@ export default function unusedFontfaceRemover (ast) {
           const name = csstree.property(declaration.property).name
 
           if (name === 'font-family') {
-            const familyName = decodeFontName(declaration.value)
+            const familyName = decodeFontName(declaration.value).toLowerCase()
 
             // was this @font-face used?
             if (!fontNameValues.has(familyName)) {
