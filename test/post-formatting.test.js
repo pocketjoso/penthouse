@@ -85,6 +85,19 @@ describe('penthouse post formatting tests', () => {
     expect(csstree.generate(ast)).toEqual(normaliseCss(expectedCss))
   })
 
+  it('should treat font-family names as case-insensitive', () => {
+    // contains mismatched case for font-name between @font-face and usage ("Roboto" vs "roboto")
+    // - should be kept regardless
+    const cssString = "@font-face{font-family:'Roboto';font-style:normal;font-weight:300;src:local('Roboto Light')}#one{color:red;font-family:'roboto';font-weight:300}#one{color:blue}"
+    return penthouse({
+      url: staticServerFileUrl('case-sensitive.html'),
+      cssString
+    })
+      .then(css => {
+        expect(css).toEqual(normaliseCss(cssString))
+      })
+  })
+
   it('should only keep @keyframe rules used in critical css', () => {
     const originalCss = read(path.join(process.env.PWD, 'test', 'static-server', 'unused-keyframes.css'), 'utf8')
     const expectedCss = read(path.join(process.env.PWD, 'test', 'static-server', 'unused-keyframes--expected.css'), 'utf8')
