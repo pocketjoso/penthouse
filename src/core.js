@@ -154,7 +154,7 @@ async function preparePage ({
   // update it here.
   let setViewportPromise = Promise.resolve()
   const currentViewport = page.viewport()
-  if (currentViewport.width !== width || currentViewport.height !== height) {
+  if (!currentViewport || currentViewport.width !== width || currentViewport.height !== height) {
     setViewportPromise = page
       .setViewport({ width, height })
       .then(() => debuglog('viewport size updated'))
