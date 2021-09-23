@@ -126,7 +126,8 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
       allowedResponseCode: options.allowedResponseCode,
       unstableKeepOpenPages:
         options.unstableKeepOpenPages ||
-        _UNSTABLE_KEEP_ALIVE_MAX_KEPT_OPEN_PAGES
+        _UNSTABLE_KEEP_ALIVE_MAX_KEPT_OPEN_PAGES,
+      tryParentsDisplayNone: options.tryParentsDisplayNone || false
     })
   } catch (e) {
     const page = await pagePromise.then(({ page }) => page)
