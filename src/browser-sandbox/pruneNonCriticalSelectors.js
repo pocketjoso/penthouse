@@ -25,20 +25,18 @@ export default function pruneNonCriticalSelectors ({
     element.style.clear = 'none'
     var aboveFold = element.getBoundingClientRect().top < h
     if(aboveFold && tryParentsDisplayNone) {
-      var p = element.parentElement;
-      var parentHidden = false;
+      var current = element.parentElement;
       do {
-        //if(p.style.display === 'none') {
-        if(getComputedStyle(p).display === 'none') {
-        //if(p.getBoundingClientRect().height === 0) {
-          parentHidden = true;
+        if (isElementAboveFoldCache.has(element)) {
+          aboveFold = isElementAboveFoldCache.has(element)
           break;
         }
-        p = p.parentElement
-      } while (p)
-      if(parentHidden) {
-        aboveFold = false
-      }
+        if(getComputedStyle(current).display === 'none') {
+          aboveFold = false;
+          break;
+        }
+        current = current.parentElement
+      } while (current)
     }
     // cache so we dont have to re-query DOM for this value
     isElementAboveFoldCache.set(element, aboveFold)
