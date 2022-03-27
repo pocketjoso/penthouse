@@ -23,7 +23,8 @@ export default function pruneNonCriticalSelectors ({
 
     // but do that only if elements have their style attribute defined
     // (ref: https://github.com/pocketjoso/penthouse/issues/342)
-    if (typeof element.style !== 'undefined') {
+    const isElementStyleDefined = typeof element.style !== 'undefined'
+    if (isElementStyleDefined) {
       var originalClearStyle = element.style.clear || ''
       element.style.clear = 'none'
     }
@@ -32,7 +33,7 @@ export default function pruneNonCriticalSelectors ({
     // cache so we dont have to re-query DOM for this value
     isElementAboveFoldCache.set(element, aboveFold)
 
-    if (typeof element.style !== 'undefined') {
+    if (isElementStyleDefined) {
       // set clear style back to what it was
       element.style.clear = originalClearStyle
     }
