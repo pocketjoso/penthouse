@@ -20,14 +20,22 @@ export default function pruneNonCriticalSelectors ({
     // temporarily force clear none in order to catch elements that clear previous
     // content themselves and who w/o their styles could show up unstyled in above
     // the fold content (if they rely on f.e. 'clear:both;' to clear some main content)
-    var originalClearStyle = element.style.clear || ''
-    element.style.clear = 'none'
+
+    // but do that only if elements have their style attribute defined
+    // (ref: https://github.com/pocketjoso/penthouse/issues/342)
+    if (typeof element.style !== 'undefined') {
+      var originalClearStyle = element.style.clear || ''
+      element.style.clear = 'none'
+    }
+
     var aboveFold = element.getBoundingClientRect().top < h
     // cache so we dont have to re-query DOM for this value
     isElementAboveFoldCache.set(element, aboveFold)
 
-    // set clear style back to what it was
-    element.style.clear = originalClearStyle
+    if (typeof element.style !== 'undefined') {
+      // set clear style back to what it was
+      element.style.clear = originalClearStyle
+    }
 
     // Should not be needed anymore with Chrome Headless:
     // do some monitoring before complete removing the code (below)
