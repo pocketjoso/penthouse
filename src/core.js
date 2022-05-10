@@ -24,13 +24,14 @@ function blockinterceptedRequests (interceptedRequest) {
 function loadPage (
   page,
   url,
+  pageGotoOptions,
   timeout,
   pageLoadSkipTimeout,
   allowedResponseCode
 ) {
   debuglog('page load start')
   let waitingForPageLoad = true
-  let loadPagePromise = page.goto(url)
+  let loadPagePromise = page.goto(url, pageGotoOptions)
   if (pageLoadSkipTimeout) {
     loadPagePromise = Promise.race([
       loadPagePromise,
@@ -267,6 +268,7 @@ async function grabPageScreenshot ({
 async function pruneNonCriticalCssLauncher ({
   pagePromise,
   url,
+  pageGotoOptions,
   cssString,
   width,
   height,
@@ -398,6 +400,7 @@ async function pruneNonCriticalCssLauncher ({
     const loadPagePromise = loadPage(
       page,
       url,
+      pageGotoOptions,
       timeout,
       pageLoadSkipTimeout,
       allowedResponseCode
