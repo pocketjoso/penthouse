@@ -16,10 +16,12 @@ const browserPromise = puppeteer.launch({
   }
 })
 penthouse({
+	// pageGotoOptions are the options for puppeteer: Check the available options : https://github.com/puppeteer/puppeteer/blob/v14.0.0/docs/api.md#pagegotourl-options
   url: 'https://google.com',
   cssString: 'body { color: red }',
   puppeteer: {
-    getBrowser: () => browserPromise
+    getBrowser: () => browserPromise,
+    pageGotoOptions: {waitUntil: 'networkidle0'}
   }
 })
   .then(criticalCss => {
