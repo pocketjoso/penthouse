@@ -2,7 +2,8 @@
 // no access to scrope outside of function
 export default function pruneNonCriticalSelectors ({
   selectors,
-  maxElementsToCheckPerSelector
+  maxElementsToCheckPerSelector,
+  tryParentsDisplayNone
 }) {
   console.log('debug: pruneNonCriticalSelectors init')
   var h = window.innerHeight
@@ -30,6 +31,20 @@ export default function pruneNonCriticalSelectors ({
     }
 
     var aboveFold = element.getBoundingClientRect().top < h
+    if(aboveFold && tryParentsDisplayNone) {
+      var current = element.parentElement;
+      do {
+        if (isElementAboveFoldCache.has(element)) {
+          aboveFold = isElementAboveFoldCache.has(element)
+          break;
+        }
+        if(getComputedStyle(current).display === 'none') {
+          aboveFold = false;
+          break;
+        }
+        current = current.parentElement
+      } while (current)
+    }
     // cache so we dont have to re-query DOM for this value
     isElementAboveFoldCache.set(element, aboveFold)
 

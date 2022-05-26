@@ -288,7 +288,8 @@ async function pruneNonCriticalCssLauncher ({
   keepLargerMediaQueries,
   maxElementsToCheckPerSelector,
   unstableKeepBrowserAlive,
-  allowedResponseCode
+  allowedResponseCode,
+  tryParentsDisplayNone
 }) {
   let _hasExited = false
   // hacky to get around _hasExited only available in the scope of this function
@@ -483,7 +484,8 @@ async function pruneNonCriticalCssLauncher ({
         .evaluate(pruneNonCriticalSelectors, {
           selectors,
           renderWaitTime,
-          maxElementsToCheckPerSelector
+          maxElementsToCheckPerSelector,
+          tryParentsDisplayNone
         })
         .then(criticalSelectors => {
           debuglog('pruneNonCriticalSelectors done')
