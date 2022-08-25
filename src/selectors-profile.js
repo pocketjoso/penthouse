@@ -78,7 +78,7 @@ function normalizeSelector (selectorNode, forceInclude, forceExclude) {
     // handle browser specific pseudo selectors bound to elements,
     // Example, button::-moz-focus-inner, input[type=number]::-webkit-inner-spin-button
     // remove browser specific pseudo and test for element
-    modifiedSelector = modifiedSelector.replace(/:?:-[a-z-]*/g, '')
+    modifiedSelector = modifiedSelector.replace(/(?<!\\):?:-[a-z-]*/g, '')
   }
 
   return modifiedSelector
