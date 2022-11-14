@@ -155,7 +155,11 @@ async function preparePage ({
   // update it here.
   let setViewportPromise = Promise.resolve()
   const currentViewport = page.viewport()
-  if (!currentViewport || currentViewport.width !== width || currentViewport.height !== height) {
+  if (
+    !currentViewport ||
+    currentViewport.width !== width ||
+    currentViewport.height !== height
+  ) {
     setViewportPromise = page
       .setViewport({ width, height })
       .then(() => debuglog('viewport size updated'))
@@ -307,7 +311,7 @@ async function pruneNonCriticalCssLauncher ({
       debuglog('Penthouse core start')
       let page = null
       let killTimeout = null
-      async function cleanupAndExit ({ error, returnValue }) {
+      const cleanupAndExit = async ({ error, returnValue }) => {
         if (_hasExited) {
           return
         }
@@ -353,7 +357,9 @@ async function pruneNonCriticalCssLauncher ({
       }
       killTimeout = setTimeout(() => {
         cleanupAndExit({
-          error: new Error('Penthouse timed out after ' + timeout / 1000 + 's. ')
+          error: new Error(
+            'Penthouse timed out after ' + timeout / 1000 + 's. '
+          )
         })
       }, timeout)
 
@@ -543,8 +549,8 @@ async function pruneNonCriticalCssLauncher ({
 
       cleanupAndExit({ returnValue: css })
     } catch (err) {
-			reject(err);
-		}
+      reject(err)
+    }
   })
 }
 
