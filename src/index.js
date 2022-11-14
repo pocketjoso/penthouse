@@ -96,7 +96,8 @@ const generateCriticalCssWrapped = async function generateCriticalCssWrapped (
     formattedCss = await generateCriticalCss({
       pagePromise,
       url: options.url,
-      pageGotoOptions: (options.puppeteer && options.puppeteer.pageGotoOptions) || {},
+      pageGotoOptions:
+        (options.puppeteer && options.puppeteer.pageGotoOptions) || {},
       cssString: options.cssString,
       width,
       height,
