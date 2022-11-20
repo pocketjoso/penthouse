@@ -12,12 +12,18 @@ const PUPPETEER_PAGE_UNLOADED_DURING_EXECUTION_ERROR_REGEX = /(Cannot find conte
 export const PAGE_UNLOADED_DURING_EXECUTION_ERROR_MESSAGE =
   'PAGE_UNLOADED_DURING_EXECUTION: Critical css generation script could not be executed.\n\nThis can happen if Penthouse was killed during execution, OR otherwise most commonly if the page navigates away after load, via setting window.location, meta tag refresh directive or similar. For the critical css generation to work the loaded page must stay: remove any redirects or move them to the server. You can also disable them on your end just for the critical css generation, for example via a query parameter.'
 
-function blockinterceptedRequests (interceptedRequest) {
-  const isJsRequest = /\.js(\?.*)?$/.test(interceptedRequest.url())
-  if (isJsRequest) {
-    interceptedRequest.abort()
-  } else {
-    interceptedRequest.continue()
+async function blockinterceptedRequests (interceptedRequest) {
+  try {
+    const isJsRequest = /\.js(\?.*)?$/.test(interceptedRequest.url())
+    if (isJsRequest) {
+      await interceptedRequest.abort()
+    } else {
+      await interceptedRequest.continue()
+    }
+  } catch (err) {
+    debuglog(
+      'blockinterceptedRequests failed, but we ignore this: ' + err.toString()
+    )
   }
 }
 
@@ -155,7 +161,11 @@ async function preparePage ({
   // update it here.
   let setViewportPromise = Promise.resolve()
   const currentViewport = page.viewport()
-  if (!currentViewport || currentViewport.width !== width || currentViewport.height !== height) {
+  if (
+    !currentViewport ||
+    currentViewport.width !== width ||
+    currentViewport.height !== height
+  ) {
     setViewportPromise = page
       .setViewport({ width, height })
       .then(() => debuglog('viewport size updated'))
@@ -305,7 +315,7 @@ async function pruneNonCriticalCssLauncher ({
     debuglog('Penthouse core start')
     let page = null
     let killTimeout = null
-    async function cleanupAndExit ({ error, returnValue }) {
+    const cleanupAndExit = async ({ error, returnValue }) => {
       if (_hasExited) {
         return
       }
@@ -355,191 +365,196 @@ async function pruneNonCriticalCssLauncher ({
       })
     }, timeout)
 
-    // 1. start preparing a browser page (tab) [NOT BLOCKING]
-    const updatedPagePromise = preparePage({
-      page,
-      pagePromise,
-      width,
-      height,
-      userAgent,
-      cookies,
-      customPageHeaders,
-      blockJSRequests,
-      cleanupAndExit,
-      getHasExited
-    })
-
-    // 2. parse ast
-    // -> [BLOCK FOR] AST parsing
-    let ast
+    // ensure there is no uncaughtException
     try {
-      ast = await astFromCss({
-        cssString,
-        strict
+      // 1. start preparing a browser page (tab) [NOT BLOCKING]
+      const updatedPagePromise = preparePage({
+        page,
+        pagePromise,
+        width,
+        height,
+        userAgent,
+        cookies,
+        customPageHeaders,
+        blockJSRequests,
+        cleanupAndExit,
+        getHasExited
       })
-    } catch (e) {
-      cleanupAndExit({ error: e })
-      return
-    }
 
-    // 3. Further process the ast [BLOCKING]
-    // Strip out non matching media queries.
-    // Need to be done before buildSelectorProfile;
-    // (very fast but could be done together/in parallel in future)
-    nonMatchingMediaQueryRemover(ast, width, height, keepLargerMediaQueries)
-    debuglog('stripped out non matching media queries')
-
-    // -> [BLOCK FOR] page preparation
-    page = await updatedPagePromise
-    if (!page) {
-      cleanupAndExit({ error: 'Could not open page in browser' })
-      return
-    }
-
-    // load the page (slow) [NOT BLOCKING]
-    const loadPagePromise = loadPage(
-      page,
-      url,
-      pageGotoOptions,
-      timeout,
-      pageLoadSkipTimeout,
-      allowedResponseCode
-    )
-
-    // turn css to formatted selectorlist [NOT BLOCKING]
-    debuglog('turn css to formatted selectorlist START')
-    const buildSelectorProfilePromise = buildSelectorProfile(
-      ast,
-      forceInclude && forceInclude.length ? forceInclude : null,
-      forceExclude && forceExclude.length ? forceExclude : null
-    ).then(res => {
-      debuglog('turn css to formatted selectorlist DONE')
-      return res
-    })
-
-    // -> [BLOCK FOR] page load
-    try {
-      await loadPagePromise
-    } catch (e) {
-      cleanupAndExit({ error: e })
-      return
-    }
-    if (!page) {
-      // in case we timed out
-      debuglog('page load TIMED OUT')
-      cleanupAndExit({ error: new Error('Page load timed out') })
-      return
-    }
-    if (_hasExited) return
-
-    // Penthouse waits for the `load` event to fire
-    // (before loadPagePromise resolves; except for very slow loading pages)
-    // (via default puppeteer page.goto options.waitUntil setting,
-    //  https://github.com/GoogleChrome/puppeteer/blob/v1.8.0/docs/api.md#pagegotourl-options)
-    // This means "all of the objects in the document are in the DOM, and all the images...
-    // have finished loading".
-    // This is necessary for Penthouse to know the correct layout of the critical viewport
-    // (well really, we would only need to load the critical viewport.. not possible?)
-
-    // However, @font-face's can be available later,
-    // and for this reason it can be useful to delay further - if screenshots are used.
-    // For this `renderWaitTime` can be used.
-
-    // Note: `renderWaitTime` is not a very good name,
-    // and just setting a time is also not the most effective solution to f.e. wait for fonts.
-    // In future probably deprecate and allow for a custom function instead (returning a promise).
-
-    // -> [BLOCK FOR] renderWaitTime - needs to be done before we take any screenshots
-    await new Promise(resolve => {
-      setTimeout(() => {
-        debuglog('waited for renderWaitTime: ' + renderWaitTime)
-        resolve()
-      }, renderWaitTime)
-    })
-
-    // take before screenshot (optional) [NOT BLOCKING]
-    const beforeScreenshotPromise = takeScreenshots
-      ? grabPageScreenshot({
-          type: 'before',
-          page,
-          screenshots,
-          screenshotExtension,
-          debuglog
+      // 2. parse ast
+      // -> [BLOCK FOR] AST parsing
+      let ast
+      try {
+        ast = await astFromCss({
+          cssString,
+          strict
         })
-      : Promise.resolve()
+      } catch (e) {
+        cleanupAndExit({ error: e })
+        return
+      }
 
-    // -> [BLOCK FOR] css into formatted selectors list with "sourcemap"
-    // latter used to map back to full css rule
-    const { selectors, selectorNodeMap } = await buildSelectorProfilePromise
+      // 3. Further process the ast [BLOCKING]
+      // Strip out non matching media queries.
+      // Need to be done before buildSelectorProfile;
+      // (very fast but could be done together/in parallel in future)
+      nonMatchingMediaQueryRemover(ast, width, height, keepLargerMediaQueries)
+      debuglog('stripped out non matching media queries')
 
-    if (getHasExited()) {
-      return
-    }
+      // -> [BLOCK FOR] page preparation
+      page = await updatedPagePromise
+      if (!page) {
+        cleanupAndExit({ error: 'Could not open page in browser' })
+        return
+      }
 
-    // -> [BLOCK FOR] critical css selector pruning (in browser)
-    let criticalSelectors
-    try {
-      criticalSelectors = await page
-        .evaluate(pruneNonCriticalSelectors, {
-          selectors,
-          renderWaitTime,
-          maxElementsToCheckPerSelector
-        })
-        .then(criticalSelectors => {
-          debuglog('pruneNonCriticalSelectors done')
-          return criticalSelectors
-        })
-    } catch (err) {
-      debuglog('pruneNonCriticalSelector threw an error: ' + err)
-      const errorDueToPageUnloaded = PUPPETEER_PAGE_UNLOADED_DURING_EXECUTION_ERROR_REGEX.test(
-        err
+      // load the page (slow) [NOT BLOCKING]
+      const loadPagePromise = loadPage(
+        page,
+        url,
+        pageGotoOptions,
+        timeout,
+        pageLoadSkipTimeout,
+        allowedResponseCode
       )
-      cleanupAndExit({
-        error: errorDueToPageUnloaded
-          ? new Error(PAGE_UNLOADED_DURING_EXECUTION_ERROR_MESSAGE)
-          : err
+
+      // turn css to formatted selectorlist [NOT BLOCKING]
+      debuglog('turn css to formatted selectorlist START')
+      const buildSelectorProfilePromise = buildSelectorProfile(
+        ast,
+        forceInclude && forceInclude.length ? forceInclude : null,
+        forceExclude && forceExclude.length ? forceExclude : null
+      ).then(res => {
+        debuglog('turn css to formatted selectorlist DONE')
+        return res
       })
-      return
-    }
-    if (getHasExited()) {
-      return
-    }
 
-    // -> [BLOCK FOR] clean up final ast for critical css
-    debuglog('AST cleanup START')
+      // -> [BLOCK FOR] page load
+      try {
+        await loadPagePromise
+      } catch (e) {
+        cleanupAndExit({ error: e })
+        return
+      }
+      if (!page) {
+        // in case we timed out
+        debuglog('page load TIMED OUT')
+        cleanupAndExit({ error: new Error('Page load timed out') })
+        return
+      }
+      if (_hasExited) return
 
-    // NOTE: this function mutates the AST
-    cleanupAst({
-      ast,
-      selectorNodeMap,
-      criticalSelectors,
-      propertiesToRemove,
-      maxEmbeddedBase64Length
-    })
-    debuglog('AST cleanup DONE')
+      // Penthouse waits for the `load` event to fire
+      // (before loadPagePromise resolves; except for very slow loading pages)
+      // (via default puppeteer page.goto options.waitUntil setting,
+      //  https://github.com/GoogleChrome/puppeteer/blob/v1.8.0/docs/api.md#pagegotourl-options)
+      // This means "all of the objects in the document are in the DOM, and all the images...
+      // have finished loading".
+      // This is necessary for Penthouse to know the correct layout of the critical viewport
+      // (well really, we would only need to load the critical viewport.. not possible?)
 
-    // -> [BLOCK FOR] generate final critical css from critical ast
-    const css = csstree.generate(ast)
-    debuglog('generated CSS from AST')
+      // However, @font-face's can be available later,
+      // and for this reason it can be useful to delay further - if screenshots are used.
+      // For this `renderWaitTime` can be used.
 
-    // take after screenshot (optional) [BLOCKING]
-    if (takeScreenshots) {
-      // wait for the before screenshot, before start modifying the page
-      await beforeScreenshotPromise
-      debuglog('inline critical styles for after screenshot')
-      await page.evaluate(replacePageCss, { css }).then(() => {
-        return grabPageScreenshot({
-          type: 'after',
-          page,
-          screenshots,
-          screenshotExtension,
-          debuglog
+      // Note: `renderWaitTime` is not a very good name,
+      // and just setting a time is also not the most effective solution to f.e. wait for fonts.
+      // In future probably deprecate and allow for a custom function instead (returning a promise).
+
+      // -> [BLOCK FOR] renderWaitTime - needs to be done before we take any screenshots
+      await new Promise(resolve => {
+        setTimeout(() => {
+          debuglog('waited for renderWaitTime: ' + renderWaitTime)
+          resolve()
+        }, renderWaitTime)
+      })
+
+      // take before screenshot (optional) [NOT BLOCKING]
+      const beforeScreenshotPromise = takeScreenshots
+        ? grabPageScreenshot({
+            type: 'before',
+            page,
+            screenshots,
+            screenshotExtension,
+            debuglog
+          })
+        : Promise.resolve()
+
+      // -> [BLOCK FOR] css into formatted selectors list with "sourcemap"
+      // latter used to map back to full css rule
+      const { selectors, selectorNodeMap } = await buildSelectorProfilePromise
+
+      if (getHasExited()) {
+        return
+      }
+
+      // -> [BLOCK FOR] critical css selector pruning (in browser)
+      let criticalSelectors
+      try {
+        criticalSelectors = await page
+          .evaluate(pruneNonCriticalSelectors, {
+            selectors,
+            renderWaitTime,
+            maxElementsToCheckPerSelector
+          })
+          .then(criticalSelectors => {
+            debuglog('pruneNonCriticalSelectors done')
+            return criticalSelectors
+          })
+      } catch (err) {
+        debuglog('pruneNonCriticalSelector threw an error: ' + err)
+        const errorDueToPageUnloaded = PUPPETEER_PAGE_UNLOADED_DURING_EXECUTION_ERROR_REGEX.test(
+          err
+        )
+        cleanupAndExit({
+          error: errorDueToPageUnloaded
+            ? new Error(PAGE_UNLOADED_DURING_EXECUTION_ERROR_MESSAGE)
+            : err
         })
-      })
-    }
-    debuglog('generateCriticalCss DONE')
+        return
+      }
+      if (getHasExited()) {
+        return
+      }
 
-    cleanupAndExit({ returnValue: css })
+      // -> [BLOCK FOR] clean up final ast for critical css
+      debuglog('AST cleanup START')
+
+      // NOTE: this function mutates the AST
+      cleanupAst({
+        ast,
+        selectorNodeMap,
+        criticalSelectors,
+        propertiesToRemove,
+        maxEmbeddedBase64Length
+      })
+      debuglog('AST cleanup DONE')
+
+      // -> [BLOCK FOR] generate final critical css from critical ast
+      const css = csstree.generate(ast)
+      debuglog('generated CSS from AST')
+
+      // take after screenshot (optional) [BLOCKING]
+      if (takeScreenshots) {
+        // wait for the before screenshot, before start modifying the page
+        await beforeScreenshotPromise
+        debuglog('inline critical styles for after screenshot')
+        await page.evaluate(replacePageCss, { css }).then(() => {
+          return grabPageScreenshot({
+            type: 'after',
+            page,
+            screenshots,
+            screenshotExtension,
+            debuglog
+          })
+        })
+      }
+      debuglog('generateCriticalCss DONE')
+
+      cleanupAndExit({ returnValue: css })
+    } catch (err) {
+      reject(err)
+    }
   })
 }
 
