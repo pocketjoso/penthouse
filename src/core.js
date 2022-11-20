@@ -311,64 +311,62 @@ async function pruneNonCriticalCssLauncher ({
   // NOTE: would need a refactor to killTimeout logic to be able to remove promise here.
   /* eslint-disable no-async-promise-executor */
   return new Promise(async (resolve, reject) => {
+    /* eslint-enable no-async-promise-executor */
+    debuglog('Penthouse core start')
+    let page = null
+    let killTimeout = null
+    const cleanupAndExit = async ({ error, returnValue }) => {
+      if (_hasExited) {
+        return
+      }
+      debuglog('cleanupAndExit')
+      _hasExited = true
+      clearTimeout(killTimeout)
+
+      if (error) {
+        return reject(error)
+      }
+
+      if (page) {
+        const resetPromises = []
+        // reset page headers and cookies,
+        // since we re-use the page
+        if (customPageHeaders && Object.keys(customPageHeaders).length) {
+          try {
+            resetPromises.push(
+              page
+                .setExtraHTTPHeaders({})
+                .then(() => debuglog('customPageHeaders reset'))
+            )
+          } catch (e) {
+            debuglog('failed resetting extra http headers: ' + e)
+          }
+        }
+        // reset cookies
+        if (cookies && cookies.length) {
+          try {
+            resetPromises.push(
+              page
+                .deleteCookie(...cookies)
+                .then(() => debuglog('cookie(s) reset: '))
+            )
+          } catch (e) {
+            debuglog('failed to reset cookies: ' + e)
+          }
+        }
+        await Promise.all(resetPromises)
+      }
+
+      return resolve(returnValue)
+    }
+    killTimeout = setTimeout(() => {
+      cleanupAndExit({
+        error: new Error('Penthouse timed out after ' + timeout / 1000 + 's. ')
+      })
+    }, timeout)
+
     // ensure there is no uncaughtException
     try {
-      /* eslint-enable no-async-promise-executor */
-      debuglog('Penthouse core start')
-      let page = null
-      let killTimeout = null
-      const cleanupAndExit = async ({ error, returnValue }) => {
-        if (_hasExited) {
-          return
-        }
-        debuglog('cleanupAndExit')
-        _hasExited = true
-        clearTimeout(killTimeout)
-
-        if (error) {
-          return reject(error)
-        }
-
-        if (page) {
-          const resetPromises = []
-          // reset page headers and cookies,
-          // since we re-use the page
-          if (customPageHeaders && Object.keys(customPageHeaders).length) {
-            try {
-              resetPromises.push(
-                page
-                  .setExtraHTTPHeaders({})
-                  .then(() => debuglog('customPageHeaders reset'))
-              )
-            } catch (e) {
-              debuglog('failed resetting extra http headers: ' + e)
-            }
-          }
-          // reset cookies
-          if (cookies && cookies.length) {
-            try {
-              resetPromises.push(
-                page
-                  .deleteCookie(...cookies)
-                  .then(() => debuglog('cookie(s) reset: '))
-              )
-            } catch (e) {
-              debuglog('failed to reset cookies: ' + e)
-            }
-          }
-          await Promise.all(resetPromises)
-        }
-
-        return resolve(returnValue)
-      }
-      killTimeout = setTimeout(() => {
-        cleanupAndExit({
-          error: new Error(
-            'Penthouse timed out after ' + timeout / 1000 + 's. '
-          )
-        })
-      }, timeout)
-
       // 1. start preparing a browser page (tab) [NOT BLOCKING]
       const updatedPagePromise = preparePage({
         page,
