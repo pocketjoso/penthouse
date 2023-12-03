@@ -34,7 +34,7 @@ export default function finalRuleRemover (ast, propertiesToRemove) {
 
       /* Case 3: @-rule with CSS rules inside [REMAIN] */
       // non matching media queries are stripped out in non-matching-media-query-remover.js
-      if (name === 'media' || name === 'document' || name === 'supports') {
+      if (name === 'media' || name === 'document' || name === 'supports' || name === 'container') {
         if (atrule.block && !atrule.block.children.isEmpty()) {
           return
         }
